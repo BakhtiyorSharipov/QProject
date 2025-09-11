@@ -37,15 +37,17 @@ public class CompanyController: ControllerBase
     }
     
     [HttpPut("{id}")]
-    public void Put([FromRoute] int id, [FromBody] UpdateCompanyRequest request)
+    public IActionResult Put([FromRoute] int id, [FromBody] UpdateCompanyRequest request)
     {
-        _companyService.Update(id, request);
-       
+       var update= _companyService.Update(id, request);
+       return Ok(update);
+
     }
 
     [HttpDelete("{id}")]
-    public void Delete([FromRoute] int id)
+    public IActionResult Delete([FromRoute] int id)
     {
-        _companyService.Delete(id);
+       var delete= _companyService.Delete(id);
+       return NoContent();
     }
 }

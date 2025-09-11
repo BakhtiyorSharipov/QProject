@@ -8,11 +8,11 @@ using QDomain.Models;
 
 namespace QApplication.Services;
 
-public class BlockedCustomerService: BaseService<BlockedCustomerEntity, BlockedCustomerResponseModel, BlockedCustomerRequestModel>, IBlockedCustomerService
+public class BlockedCustomerService:  IBlockedCustomerService
 {
     private readonly IBlockedCustomerRepository _repository;
 
-    public BlockedCustomerService(IBlockedCustomerRepository repository) : base(repository)
+    public BlockedCustomerService(IBlockedCustomerRepository repository)
     {
         _repository = repository;
     }
@@ -120,6 +120,7 @@ public class BlockedCustomerService: BaseService<BlockedCustomerEntity, BlockedC
 
         var response = new BlockedCustomerResponseModel()
         {
+            Id=dbBlockedCustomer.Id,
             CompanyId = dbBlockedCustomer.CompanyId,
             CustomerId = dbBlockedCustomer.CustomerId,
             BannedUntil = dbBlockedCustomer.BannedUntil,

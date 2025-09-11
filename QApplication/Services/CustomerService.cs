@@ -10,11 +10,11 @@ using QDomain.Models;
 
 namespace QApplication.Services;
 
-public class CustomerService: BaseService<CustomerEntity, CustomerResponseModel, CustomerRequestModel>, ICustomerService
+public class CustomerService: ICustomerService
 {
     private readonly ICustomerRepository _repository;
 
-    public CustomerService(ICustomerRepository repository): base(repository)
+    public CustomerService(ICustomerRepository repository)
     {
         _repository = repository;
     }
@@ -55,7 +55,7 @@ public class CustomerService: BaseService<CustomerEntity, CustomerResponseModel,
 
         return response;
     }
-
+    
     public CustomerResponseModel Add(CustomerRequestModel request)
     {
         var requestToCreate = request as CreateCustomerRequest;

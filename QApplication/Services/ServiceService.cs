@@ -8,11 +8,11 @@ using QDomain.Models;
 
 namespace QApplication.Services;
 
-public class ServiceService: BaseService<ServiceEntity, ServiceResponseModel, ServiceRequestModel>, IServiceService
+public class ServiceService: IServiceService
 {
     private readonly IServiceRepository _repository;
 
-    public ServiceService(IServiceRepository repository) : base(repository)
+    public ServiceService(IServiceRepository repository)
     {
         _repository = repository;
     }
@@ -27,6 +27,7 @@ public class ServiceService: BaseService<ServiceEntity, ServiceResponseModel, Se
 
         var response = dbService.Select(service => new ServiceResponseModel()
         {
+            Id=service.Id,
             CompanyId = service.CompanyId,
             ServiceName = service.ServiceName,
             ServiceDescription = service.ServiceDescription
@@ -45,6 +46,7 @@ public class ServiceService: BaseService<ServiceEntity, ServiceResponseModel, Se
 
         var response = new ServiceResponseModel()
         {
+            Id=dbService.Id,
             CompanyId = dbService.CompanyId,
             ServiceName = dbService.ServiceName,
             ServiceDescription = dbService.ServiceDescription
@@ -73,6 +75,7 @@ public class ServiceService: BaseService<ServiceEntity, ServiceResponseModel, Se
 
         var response = new ServiceResponseModel()
         {
+            Id = service.Id,
             CompanyId = service.CompanyId,
             ServiceName = service.ServiceName,
             ServiceDescription = service.ServiceDescription
@@ -104,6 +107,7 @@ public class ServiceService: BaseService<ServiceEntity, ServiceResponseModel, Se
 
         var response = new ServiceResponseModel()
         {
+            Id=dbService.Id,
             CompanyId = dbService.CompanyId,
             ServiceName = dbService.ServiceName,
             ServiceDescription = dbService.ServiceDescription

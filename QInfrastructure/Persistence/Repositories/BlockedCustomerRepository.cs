@@ -5,14 +5,45 @@ using QInfrastructure.Persistence.DataBase;
 
 namespace QInfrastructure.Persistence.Repositories;
 
-public class BlockedCustomerRepository: Repository<BlockedCustomerEntity>, IBlockedCustomerRepository
+public class BlockedCustomerRepository: IBlockedCustomerRepository
 {
     private readonly DbSet<BlockedCustomerEntity> _dbBlockedCustomer;
     private readonly EFContext _context;
     
-    public BlockedCustomerRepository(EFContext context) : base(context)
+    public BlockedCustomerRepository(EFContext context) 
     {
         _dbBlockedCustomer = context.Set<BlockedCustomerEntity>();
         _context = context;
+    }
+
+    public IQueryable<BlockedCustomerEntity> GetAll(int pageList, int pageNumber)
+    {
+        return _dbBlockedCustomer.Skip((pageNumber - 1) * pageList).Take(pageList);
+    }
+
+    public BlockedCustomerEntity FindById(int id)
+    {
+        var foundEntity = _dbBlockedCustomer.Find(id);
+        return foundEntity;
+    }
+
+    public void Add(BlockedCustomerEntity entity)
+    {
+        _dbBlockedCustomer.Add(entity);
+    }
+
+    public void Update(BlockedCustomerEntity entity)
+    {
+        _dbBlockedCustomer.Update(entity);
+    }
+
+    public void Delete(BlockedCustomerEntity entity)
+    {
+        _dbBlockedCustomer.Remove(entity);
+    }
+
+    public int SaveChanges()
+    {
+        return _context.SaveChanges();
     }
 }
