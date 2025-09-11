@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("QAPI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+02d55a29106cb1b290f32255564835f4536e1571")]
 [assembly: System.Reflection.AssemblyProductAttribute("QAPI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("QAPI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

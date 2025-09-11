@@ -36,17 +36,18 @@ public class CustomerController: ControllerBase
     }
 
     [HttpPut("{id}")]
-    public void Put([FromRoute] int id, [FromBody] UpdateCustomerRequest request)
+    public IActionResult Put([FromRoute] int id, [FromBody] UpdateCustomerRequest request)
     {
-        _service.Update(id,request);
+       var update= _service.Update(id,request);
+       return Ok(update);
     }
 
     [HttpDelete("{id}")]
-    public void Delete([FromRoute] int id)
+    public IActionResult Delete([FromRoute] int id)
     {
-        _service.Delete(id);
+       var delete= _service.Delete(id);
+       return NoContent();
     }
-    
     
     
     

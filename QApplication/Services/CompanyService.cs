@@ -8,11 +8,11 @@ using QDomain.Models;
 
 namespace QApplication.Services;
 
-public class CompanyService: BaseService<CompanyEntity, CompanyResponseModel, CompanyRequestModel>, ICompanyService
+public class CompanyService: ICompanyService
 {
     private readonly ICompanyRepository _repository;
     
-    public CompanyService(ICompanyRepository repository) : base(repository)
+    public CompanyService(ICompanyRepository repository) 
     {
         _repository = repository;
     }
