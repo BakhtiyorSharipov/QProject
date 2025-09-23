@@ -21,7 +21,7 @@ public class QueueRepository:  IQueueRepository
     {
         return _dbQueue.Skip((pageNumber - 1) * pageList).Take(pageList);
     }
-
+    
     public QueueEntity FindById(int id)
     {
         var found = _dbQueue.Find(id);
@@ -46,5 +46,17 @@ public class QueueRepository:  IQueueRepository
     public int SaveChanges()
     {
         return _context.SaveChanges();
+    }
+    
+    public IQueryable<QueueEntity> GetQueuesByCustomer(int customerId)
+    {
+        var found = _dbQueue.Where(q=>q.CustomerId==customerId);
+        return found;
+    }
+
+    public IQueryable<QueueEntity> GetQueuesByEmployee(int employeeId)
+    {
+        var found = _dbQueue.Where(q => q.EmployeeId == employeeId);
+        return found;
     }
 }

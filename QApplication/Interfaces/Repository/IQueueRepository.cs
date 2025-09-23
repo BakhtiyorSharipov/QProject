@@ -10,4 +10,8 @@ public interface IQueueRepository
     void Update(QueueEntity entity);
     void Delete(QueueEntity entity);
     int SaveChanges();
+
+    IQueryable<QueueEntity> GetQueuesByCustomer(int customerId);
+    IQueryable<QueueEntity> GetQueuesByEmployee(int employeeId);
+    
 }

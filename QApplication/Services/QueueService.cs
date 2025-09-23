@@ -4,6 +4,7 @@ using QApplication.Interfaces;
 using QApplication.Interfaces.Repository;
 using QApplication.Requests.QueueRequest;
 using QApplication.Responses;
+using QDomain.Enums;
 using QDomain.Models;
 
 namespace QApplication.Services;
@@ -31,15 +32,13 @@ public class QueueService: IQueueService
             CustomerId = queue.CustomerId,
             EmployeeId = queue.EmployeeId,
             ServiceId = queue.ServiceId,
-            DayOfWeek = queue.DayOfWeek,
             StartTime = queue.StartTime,
-            EndTime = queue.EndTime,
-            CancelReason = queue.CancelReason
-            
+            Status = queue.Status
         }).ToList();
 
         return response;
     }
+
 
     public QueueResponseModel GetById(int id)
     {
@@ -55,10 +54,8 @@ public class QueueService: IQueueService
             CustomerId = dbQueue.CustomerId,
             EmployeeId = dbQueue.EmployeeId,
             ServiceId = dbQueue.ServiceId,
-            DayOfWeek = dbQueue.DayOfWeek,
             StartTime = dbQueue.StartTime,
-            EndTime = dbQueue.EndTime,
-            CancelReason = dbQueue.CancelReason
+            Status = dbQueue.Status
         };
 
         return response;
@@ -77,10 +74,8 @@ public class QueueService: IQueueService
             CustomerId = requestToCreate.CustomerId,
             EmployeeId = requestToCreate.EmployeeId,
             ServiceId = requestToCreate.ServiceId,
-            DayOfWeek = requestToCreate.DayOfWeek,
             StartTime = requestToCreate.StartTime,
-            EndTime = requestToCreate.EndTime,
-            CancelReason = requestToCreate.CancelReason
+            Status = QueueStatus.Pending
         };
         
         _repository.Add(queue);
@@ -92,14 +87,14 @@ public class QueueService: IQueueService
             CustomerId = queue.CustomerId,
             EmployeeId = queue.EmployeeId,
             ServiceId = queue.ServiceId,
-            DayOfWeek = queue.DayOfWeek,
             StartTime = queue.StartTime,
-            EndTime = queue.EndTime,
-            CancelReason = queue.CancelReason
+            Status = queue.Status
         };
 
         return response;
     }
+
+    
 
     public QueueResponseModel Update(int id, QueueRequestModel requestModel)
     {
@@ -118,10 +113,7 @@ public class QueueService: IQueueService
         dbQueue.CustomerId = requestToUpdate.CustomerId;
         dbQueue.EmployeeId = requestToUpdate.EmployeeId;
         dbQueue.ServiceId = requestToUpdate.ServiceId;
-        dbQueue.DayOfWeek = requestToUpdate.DayOfWeek;
         dbQueue.StartTime = requestToUpdate.StartTime;
-        dbQueue.EndTime = requestToUpdate.EndTime;
-        dbQueue.CancelReason = requestToUpdate.CancelReason;
         
         _repository.Update(dbQueue);
         _repository.SaveChanges();
@@ -132,10 +124,7 @@ public class QueueService: IQueueService
             CustomerId = dbQueue.CustomerId,
             EmployeeId = dbQueue.EmployeeId,
             ServiceId = dbQueue.ServiceId,
-            DayOfWeek = dbQueue.DayOfWeek,
             StartTime = dbQueue.StartTime,
-            EndTime = dbQueue.EndTime,
-            CancelReason = dbQueue.CancelReason
         };
 
         return response;
@@ -155,4 +144,132 @@ public class QueueService: IQueueService
         return true;
     }
     
+    
+    public QueueResponseModel CancelQueueByCustomer(QueueCancelRequest request)
+    {
+        var dbQueue = _repository.FindById(request.QueueId);
+        if (dbQueue==null)
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
+        }
+
+        if ((dbQueue.StartTime- DateTime.Now).TotalMinutes<10)
+        {
+            throw new Exception("Cannot cancel less than 10 minutes before start time");
+        }
+
+        dbQueue.Status = QueueStatus.CancelledByCustomer;
+        dbQueue.CancelReason = request.CancelReason;
+
+        _repository.SaveChanges();
+
+        var response = new QueueResponseModel
+        {
+            Id = dbQueue.Id,
+            CustomerId = dbQueue.CustomerId,
+            EmployeeId = dbQueue.EmployeeId,
+            ServiceId = dbQueue.ServiceId,
+            StartTime = dbQueue.StartTime,
+            Status = dbQueue.Status
+        };
+
+        return response;
+    }
+
+    public QueueResponseModel CancelQueueByEmployee(QueueCancelRequest request)
+    {
+        var dbQueue = _repository.FindById(request.QueueId);
+        if (dbQueue==null)
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound);
+        }
+
+        dbQueue.Status = QueueStatus.CancelledByEmployee;
+        dbQueue.CancelReason = request.CancelReason;
+
+        _repository.SaveChanges();
+
+        var response = new QueueResponseModel
+        {
+            Id = dbQueue.Id,
+            CustomerId = dbQueue.CustomerId,
+            EmployeeId = dbQueue.EmployeeId,
+            ServiceId = dbQueue.ServiceId,
+            StartTime = dbQueue.StartTime,
+            Status = dbQueue.Status
+        };
+
+        return response;
+    }
+    
+    public QueueResponseModel UpdateQueueStatus(int id, QueueStatus newStatus)
+    {
+        var dbQueue = _repository.FindById(id);
+        if (dbQueue==null)
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
+        }
+
+        if (newStatus != QueueStatus.Completed && newStatus !=QueueStatus.NoShow && newStatus !=QueueStatus.Confirmed)
+        {
+            throw new Exception("Invalid status update by employee");
+        }
+
+        dbQueue.Status = newStatus;
+        _repository.SaveChanges();
+
+        var response = new QueueResponseModel
+        {
+            Id = dbQueue.Id,
+            CustomerId = dbQueue.CustomerId,
+            EmployeeId = dbQueue.EmployeeId,
+            ServiceId = dbQueue.ServiceId,
+            StartTime = dbQueue.StartTime,
+            Status = dbQueue.Status
+        };
+
+        return response;
+    }
+
+    public IEnumerable<QueueResponseModel> GetQueuesByCustomer(int customerId)
+    {
+        var dbQueue = _repository.GetQueuesByCustomer(customerId);
+        if (dbQueue==null)
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
+        }
+
+        var response = dbQueue.Select(queue => new QueueResponseModel
+        {
+            Id = queue.Id,
+            CustomerId = queue.CustomerId,
+            EmployeeId = queue.EmployeeId,
+            ServiceId = queue.ServiceId,
+            StartTime = queue.StartTime,
+            Status = queue.Status
+        }).ToList();
+
+        return response;
+    }
+
+    public IEnumerable<QueueResponseModel> GetQueuesByEmployee(int employeeId)
+    {
+        var dbQueue = _repository.GetQueuesByEmployee(employeeId);
+        if (dbQueue==null)
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
+        }
+
+        var response = dbQueue.Select(queue => new QueueResponseModel()
+        {
+            Id = queue.Id,
+            CustomerId = queue.Id,
+            EmployeeId = queue.EmployeeId,
+            ServiceId = queue.ServiceId,
+            StartTime = queue.StartTime,
+            Status = queue.Status
+        }).ToList();
+
+        return response;
+    }
 }

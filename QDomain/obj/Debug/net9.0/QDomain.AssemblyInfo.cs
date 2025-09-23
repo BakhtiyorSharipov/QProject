@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("QDomain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+02d55a29106cb1b290f32255564835f4536e1571")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+bb00e393583e241d333d0c19a2efd9602946f356")]
 [assembly: System.Reflection.AssemblyProductAttribute("QDomain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("QDomain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
