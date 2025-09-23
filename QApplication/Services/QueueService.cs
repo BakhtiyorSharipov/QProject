@@ -153,7 +153,7 @@ public class QueueService: IQueueService
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
         }
 
-        if ((dbQueue.StartTime- DateTime.Now).TotalMinutes<10)
+        if ((dbQueue.StartTime - DateTime.Now).TotalMinutes<10)
         {
             throw new Exception("Cannot cancel less than 10 minutes before start time");
         }

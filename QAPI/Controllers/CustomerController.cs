@@ -48,9 +48,5 @@ public class CustomerController: ControllerBase
        var delete= _service.Delete(id);
        return NoContent();
     }
-    
-    
-    
-    
-    
+
 }

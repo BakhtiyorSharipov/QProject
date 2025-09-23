@@ -25,8 +25,7 @@ builder.Services.AddScoped<IServiceRepository, ServiceRepository>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<EFContext>(
-    options => { options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")); },
-    ServiceLifetime.Scoped);
+    options => { options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")); });
 
 var app = builder.Build();
 if (app.Environment.IsDevelopment())
