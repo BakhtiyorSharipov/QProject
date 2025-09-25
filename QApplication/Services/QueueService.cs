@@ -9,7 +9,7 @@ using QDomain.Models;
 
 namespace QApplication.Services;
 
-public class QueueService: IQueueService
+public class QueueService : IQueueService
 {
     private readonly IQueueRepository _repository;
 
@@ -21,7 +21,7 @@ public class QueueService: IQueueService
     public IEnumerable<QueueResponseModel> GetAll(int pageList, int pageNumber)
     {
         var dbQueue = _repository.GetAll(pageList, pageNumber);
-        if (dbQueue==null)
+        if (dbQueue == null)
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
         }
@@ -43,14 +43,14 @@ public class QueueService: IQueueService
     public QueueResponseModel GetById(int id)
     {
         var dbQueue = _repository.FindById(id);
-        if (dbQueue==null)
+        if (dbQueue == null)
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
         }
 
         var response = new QueueResponseModel()
         {
-            Id=dbQueue.Id,
+            Id = dbQueue.Id,
             CustomerId = dbQueue.CustomerId,
             EmployeeId = dbQueue.EmployeeId,
             ServiceId = dbQueue.ServiceId,
@@ -64,7 +64,7 @@ public class QueueService: IQueueService
     public QueueResponseModel Add(QueueRequestModel requestModel)
     {
         var requestToCreate = requestModel as CreateQueueRequest;
-        if (requestToCreate==null)
+        if (requestToCreate == null)
         {
             throw new HttpStatusCodeException(HttpStatusCode.BadRequest, nameof(QueueEntity));
         }
@@ -77,7 +77,7 @@ public class QueueService: IQueueService
             StartTime = requestToCreate.StartTime,
             Status = QueueStatus.Pending
         };
-        
+
         _repository.Add(queue);
         _repository.SaveChanges();
 
@@ -94,18 +94,17 @@ public class QueueService: IQueueService
         return response;
     }
 
-    
 
     public QueueResponseModel Update(int id, QueueRequestModel requestModel)
     {
         var dbQueue = _repository.FindById(id);
-        if (dbQueue==null)
+        if (dbQueue == null)
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
         }
 
         var requestToUpdate = requestModel as UpdateQueueRequest;
-        if (requestToUpdate==null)
+        if (requestToUpdate == null)
         {
             throw new HttpStatusCodeException(HttpStatusCode.BadRequest, nameof(QueueEntity));
         }
@@ -114,7 +113,7 @@ public class QueueService: IQueueService
         dbQueue.EmployeeId = requestToUpdate.EmployeeId;
         dbQueue.ServiceId = requestToUpdate.ServiceId;
         dbQueue.StartTime = requestToUpdate.StartTime;
-        
+
         _repository.Update(dbQueue);
         _repository.SaveChanges();
 
@@ -133,27 +132,32 @@ public class QueueService: IQueueService
     public bool Delete(int id)
     {
         var dbQueue = _repository.FindById(id);
-        if (dbQueue==null)
+        if (dbQueue == null)
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
         }
-        
+
         _repository.Delete(dbQueue);
         _repository.SaveChanges();
 
         return true;
     }
-    
-    
+
+
     public QueueResponseModel CancelQueueByCustomer(QueueCancelRequest request)
     {
         var dbQueue = _repository.FindById(request.QueueId);
-        if (dbQueue==null)
+        if (dbQueue == null)
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
         }
 
-        if ((dbQueue.StartTime - DateTime.Now).TotalMinutes<10)
+        if (dbQueue.Status != QueueStatus.Pending && dbQueue.Status != QueueStatus.Confirmed)
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.BadRequest, nameof(QueueEntity));
+        }
+
+        if ((dbQueue.StartTime - DateTime.Now).TotalMinutes < 10)
         {
             throw new Exception("Cannot cancel less than 10 minutes before start time");
         }
@@ -179,7 +183,7 @@ public class QueueService: IQueueService
     public QueueResponseModel CancelQueueByEmployee(QueueCancelRequest request)
     {
         var dbQueue = _repository.FindById(request.QueueId);
-        if (dbQueue==null)
+        if (dbQueue == null)
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound);
         }
@@ -201,16 +205,42 @@ public class QueueService: IQueueService
 
         return response;
     }
-    
+
     public QueueResponseModel UpdateQueueStatus(int id, QueueStatus newStatus)
     {
         var dbQueue = _repository.FindById(id);
-        if (dbQueue==null)
+        if (dbQueue == null)
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
         }
 
-        if (newStatus != QueueStatus.Completed && newStatus !=QueueStatus.NoShow && newStatus !=QueueStatus.Confirmed)
+        switch (dbQueue.Status)
+        {
+            case QueueStatus.Pending:
+                if (newStatus != QueueStatus.Confirmed && newStatus != QueueStatus.CancelledByEmployee)
+                {
+                    throw new Exception("Pending queue can only be Confirmed or Cancelled!");
+                }
+
+                break;
+            case QueueStatus.Confirmed:
+                if (newStatus != QueueStatus.Completed && newStatus != QueueStatus.DidNotCome &&
+                    newStatus != QueueStatus.CancelledByEmployee)
+                {
+                    throw new Exception("Confirmed queues can only be Completed, DidNotCome, Cancelled!");
+                }
+
+                break;
+            case QueueStatus.Completed:
+            case QueueStatus.CancelledByEmployee:
+            case QueueStatus.CancelledByCustomer:
+            case QueueStatus.CanceledByAdmin:
+            case QueueStatus.DidNotCome:
+                throw new Exception("This queue is already finalized and cannot be updated!");
+        }
+
+        if (newStatus != QueueStatus.Completed && newStatus != QueueStatus.DidNotCome &&
+            newStatus != QueueStatus.Confirmed)
         {
             throw new Exception("Invalid status update by employee");
         }
@@ -234,7 +264,7 @@ public class QueueService: IQueueService
     public IEnumerable<QueueResponseModel> GetQueuesByCustomer(int customerId)
     {
         var dbQueue = _repository.GetQueuesByCustomer(customerId);
-        if (dbQueue==null)
+        if (dbQueue == null)
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
         }
@@ -255,7 +285,7 @@ public class QueueService: IQueueService
     public IEnumerable<QueueResponseModel> GetQueuesByEmployee(int employeeId)
     {
         var dbQueue = _repository.GetQueuesByEmployee(employeeId);
-        if (dbQueue==null)
+        if (dbQueue == null)
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
         }

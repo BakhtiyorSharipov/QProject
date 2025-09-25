@@ -8,5 +8,5 @@ public enum QueueStatus
     CancelledByCustomer,
     CancelledByEmployee,
     CanceledByAdmin,
-    NoShow
+    DidNotCome
 }
