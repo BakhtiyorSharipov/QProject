@@ -9,11 +9,11 @@ using QDomain.Models;
 
 namespace QApplication.Services;
 
-public class EmployeeService: BaseService<EmployeeEntity, EmployeeResponseModel, EmployeeRequestModel>, IEmployeeService
+public class EmployeeService:  IEmployeeService
 {
     private readonly IEmployeeRepository _repository;
 
-    public EmployeeService(IEmployeeRepository repository) : base(repository)
+    public EmployeeService(IEmployeeRepository repository)
     {
         _repository = repository;
     }
@@ -24,6 +24,7 @@ public class EmployeeService: BaseService<EmployeeEntity, EmployeeResponseModel,
         var response = dbEmployee.Select(employee => new EmployeeResponseModel()
         {
             Id = employee.Id,
+            ServiceId = employee.ServiceId,
             FirstName = employee.FirstName,
             LastName = employee.LastName,
             Position = employee.Position,
@@ -46,6 +47,7 @@ public class EmployeeService: BaseService<EmployeeEntity, EmployeeResponseModel,
         var response = new EmployeeResponseModel()
         {
             Id = dbEmployee.Id,
+            ServiceId = dbEmployee.ServiceId,
             FirstName = dbEmployee.FirstName,
             LastName = dbEmployee.LastName,
             Position = dbEmployee.Position,
@@ -72,7 +74,8 @@ public class EmployeeService: BaseService<EmployeeEntity, EmployeeResponseModel,
             Position = requestToCreate.Position,
             EmailAddress = request.EmailAddress,
             PhoneNumber = requestToCreate.PhoneNumber,
-            Password = requestToCreate.Password
+            Password = requestToCreate.Password,
+            ServiceId = requestToCreate.ServiceId
         };
         
         _repository.Add(employee);
@@ -81,6 +84,7 @@ public class EmployeeService: BaseService<EmployeeEntity, EmployeeResponseModel,
         var response = new EmployeeResponseModel()
         {
             Id = employee.Id,
+            ServiceId = employee.ServiceId,
             FirstName = employee.FirstName,
             LastName = employee.LastName,
             Position = employee.Position,
@@ -119,6 +123,7 @@ public class EmployeeService: BaseService<EmployeeEntity, EmployeeResponseModel,
         var response = new EmployeeResponseModel()
         {
             Id = dbEmployee.Id,
+            ServiceId = dbEmployee.ServiceId,
             FirstName = dbEmployee.FirstName,
             LastName = dbEmployee.LastName,
             Position = dbEmployee.Position,

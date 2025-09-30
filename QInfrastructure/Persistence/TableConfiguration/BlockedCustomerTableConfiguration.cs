@@ -14,7 +14,7 @@ public class BlockedCustomerTableConfiguration: IEntityTypeConfiguration<Blocked
         builder.HasOne(s => s.Company)
             .WithMany()
             .HasForeignKey(s => s.CompanyId);
-        
+
         builder.HasOne(s => s.Customer)
             .WithMany()
             .HasForeignKey(s => s.CustomerId);

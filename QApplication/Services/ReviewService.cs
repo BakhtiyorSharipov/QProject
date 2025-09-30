@@ -8,11 +8,11 @@ using QDomain.Models;
 
 namespace QApplication.Services;
 
-public class ReviewService: BaseService<ReviewEntity,  ReviewResponseModel, ReviewRequestModel>, IReviewService
+public class ReviewService:  IReviewService
 {
     private readonly IReviewRepository _repository;
 
-    public ReviewService(IReviewRepository repository): base(repository)
+    public ReviewService(IReviewRepository repository)
     {
         _repository = repository;
     }
@@ -27,6 +27,7 @@ public class ReviewService: BaseService<ReviewEntity,  ReviewResponseModel, Revi
 
         var response = dbReview.Select(review => new ReviewResponseModel()
         {
+            Id = review.Id,
             CustomerId = review.CustomerId,
             EmployeeId = review.EmployeeId,
             QueueId = review.QueueId,
@@ -47,6 +48,7 @@ public class ReviewService: BaseService<ReviewEntity,  ReviewResponseModel, Revi
 
         var response = new ReviewResponseModel()
         {
+            Id = dbReview.Id,
             CustomerId = dbReview.CustomerId,
             EmployeeId = dbReview.EmployeeId,
             QueueId = dbReview.QueueId,
