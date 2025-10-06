@@ -3,9 +3,9 @@ using QDomain.Models;
 
 namespace QInfrastructure.Persistence.DataBase;
 
-public class EFContext: DbContext
+public class QueueDbContext: DbContext
 {
-    public EFContext(DbContextOptions<EFContext> options) : base(options)
+    public QueueDbContext(DbContextOptions<QueueDbContext> options) : base(options)
     {
         
     }

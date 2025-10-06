@@ -11,7 +11,7 @@ using QInfrastructure.Persistence.DataBase;
 
 namespace QInfrastructure.Persistence.DataBase.Migrations
 {
-    [DbContext(typeof(EFContext))]
+    [DbContext(typeof(QueueDbContext))]
     [Migration("20250922173625_Changes1")]
     partial class Changes1
     {

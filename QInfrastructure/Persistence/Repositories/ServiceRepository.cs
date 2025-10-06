@@ -8,9 +8,9 @@ namespace QInfrastructure.Persistence.Repositories;
 public class ServiceRepository:IServiceRepository
 {
     private readonly DbSet<ServiceEntity> _dbService;
-    private readonly EFContext _context;
+    private readonly QueueDbContext _context;
     
-    public ServiceRepository(EFContext context)
+    public ServiceRepository(QueueDbContext context)
     {
         _dbService = context.Set<ServiceEntity>();
         _context = context;

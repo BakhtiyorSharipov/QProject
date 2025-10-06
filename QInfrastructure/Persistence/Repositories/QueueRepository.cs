@@ -9,9 +9,9 @@ namespace QInfrastructure.Persistence.Repositories;
 public class QueueRepository:  IQueueRepository
 {
     private readonly DbSet<QueueEntity> _dbQueue;
-    private readonly EFContext _context;
+    private readonly QueueDbContext _context;
 
-    public QueueRepository(EFContext context)
+    public QueueRepository(QueueDbContext context)
     {
         _dbQueue = context.Set<QueueEntity>();
         _context = context;

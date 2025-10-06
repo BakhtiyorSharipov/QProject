@@ -5,12 +5,12 @@ using QInfrastructure.Persistence.DataBase;
 
 namespace QInfrastructure.Persistence.Repositories;
 
-public class CompanyRepository:  ICompanyRepository
+public class CompanyRepository : ICompanyRepository
 {
     private readonly DbSet<CompanyEntity> _dbCompany;
-    private readonly EFContext _context;
-    
-    public CompanyRepository(EFContext context)
+    private readonly QueueDbContext _context;
+
+    public CompanyRepository(QueueDbContext context)
     {
         _dbCompany = context.Set<CompanyEntity>();
         _context = context;

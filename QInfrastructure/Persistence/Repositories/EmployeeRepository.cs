@@ -8,9 +8,9 @@ namespace QInfrastructure.Persistence.Repositories;
 public class EmployeeRepository: IEmployeeRepository
 {
     private readonly DbSet<EmployeeEntity> _dbEmployee;
-    private readonly EFContext _context;
+    private readonly QueueDbContext _context;
     
-    public EmployeeRepository(EFContext context)
+    public EmployeeRepository(QueueDbContext context)
     {
         _dbEmployee = context.Set<EmployeeEntity>();
         _context = context;

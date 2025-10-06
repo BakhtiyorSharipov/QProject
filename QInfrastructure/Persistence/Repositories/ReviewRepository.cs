@@ -8,9 +8,9 @@ namespace QInfrastructure.Persistence.Repositories;
 public class ReviewRepository: IReviewRepository
 {
     private readonly DbSet<ReviewEntity> _dbReview;
-    private readonly EFContext _context;
+    private readonly QueueDbContext _context;
     
-    public ReviewRepository(EFContext context)
+    public ReviewRepository(QueueDbContext context)
     {
         _dbReview = context.Set<ReviewEntity>();
         _context = context;

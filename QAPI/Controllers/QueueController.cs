@@ -35,14 +35,7 @@ public class QueueController : ControllerBase
         var queue = _service.Add(request);
         return Created(nameof(GetById), queue);
     }
-
-    [HttpPut("{id}")]
-    public IActionResult Put([FromRoute] int id, [FromBody] UpdateQueueRequest request)
-    {
-        var update = _service.Update(id, request);
-        return Ok(update);
-    }
-
+    
     [HttpDelete("{id}")]
     public IActionResult Delete([FromRoute] int id)
     {
