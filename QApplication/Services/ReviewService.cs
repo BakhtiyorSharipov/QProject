@@ -4,6 +4,7 @@ using QApplication.Interfaces;
 using QApplication.Interfaces.Repository;
 using QApplication.Requests.ReviewRequest;
 using QApplication.Responses;
+using QDomain.Enums;
 using QDomain.Models;
 
 namespace QApplication.Services;
@@ -11,10 +12,11 @@ namespace QApplication.Services;
 public class ReviewService:  IReviewService
 {
     private readonly IReviewRepository _repository;
-
-    public ReviewService(IReviewRepository repository)
+    private readonly IQueueRepository _queueRepository;
+    public ReviewService(IReviewRepository repository, IQueueRepository queueRepository)
     {
         _repository = repository;
+        _queueRepository = queueRepository;
     }
 
     public IEnumerable<ReviewResponseModel> GetAll(int pageList, int pageNumber)
@@ -29,7 +31,26 @@ public class ReviewService:  IReviewService
         {
             Id = review.Id,
             CustomerId = review.CustomerId,
-            EmployeeId = review.EmployeeId,
+            QueueId = review.QueueId,
+            Grade = review.Grade,
+            ReviewText = review.ReviewText
+        }).ToList();
+
+        return response;
+    }
+
+    public IEnumerable<ReviewResponseModel> GetAllReviewsByQueue(int queueId)
+    {
+        var dbReview = _repository.GetAllReviewsByQueue(queueId);
+        if (dbReview==null)
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
+        }
+
+        var response = dbReview.Select(review => new ReviewResponseModel
+        {
+            Id = review.Id,
+            CustomerId = review.CustomerId,
             QueueId = review.QueueId,
             Grade = review.Grade,
             ReviewText = review.ReviewText
@@ -50,7 +71,7 @@ public class ReviewService:  IReviewService
         {
             Id = dbReview.Id,
             CustomerId = dbReview.CustomerId,
-            EmployeeId = dbReview.EmployeeId,
+    
             QueueId = dbReview.QueueId,
             Grade = dbReview.Grade,
             ReviewText = dbReview.ReviewText
@@ -67,14 +88,36 @@ public class ReviewService:  IReviewService
             throw new HttpStatusCodeException(HttpStatusCode.BadRequest, nameof(ReviewEntity));
         }
 
+        var queue = _queueRepository.FindById(requestToCreate.QueueId);
+        if (queue==null)
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
+        }
+
+        if (queue.Status != QueueStatus.Completed)
+        {
+            throw new Exception("You can leave review only if status is completed");
+        }
+
+        var reviews = GetAllReviewsByQueue(queue.Id);
+        var isDouble = reviews.Any(s => s.CustomerId == queue.CustomerId);
+        if (isDouble)
+        {
+            throw new Exception("You have already left a review for this queue!");
+        }
+        
         var review = new ReviewEntity()
         {
             CustomerId = requestToCreate.CustomerId,
-            EmployeeId = requestToCreate.EmployeeId,
             QueueId = requestToCreate.QueueId,
             Grade = requestToCreate.Grade,
             ReviewText = requestToCreate.ReviewText
         };
+
+        if (review.Grade <1 || review.Grade>5)
+        {
+            throw new Exception("Grade should be between 1 and 5!");
+        }
         
         _repository.Add(review);
         _repository.SaveChanges();
@@ -83,7 +126,7 @@ public class ReviewService:  IReviewService
         {
             Id = review.Id,
             CustomerId = review.CustomerId,
-            EmployeeId = review.EmployeeId,
+  
             QueueId = review.QueueId,
             Grade = review.Grade,
             ReviewText = review.ReviewText
@@ -91,55 +134,5 @@ public class ReviewService:  IReviewService
 
         return response;
     }
-
-    public ReviewResponseModel Update(int id, ReviewRequestModel request)
-    {
-        var dbReview = _repository.FindById(id);
-        if (dbReview==null)
-        {
-            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(ReviewEntity));
-        }
-
-        var requestToUpdate = request as UpdateReviewRequest;
-        if (requestToUpdate== null)
-        {
-            throw new HttpStatusCodeException(HttpStatusCode.BadRequest, nameof(ReviewEntity));
-        }
-
-        dbReview.CustomerId = requestToUpdate.CustomerId;
-        dbReview.EmployeeId = requestToUpdate.EmployeeId;
-        dbReview.QueueId = requestToUpdate.QueueId;
-        dbReview.Grade = requestToUpdate.Grade;
-        dbReview.ReviewText = requestToUpdate.ReviewText;
-        
-        _repository.Update(dbReview);
-        _repository.SaveChanges();
-
-        var response = new ReviewResponseModel()
-        {
-            Id = dbReview.Id,
-            CustomerId = dbReview.CustomerId,
-            EmployeeId = dbReview.EmployeeId,
-            QueueId = dbReview.QueueId,
-            Grade = dbReview.Grade,
-            ReviewText = dbReview.ReviewText
-        };
-
-        return response;
-    }
-
-
-    public bool Delete(int id)
-    {
-        var dbReview = _repository.FindById(id);
-        if (dbReview== null)
-        {
-            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(ReviewEntity));
-        }
-        
-        _repository.Delete(dbReview);
-        _repository.SaveChanges();
-
-        return true;
-    }
+    
 }

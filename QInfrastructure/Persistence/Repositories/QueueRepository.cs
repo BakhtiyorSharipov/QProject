@@ -24,8 +24,12 @@ public class QueueRepository:  IQueueRepository
     
     public QueueEntity FindById(int id)
     {
-        var found = _dbQueue.Find(id);
-        return found;
+        return _dbQueue
+            .Include(q => q.Service)
+            .ThenInclude(s => s.Company)
+            .Include(q => q.Customer)
+            .Include(q => q.Employee)
+            .FirstOrDefault(q => q.Id == id);
     }
 
     public void Add(QueueEntity entity)

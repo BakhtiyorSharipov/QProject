@@ -21,6 +21,11 @@ public class ReviewRepository: IReviewRepository
         return _dbReview.Skip((pageNumber - 1) * pageList).Take(pageList);
     }
 
+    public IQueryable<ReviewEntity> GetAllReviewsByQueue(int queueId)
+    {
+        return _dbReview.Where(q => q.QueueId == queueId);
+    }
+
     public ReviewEntity FindById(int id)
     {
         var found = _dbReview.Find(id);
@@ -31,16 +36,7 @@ public class ReviewRepository: IReviewRepository
     {
         _dbReview.Add(entity);
     }
-
-    public void Update(ReviewEntity entity)
-    {
-        _dbReview.Update(entity);
-    }
-
-    public void Delete(ReviewEntity entity)
-    {
-        _dbReview.Remove(entity);
-    }
+    
 
     public int SaveChanges()
     {

@@ -2,6 +2,7 @@ using System.Net;
 using QApplication.Exceptions;
 using QApplication.Interfaces;
 using QApplication.Interfaces.Repository;
+using QApplication.Requests.BlockedCustomerRequest;
 using QApplication.Requests.QueueRequest;
 using QApplication.Responses;
 using QDomain.Enums;
@@ -15,13 +16,17 @@ public class QueueService : IQueueService
     private readonly IAvailabilityScheduleRepository _scheduleRepository;
     private readonly ICustomerRepository _customerRepository;
     private readonly IServiceRepository _serviceRepository;
+    private readonly IBlockedCustomerRepository _blockedCustomerRepository;
 
-    public QueueService(IQueueRepository repository, IAvailabilityScheduleRepository scheduleRepository, ICustomerRepository customerRepository, IServiceRepository serviceRepository)
+    public QueueService(IQueueRepository repository, IAvailabilityScheduleRepository scheduleRepository,
+        ICustomerRepository customerRepository, IServiceRepository serviceRepository,
+        IBlockedCustomerRepository blockedCustomerRepository)
     {
         _repository = repository;
         _scheduleRepository = scheduleRepository;
         _customerRepository = customerRepository;
         _serviceRepository = serviceRepository;
+        _blockedCustomerRepository = blockedCustomerRepository;
     }
 
     public IEnumerable<QueueResponseModel> GetAll(int pageList, int pageNumber)
@@ -82,13 +87,13 @@ public class QueueService : IQueueService
         }
 
         var customer = _customerRepository.FindById(requestToCreate.CustomerId);
-        if (customer==null)
+        if (customer == null)
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(CustomerEntity));
         }
 
         var service = _serviceRepository.FindById(requestToCreate.ServiceId);
-        if (service==null)
+        if (service == null)
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(ServiceEntity));
         }
@@ -120,7 +125,14 @@ public class QueueService : IQueueService
         {
             throw new Exception("This slot is already booked!");
         }
-        
+
+        var blocked = _blockedCustomerRepository.FindById(requestToCreate.CustomerId);
+        if (blocked != null &&
+            blocked.DoesBanForever &&
+            service.CompanyId == blocked.CompanyId)
+        {
+            throw new Exception("You are blocked by this company!");
+        }
 
         var queue = new QueueEntity()
         {
@@ -262,6 +274,27 @@ public class QueueService : IQueueService
             newStatus != QueueStatus.Confirmed)
         {
             throw new Exception("Invalid status update by employee");
+        }
+
+
+        var count = _repository.GetQueuesByCustomer(dbQueue.CustomerId)
+            .Count(s => s.Status == QueueStatus.DidNotCome);
+
+        if (count >= 3)
+
+        {
+            BlockedCustomerEntity blockedCustomer = new BlockedCustomerEntity
+            {
+                CustomerId = dbQueue.CustomerId,
+                CompanyId = dbQueue.Service.CompanyId,
+                DoesBanForever = true,
+                Reason = "Did not come 3 times",
+                BannedUntil = DateTime.MaxValue
+            };
+
+            _blockedCustomerRepository.Add(blockedCustomer);
+            _blockedCustomerRepository.SaveChanges();
+            throw new Exception("Customer has been automatically blocked due to multiple DidNotCome.");
         }
 
         dbQueue.Status = newStatus;

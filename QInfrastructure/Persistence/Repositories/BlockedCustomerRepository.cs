@@ -31,11 +31,7 @@ public class BlockedCustomerRepository : IBlockedCustomerRepository
     {
         _dbBlockedCustomer.Add(entity);
     }
-
-    public void Update(BlockedCustomerEntity entity)
-    {
-        _dbBlockedCustomer.Update(entity);
-    }
+    
 
     public void Delete(BlockedCustomerEntity entity)
     {

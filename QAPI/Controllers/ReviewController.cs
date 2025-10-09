@@ -36,17 +36,4 @@ public class ReviewController: ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = review.Id }, review);
     }
 
-    [HttpPut("{id}")]
-    public IActionResult Put([FromRoute] int id, [FromBody] UpdateReviewRequest request)
-    {
-       var update= _service.Update(id, request);
-       return Ok(update);
-    }
-
-    [HttpDelete("{id}")]
-    public IActionResult Delete([FromRoute] int id)
-    {
-       var delete=_service.Delete(id);
-       return NoContent();
-    }
 }

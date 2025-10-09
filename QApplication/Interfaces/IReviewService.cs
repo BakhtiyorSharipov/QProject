@@ -8,8 +8,7 @@ namespace QApplication.Interfaces;
 public interface IReviewService
 {
     IEnumerable<ReviewResponseModel> GetAll(int pageList, int pageNumber);
+    IEnumerable<ReviewResponseModel> GetAllReviewsByQueue(int queueId);
     ReviewResponseModel GetById(int id);
     ReviewResponseModel Add(ReviewRequestModel request);
-    ReviewResponseModel Update(int id, ReviewRequestModel request);
-    bool Delete(int id);
 }
