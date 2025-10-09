@@ -8,9 +8,9 @@ namespace QInfrastructure.Persistence.Repositories;
 public class ReviewRepository: IReviewRepository
 {
     private readonly DbSet<ReviewEntity> _dbReview;
-    private readonly EFContext _context;
+    private readonly QueueDbContext _context;
     
-    public ReviewRepository(EFContext context)
+    public ReviewRepository(QueueDbContext context)
     {
         _dbReview = context.Set<ReviewEntity>();
         _context = context;
@@ -19,6 +19,11 @@ public class ReviewRepository: IReviewRepository
     public IQueryable<ReviewEntity> GetAll(int pageList, int pageNumber)
     {
         return _dbReview.Skip((pageNumber - 1) * pageList).Take(pageList);
+    }
+
+    public IQueryable<ReviewEntity> GetAllReviewsByQueue(int queueId)
+    {
+        return _dbReview.Where(q => q.QueueId == queueId);
     }
 
     public ReviewEntity FindById(int id)
@@ -31,16 +36,7 @@ public class ReviewRepository: IReviewRepository
     {
         _dbReview.Add(entity);
     }
-
-    public void Update(ReviewEntity entity)
-    {
-        _dbReview.Update(entity);
-    }
-
-    public void Delete(ReviewEntity entity)
-    {
-        _dbReview.Remove(entity);
-    }
+    
 
     public int SaveChanges()
     {

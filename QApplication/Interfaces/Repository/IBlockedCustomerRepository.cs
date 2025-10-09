@@ -7,7 +7,6 @@ public interface IBlockedCustomerRepository
     IQueryable<BlockedCustomerEntity> GetAll(int pageList, int pageNumber);
     BlockedCustomerEntity FindById(int id);
     void Add(BlockedCustomerEntity entity);
-    void Update(BlockedCustomerEntity entity);
     void Delete(BlockedCustomerEntity entity);
     int SaveChanges();
 }

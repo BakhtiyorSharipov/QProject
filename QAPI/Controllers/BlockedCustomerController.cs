@@ -29,25 +29,19 @@ public class BlockedCustomerController: ControllerBase
         return _service.GetById(id);
     }
 
-    [HttpPost]
-    public IActionResult Post([FromBody] CreateBlockedCustomerRequest request)
+    [HttpPost("block")]
+    public IActionResult Block([FromBody] CreateBlockedCustomerRequest request)
     {
-        var blocked = _service.Add(request);
+        var blocked = _service.Block(request);
 
         return CreatedAtAction(nameof(GetById), new { id = blocked.Id }, blocked);
     }
+    
 
-    [HttpPut("{id}")]
-    public IActionResult Put([FromRoute] int id, [FromBody] UpdateBlockedCustomerRequest request)
+    [HttpDelete("{id}/unblock")]
+    public IActionResult Unblock([FromRoute] int id)
     {
-      var update=  _service.Update(id, request);
-      return Ok(update);
-    }
-
-    [HttpDelete("{id}")]
-    public IActionResult Delete([FromRoute] int id)
-    {
-       var delete= _service.Delete(id);
-       return NoContent();
+        var delete = _service.Unblock(id);
+        return Ok(delete);
     }
 }

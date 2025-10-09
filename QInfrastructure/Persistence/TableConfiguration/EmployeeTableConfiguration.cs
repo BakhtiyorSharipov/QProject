@@ -4,7 +4,7 @@ using QDomain.Models;
 
 namespace QInfrastructure.Persistence.TableConfiguration;
 
-public class EmployeeTableConfiguration: IEntityTypeConfiguration<EmployeeEntity>
+public class EmployeeTableConfiguration : IEntityTypeConfiguration<EmployeeEntity>
 {
     public void Configure(EntityTypeBuilder<EmployeeEntity> builder)
     {

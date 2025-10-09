@@ -15,4 +15,6 @@ public class EmployeeEntity: BaseEntity
     public ServiceEntity Service { get; set; }
 
     public List<QueueEntity> Queues { get; set; } = new();
+
+    public  List<AvailabilityScheduleEntity> AvailabilitySchedules { get; set; }
 }

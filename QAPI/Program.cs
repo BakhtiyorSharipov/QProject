@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using QApplication.Interfaces;
 using QInfrastructure.Persistence.Repositories;
 using QApplication.Interfaces.Repository;
@@ -21,11 +22,19 @@ builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<IServiceService, ServiceService>();
 builder.Services.AddScoped<IServiceRepository, ServiceRepository>();
+builder.Services.AddScoped<IAvailabilityScheduleService, AvailabilityScheduleService>();
+builder.Services.AddScoped<IAvailabilityScheduleRepository, AvailabilityScheduleRepository>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddDbContext<EFContext>(
-    options => { options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")); });
+builder.Services.AddDbContext<QueueDbContext>(
+    options =>
+    {
+        var dataSourceBuilder = new NpgsqlDataSourceBuilder(builder.Configuration.GetConnectionString("DefaultConnection"));
+        dataSourceBuilder.EnableDynamicJson();
+        var datasource = dataSourceBuilder.Build();
+        options.UseNpgsql(datasource);
+    });
 
 var app = builder.Build();
 if (app.Environment.IsDevelopment())

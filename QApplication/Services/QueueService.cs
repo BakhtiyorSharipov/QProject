@@ -2,6 +2,7 @@ using System.Net;
 using QApplication.Exceptions;
 using QApplication.Interfaces;
 using QApplication.Interfaces.Repository;
+using QApplication.Requests.BlockedCustomerRequest;
 using QApplication.Requests.QueueRequest;
 using QApplication.Responses;
 using QDomain.Enums;
@@ -12,10 +13,20 @@ namespace QApplication.Services;
 public class QueueService : IQueueService
 {
     private readonly IQueueRepository _repository;
+    private readonly IAvailabilityScheduleRepository _scheduleRepository;
+    private readonly ICustomerRepository _customerRepository;
+    private readonly IServiceRepository _serviceRepository;
+    private readonly IBlockedCustomerRepository _blockedCustomerRepository;
 
-    public QueueService(IQueueRepository repository)
+    public QueueService(IQueueRepository repository, IAvailabilityScheduleRepository scheduleRepository,
+        ICustomerRepository customerRepository, IServiceRepository serviceRepository,
+        IBlockedCustomerRepository blockedCustomerRepository)
     {
         _repository = repository;
+        _scheduleRepository = scheduleRepository;
+        _customerRepository = customerRepository;
+        _serviceRepository = serviceRepository;
+        _blockedCustomerRepository = blockedCustomerRepository;
     }
 
     public IEnumerable<QueueResponseModel> GetAll(int pageList, int pageNumber)
@@ -69,6 +80,60 @@ public class QueueService : IQueueService
             throw new HttpStatusCodeException(HttpStatusCode.BadRequest, nameof(QueueEntity));
         }
 
+        var schedule = _scheduleRepository.GetEmployeeById(requestToCreate.EmployeeId);
+        if (!schedule.Any())
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(EmployeeEntity));
+        }
+
+        var customer = _customerRepository.FindById(requestToCreate.CustomerId);
+        if (customer == null)
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(CustomerEntity));
+        }
+
+        var service = _serviceRepository.FindById(requestToCreate.ServiceId);
+        if (service == null)
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(ServiceEntity));
+        }
+
+        var dayOfWeek = schedule.Where(s => s.DayOfWeek == requestToCreate.StartTime.DayOfWeek).ToList();
+
+        if (!dayOfWeek.Any())
+        {
+            throw new Exception("No schedule found for this day!");
+        }
+
+        var slotExists = dayOfWeek.Any(s => s.AvailableSlots.Any(slot =>
+            requestToCreate.StartTime >= slot.From && requestToCreate.StartTime < slot.To
+        ));
+
+        if (!slotExists)
+        {
+            throw new Exception("Booking time is outside of employee working hours.");
+        }
+
+
+        var allQueuesByEmployee = GetQueuesByEmployee(requestToCreate.EmployeeId);
+        var isDouble = allQueuesByEmployee.Any(s =>
+            s.StartTime == requestToCreate.StartTime &&
+            s.Status == QueueStatus.Pending ||
+            s.Status == QueueStatus.Confirmed);
+
+        if (isDouble)
+        {
+            throw new Exception("This slot is already booked!");
+        }
+
+        var blocked = _blockedCustomerRepository.FindById(requestToCreate.CustomerId);
+        if (blocked != null &&
+            blocked.DoesBanForever &&
+            service.CompanyId == blocked.CompanyId)
+        {
+            throw new Exception("You are blocked by this company!");
+        }
+
         var queue = new QueueEntity()
         {
             CustomerId = requestToCreate.CustomerId,
@@ -94,40 +159,6 @@ public class QueueService : IQueueService
         return response;
     }
 
-
-    public QueueResponseModel Update(int id, QueueRequestModel requestModel)
-    {
-        var dbQueue = _repository.FindById(id);
-        if (dbQueue == null)
-        {
-            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
-        }
-
-        var requestToUpdate = requestModel as UpdateQueueRequest;
-        if (requestToUpdate == null)
-        {
-            throw new HttpStatusCodeException(HttpStatusCode.BadRequest, nameof(QueueEntity));
-        }
-
-        dbQueue.CustomerId = requestToUpdate.CustomerId;
-        dbQueue.EmployeeId = requestToUpdate.EmployeeId;
-        dbQueue.ServiceId = requestToUpdate.ServiceId;
-        dbQueue.StartTime = requestToUpdate.StartTime;
-
-        _repository.Update(dbQueue);
-        _repository.SaveChanges();
-
-        var response = new QueueResponseModel()
-        {
-            Id = dbQueue.Id,
-            CustomerId = dbQueue.CustomerId,
-            EmployeeId = dbQueue.EmployeeId,
-            ServiceId = dbQueue.ServiceId,
-            StartTime = dbQueue.StartTime,
-        };
-
-        return response;
-    }
 
     public bool Delete(int id)
     {
@@ -243,6 +274,27 @@ public class QueueService : IQueueService
             newStatus != QueueStatus.Confirmed)
         {
             throw new Exception("Invalid status update by employee");
+        }
+
+
+        var count = _repository.GetQueuesByCustomer(dbQueue.CustomerId)
+            .Count(s => s.Status == QueueStatus.DidNotCome);
+
+        if (count >= 3)
+
+        {
+            BlockedCustomerEntity blockedCustomer = new BlockedCustomerEntity
+            {
+                CustomerId = dbQueue.CustomerId,
+                CompanyId = dbQueue.Service.CompanyId,
+                DoesBanForever = true,
+                Reason = "Did not come 3 times",
+                BannedUntil = DateTime.MaxValue
+            };
+
+            _blockedCustomerRepository.Add(blockedCustomer);
+            _blockedCustomerRepository.SaveChanges();
+            throw new Exception("Customer has been automatically blocked due to multiple DidNotCome.");
         }
 
         dbQueue.Status = newStatus;

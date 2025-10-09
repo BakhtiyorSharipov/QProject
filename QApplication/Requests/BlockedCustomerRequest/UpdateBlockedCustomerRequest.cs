@@ -1,6 +1,7 @@
 namespace QApplication.Requests.BlockedCustomerRequest;
 
-public class UpdateBlockedCustomerRequest: BlockedCustomerRequestModel
+public class UpdateBlockedCustomerRequest
 {
-    
+    public bool DoesBanForever { get; set; }
+   
 }

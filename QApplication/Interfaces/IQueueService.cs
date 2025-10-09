@@ -11,7 +11,6 @@ public interface IQueueService
 
     QueueResponseModel GetById(int id);//
     QueueResponseModel Add(QueueRequestModel request);
-    QueueResponseModel Update(int id, QueueRequestModel request);//
     bool Delete(int id);//
     QueueResponseModel CancelQueueByCustomer(QueueCancelRequest request);
 

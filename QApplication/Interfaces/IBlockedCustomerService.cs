@@ -8,7 +8,6 @@ public interface IBlockedCustomerService
 {
     IEnumerable<BlockedCustomerResponseModel> GetAll(int pageList, int pageNumber);
     BlockedCustomerResponseModel GetById(int id);
-    BlockedCustomerResponseModel Add(BlockedCustomerRequestModel request);
-    BlockedCustomerResponseModel Update(int id, BlockedCustomerRequestModel request);
-    bool Delete(int id);
+    BlockedCustomerResponseModel Block(BlockedCustomerRequestModel request);
+    bool Unblock(int id);
 }

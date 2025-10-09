@@ -8,7 +8,7 @@ using QDomain.Models;
 
 namespace QApplication.Services;
 
-public class BlockedCustomerService:  IBlockedCustomerService
+public class BlockedCustomerService : IBlockedCustomerService
 {
     private readonly IBlockedCustomerRepository _repository;
 
@@ -20,7 +20,7 @@ public class BlockedCustomerService:  IBlockedCustomerService
     public IEnumerable<BlockedCustomerResponseModel> GetAll(int pageList, int pageNumber)
     {
         var dbBlockedCustomer = _repository.GetAll(pageList, pageNumber);
-        if (dbBlockedCustomer==null)
+        if (!dbBlockedCustomer.Any())
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(BlockedCustomerEntity));
         }
@@ -42,7 +42,7 @@ public class BlockedCustomerService:  IBlockedCustomerService
     public BlockedCustomerResponseModel GetById(int id)
     {
         var dbBlockedCustomer = _repository.FindById(id);
-        if (dbBlockedCustomer==null)
+        if (dbBlockedCustomer == null)
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(BlockedCustomerEntity));
         }
@@ -60,10 +60,10 @@ public class BlockedCustomerService:  IBlockedCustomerService
         return response;
     }
 
-    public BlockedCustomerResponseModel Add(BlockedCustomerRequestModel request)
+    public BlockedCustomerResponseModel Block(BlockedCustomerRequestModel request)
     {
         var requestToCreate = request as CreateBlockedCustomerRequest;
-        if (requestToCreate==null)
+        if (requestToCreate == null)
         {
             throw new HttpStatusCodeException(HttpStatusCode.BadRequest, nameof(BlockedCustomerEntity));
         }
@@ -76,8 +76,8 @@ public class BlockedCustomerService:  IBlockedCustomerService
             DoesBanForever = requestToCreate.DoesBanForever,
             Reason = requestToCreate.Reason
         };
-        
-    
+
+
         _repository.Add(blockedCustomer);
         _repository.SaveChanges();
 
@@ -95,50 +95,14 @@ public class BlockedCustomerService:  IBlockedCustomerService
     }
 
 
-    public BlockedCustomerResponseModel Update(int id, BlockedCustomerRequestModel request)
+    public bool Unblock(int id)
     {
         var dbBlockedCustomer = _repository.FindById(id);
-        if (dbBlockedCustomer== null)
+        if (dbBlockedCustomer == null)
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(BlockedCustomerEntity));
         }
 
-        var requestToUpdate = request as UpdateBlockedCustomerRequest;
-        if (requestToUpdate==null)
-        {
-            throw new HttpStatusCodeException(HttpStatusCode.BadRequest, nameof(BlockedCustomerEntity));
-        }
-
-        dbBlockedCustomer.CompanyId = requestToUpdate.CompanyId;
-        dbBlockedCustomer.CustomerId = requestToUpdate.CustomerId;
-        dbBlockedCustomer.BannedUntil = requestToUpdate.BannedUntil;
-        dbBlockedCustomer.DoesBanForever = requestToUpdate.DoesBanForever;
-        dbBlockedCustomer.Reason = requestToUpdate.Reason;
-        
-        _repository.Update(dbBlockedCustomer);
-        _repository.SaveChanges();
-
-        var response = new BlockedCustomerResponseModel()
-        {
-            Id=dbBlockedCustomer.Id,
-            CompanyId = dbBlockedCustomer.CompanyId,
-            CustomerId = dbBlockedCustomer.CustomerId,
-            BannedUntil = dbBlockedCustomer.BannedUntil,
-            DoesBanForever = dbBlockedCustomer.DoesBanForever,
-            Reason = dbBlockedCustomer.Reason
-        };
-
-        return response;
-    }
-
-    public bool Delete(int id)
-    {
-        var dbBlockedCustomer = _repository.FindById(id);
-        if (dbBlockedCustomer== null)
-        {
-            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(BlockedCustomerEntity));
-        }
-        
         _repository.Delete(dbBlockedCustomer);
         _repository.SaveChanges();
 
