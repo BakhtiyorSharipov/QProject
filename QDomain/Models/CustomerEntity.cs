@@ -11,4 +11,5 @@ public class CustomerEntity: BaseEntity
     public List<ReviewEntity> Reviews { get; set; } = new();
 
     public List<QueueEntity> Queues { get; set; } = new();
+    public List<ComplaintEntity> Complaints { get; set; } = new();
 }

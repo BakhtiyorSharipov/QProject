@@ -24,6 +24,8 @@ builder.Services.AddScoped<IServiceService, ServiceService>();
 builder.Services.AddScoped<IServiceRepository, ServiceRepository>();
 builder.Services.AddScoped<IAvailabilityScheduleService, AvailabilityScheduleService>();
 builder.Services.AddScoped<IAvailabilityScheduleRepository, AvailabilityScheduleRepository>();
+builder.Services.AddScoped<IComplaintService, ComplaintService>();
+builder.Services.AddScoped<IComplaintRepository, ComplaintRepository>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
