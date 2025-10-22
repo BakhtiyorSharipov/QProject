@@ -63,4 +63,13 @@ public class QueueRepository:  IQueueRepository
         var found = _dbQueue.Where(q => q.EmployeeId == employeeId);
         return found;
     }
+
+    public IQueryable<QueueEntity> GetAllQueues()
+    {
+        var queues = _dbQueue
+            .Include(q => q.Employee)
+            .Include(q=>q.Customer)
+            .Include(q=>q.Service);
+        return queues;
+    }
 }

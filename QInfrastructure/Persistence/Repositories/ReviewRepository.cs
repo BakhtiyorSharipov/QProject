@@ -26,6 +26,14 @@ public class ReviewRepository: IReviewRepository
         return _dbReview.Where(q => q.QueueId == queueId);
     }
 
+    public IQueryable<ReviewEntity> GetAllReviewsForReport()
+    {
+        var reviews = _dbReview
+            .Include(r => r.Customer)
+            .Include(r => r.Queue);
+        return reviews;
+    }
+
     public ReviewEntity FindById(int id)
     {
         var found = _dbReview.Find(id);

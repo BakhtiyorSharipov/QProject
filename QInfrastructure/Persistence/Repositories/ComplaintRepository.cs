@@ -26,6 +26,15 @@ public class ComplaintRepository: IComplaintRepository
         return _dbComplaint.Where(q => q.QueueId == id);
     }
 
+    public IQueryable<ComplaintEntity> GetAllComplaintsForReport()
+    {
+        var complaints = _dbComplaint
+            .Include(c => c.Customer)
+            .Include(c => c.Queue);
+
+        return complaints;
+    }
+
     public ComplaintEntity FindComplaintById(int id)
     {
         var found = _dbComplaint.Find(id);
