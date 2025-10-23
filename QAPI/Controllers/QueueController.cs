@@ -58,9 +58,9 @@ public class QueueController : ControllerBase
     }
 
     [HttpPut("status/update")]
-    public ActionResult<QueueResponseModel> UpdateStatus([FromQuery] int id, [FromQuery] QueueStatus status)
+    public ActionResult<QueueResponseModel> UpdateStatus([FromQuery] UpdateQueueRequest request)
     {
-        var result = _service.UpdateQueueStatus(id, status);
+        var result = _service.UpdateQueueStatus(request);
         return Ok(result);
     }
 

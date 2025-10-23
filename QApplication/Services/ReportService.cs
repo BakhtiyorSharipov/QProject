@@ -30,16 +30,17 @@ public class ReportService: IReportService
 
         var queues = _reportRepository.GetEmployeeReport(employee.Id).ToList();
 
-        var completed = queues.Select(c => c.Status == QueueStatus.Completed).Count();
-        var canceledByEmployee = queues.Select(c => c.Status == QueueStatus.CancelledByEmployee).Count();
-        var canceledByCustomer = queues.Select(c => c.Status == QueueStatus.CancelledByCustomer).Count();
-        var canceledByAdmin = queues.Select(c => c.Status == QueueStatus.CanceledByAdmin).Count();
-        var pending = queues.Select(p => p.Status == QueueStatus.Pending).Count();
-        var didNotCome = queues.Select(d => d.Status == QueueStatus.DidNotCome).Count();
-
+        var completed = queues.Count(c => c.Status == QueueStatus.Completed);
+        var canceledByEmployee = queues.Count(c => c.Status == QueueStatus.CancelledByEmployee);
+        var canceledByCustomer = queues.Count(c => c.Status == QueueStatus.CancelledByCustomer);
+        var canceledByAdmin = queues.Count(c => c.Status == QueueStatus.CanceledByAdmin);
+        var pending = queues.Count(p => p.Status == QueueStatus.Pending);
+        var didNotCome = queues.Count(d => d.Status == QueueStatus.DidNotCome);
+        var confirmed = queues.Count(c => c.Status == QueueStatus.Confirmed);
+        
         var canceled = canceledByAdmin + canceledByCustomer + canceledByEmployee;
 
-        var totalQueues = completed + canceled + pending + didNotCome;
+        var totalQueues = completed + canceled + pending + didNotCome+ confirmed;
 
         var response = new EmployeeReportResponseModel
         {
@@ -49,7 +50,8 @@ public class ReportService: IReportService
             CompletedQueues = completed,
             CancelledQueues = canceled,
             PendingQueues = pending,
-            DidNotComeQueues = didNotCome
+            DidNotComeQueues = didNotCome,
+            Confirmed = confirmed
         };
 
         return response;

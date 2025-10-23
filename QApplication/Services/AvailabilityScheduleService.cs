@@ -44,6 +44,7 @@ public class AvailabilityScheduleService: IAvailabilityScheduleService
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(AvailabilityScheduleEntity));
         }
+        
 
         var response = new AvailabilityScheduleResponseModel()
         {

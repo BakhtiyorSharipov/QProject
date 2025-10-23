@@ -239,6 +239,9 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                     b.Property<int>("EmployeeId")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("EndTime")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("ServiceId")
                         .HasColumnType("integer");
 

@@ -15,7 +15,7 @@ public class ReportController : ControllerBase
         _reportService = reportService;
     }
 
-    [HttpGet("employee/report")]
+    [HttpGet("employee/report{employeeId}")]
     public EmployeeReportResponseModel GetEmployeeReport([FromRoute] int employeeId)
     {
         return _reportService.GetEmployeeReport(employeeId);
