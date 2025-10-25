@@ -9,7 +9,7 @@ using QDomain.Models;
 
 namespace QApplication.Services;
 
-public class EmployeeService:  IEmployeeService
+public class EmployeeService : IEmployeeService
 {
     private readonly IEmployeeRepository _repository;
 
@@ -36,10 +36,34 @@ public class EmployeeService:  IEmployeeService
         return response;
     }
 
+    public IEnumerable<EmployeeResponseModel> GetEmployeesByCompany(int companyId)
+    {
+        var dbEmployees = _repository.GetEmployeeByCompany(companyId);
+        if (!dbEmployees.Any())
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(EmployeeEntity));
+        }
+
+        var response = dbEmployees.Select(dbEmployee => new EmployeeResponseModel
+        {
+            Id = dbEmployee.Id,
+            ServiceId = dbEmployee.ServiceId,
+            FirstName = dbEmployee.FirstName,
+            LastName = dbEmployee.LastName,
+            Position = dbEmployee.Position,
+            EmailAddress = dbEmployee.EmailAddress,
+            PhoneNumber = dbEmployee.PhoneNumber,
+            Password = dbEmployee.Password
+        }).ToList();
+
+
+        return response;
+    }
+
     public EmployeeResponseModel GetById(int id)
     {
         var dbEmployee = _repository.FindById(id);
-        if (dbEmployee==null)
+        if (dbEmployee == null)
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(EmployeeEntity));
         }
@@ -62,7 +86,7 @@ public class EmployeeService:  IEmployeeService
     public EmployeeResponseModel Add(EmployeeRequestModel request)
     {
         var requestToCreate = request as CreateEmployeeRequest;
-        if (requestToCreate== null)
+        if (requestToCreate == null)
         {
             throw new HttpStatusCodeException(HttpStatusCode.BadRequest, nameof(EmployeeEntity));
         }
@@ -77,7 +101,7 @@ public class EmployeeService:  IEmployeeService
             Password = requestToCreate.Password,
             ServiceId = requestToCreate.ServiceId
         };
-        
+
         _repository.Add(employee);
         _repository.SaveChanges();
 
@@ -99,13 +123,13 @@ public class EmployeeService:  IEmployeeService
     public EmployeeResponseModel Update(int id, EmployeeRequestModel request)
     {
         var dbEmployee = _repository.FindById(id);
-        if (dbEmployee== null)
+        if (dbEmployee == null)
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(EmployeeEntity));
         }
 
         var requestToUpdate = request as UpdateEmployeeRequest;
-        if (requestToUpdate==null)
+        if (requestToUpdate == null)
         {
             throw new HttpStatusCodeException(HttpStatusCode.BadRequest, nameof(EmployeeEntity));
         }
@@ -116,7 +140,7 @@ public class EmployeeService:  IEmployeeService
         dbEmployee.EmailAddress = requestToUpdate.EmailAddress;
         dbEmployee.PhoneNumber = requestToUpdate.PhoneNumber;
         dbEmployee.Password = requestToUpdate.Password;
-        
+
         _repository.Update(dbEmployee);
         _repository.SaveChanges();
 
@@ -142,7 +166,7 @@ public class EmployeeService:  IEmployeeService
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(EmployeeEntity));
         }
-        
+
         _repository.Delete(dbEmployee);
         _repository.SaveChanges();
         return true;

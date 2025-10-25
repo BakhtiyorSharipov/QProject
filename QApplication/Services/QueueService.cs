@@ -335,9 +335,9 @@ public class QueueService : IQueueService
     public IEnumerable<QueueResponseModel> GetQueuesByCustomer(int customerId)
     {
         var dbQueue = _repository.GetQueuesByCustomer(customerId);
-        if (dbQueue == null)
+        if (!dbQueue.Any())
         {
-            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(ServiceEntity));
         }
 
         var response = dbQueue.Select(queue => new QueueResponseModel
@@ -356,9 +356,9 @@ public class QueueService : IQueueService
     public IEnumerable<QueueResponseModel> GetQueuesByEmployee(int employeeId)
     {
         var dbQueue = _repository.GetQueuesByEmployee(employeeId);
-        if (dbQueue == null)
+        if (!dbQueue.Any())
         {
-            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(ServiceEntity));
         }
 
         var response = dbQueue.Select(queue => new QueueResponseModel()
@@ -369,6 +369,50 @@ public class QueueService : IQueueService
             ServiceId = queue.ServiceId,
             StartTime = queue.StartTime,
             EndTime= queue.EndTime ?? queue.StartTime.AddHours(1),
+            Status = queue.Status
+        }).ToList();
+
+        return response;
+    }
+
+    public IEnumerable<QueueResponseModel> GetQueuesByService(int serviceId)
+    {
+        var dbQueue = _repository.GetQueuesByService(serviceId);
+        if (!dbQueue.Any())
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(ServiceEntity));
+        }
+
+        var response = dbQueue.Select(queue => new QueueResponseModel
+        {
+            Id = queue.Id,
+            CustomerId = queue.CustomerId,
+            EmployeeId = queue.EmployeeId,
+            ServiceId = queue.ServiceId,
+            StartTime = queue.StartTime,
+            EndTime = queue.EndTime ?? queue.StartTime.AddHours(1),
+            Status = queue.Status
+        }).ToList();
+
+        return response;
+    }
+
+    public IEnumerable<QueueResponseModel> GetQueuesByCompany(int companyId)
+    {
+        var dbQueue = _repository.GetQueuesByCompany(companyId);
+        if (!dbQueue.Any())
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(ServiceEntity));
+        }
+
+        var response = dbQueue.Select(queue => new QueueResponseModel
+        {
+            Id = queue.Id,
+            CustomerId = queue.CustomerId,
+            EmployeeId = queue.EmployeeId,
+            ServiceId = queue.ServiceId,
+            StartTime = queue.StartTime,
+            EndTime = queue.EndTime ?? queue.StartTime.AddHours(1),
             Status = queue.Status
         }).ToList();
 

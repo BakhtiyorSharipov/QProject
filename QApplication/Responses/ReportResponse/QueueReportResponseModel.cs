@@ -2,10 +2,12 @@ namespace QApplication.Responses.ReportResponse;
 
 public class QueueReportResponseModel
 {
+    public List<QueueReportItemResponseModel> Queues { get; set; } = new();
+    
     public int TotalQueues { get; set; }
-    public int Completed { get; set; }
-    public int Pending { get; set; }
-    public int CancelledByCustomer { get; set; }
-    public int CancelledByEmployee { get; set; }
-    public int DidNotCome { get; set; }
+    public int CompletedCount { get; set; }
+    public int PendingCount { get; set; }
+    public int ConfirmedCount { get; set; }
+    public int CanceledCount { get; set; }
+    public int DidNotComeCount { get; set; }
 }

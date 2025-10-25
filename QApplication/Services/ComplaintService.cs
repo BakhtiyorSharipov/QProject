@@ -25,11 +25,6 @@ public class ComplaintService: IComplaintService
     public IEnumerable<ComplaintResponseModel> GetAllComplaints(int pageList, int pageNumber)
     {
         var dbComplaint = _complaintRepository.GetAllComplaints(pageList, pageNumber);
-
-        if (dbComplaint==null)
-        {
-            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(ComplaintEntity));
-        }
         
         var response = dbComplaint.Select(complaint => new ComplaintResponseModel
         {
@@ -47,7 +42,28 @@ public class ComplaintService: IComplaintService
     public IEnumerable<ComplaintResponseModel> GetAllComplaintsByQueue(int id)
     {
         var dbComplaints = _complaintRepository.GetAllComplaintsByQueue(id);
-        if (dbComplaints==null)
+        if (!dbComplaints.Any())
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(ComplaintEntity));
+        }
+
+        var response = dbComplaints.Select(complaint => new ComplaintResponseModel
+        {
+            Id = complaint.Id,
+            CustomerId = complaint.CustomerId,
+            QueueId = complaint.QueueId,
+            ComplaintText = complaint.ComplaintText,
+            ResponseText = complaint.ResponseText,
+            ComplaintStatus = complaint.ComplaintStatus
+        }).ToList();
+
+        return response;
+    }
+
+    public IEnumerable<ComplaintResponseModel> GetAllComplaintsByCompany(int companyId)
+    {
+        var dbComplaints = _complaintRepository.GetAllComplaintsByCompany(companyId);
+        if (!dbComplaints.Any())
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(ComplaintEntity));
         }

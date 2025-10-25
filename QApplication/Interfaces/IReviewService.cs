@@ -9,6 +9,7 @@ public interface IReviewService
 {
     IEnumerable<ReviewResponseModel> GetAll(int pageList, int pageNumber);
     IEnumerable<ReviewResponseModel> GetAllReviewsByQueue(int queueId);
+    IEnumerable<ReviewResponseModel> GetAllReviewsByCompany(int companyId);
     ReviewResponseModel GetById(int id);
     ReviewResponseModel Add(ReviewRequestModel request);
 }

@@ -21,6 +21,14 @@ public class CustomerRepository:  ICustomerRepository
         return _dbCustomer.Skip((pageNumber - 1) * pageList).Take(pageList);
     }
 
+    public IQueryable<QueueEntity> GetAllCustomersByCompany(int companyId)
+    {
+        var found = _dbCustomer
+            .SelectMany(s => s.Queues).Where(s => s.Service.CompanyId == companyId);
+
+        return found;
+    }
+
     public CustomerEntity FindById(int id)
     {
         var found = _dbCustomer.Find(id);

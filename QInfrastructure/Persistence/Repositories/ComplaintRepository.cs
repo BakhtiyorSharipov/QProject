@@ -26,11 +26,20 @@ public class ComplaintRepository: IComplaintRepository
         return _dbComplaint.Where(q => q.QueueId == id);
     }
 
+    public IQueryable<ComplaintEntity> GetAllComplaintsByCompany(int companyId)
+    {
+        var found= _dbComplaint.Where(s => s.Queue.Service.CompanyId == companyId);
+        return found;
+    }
+
     public IQueryable<ComplaintEntity> GetAllComplaintsForReport()
     {
         var complaints = _dbComplaint
             .Include(c => c.Customer)
-            .Include(c => c.Queue);
+            .Include(c => c.Queue)
+            .Include(c=>c.Queue.Service.Company)
+            .Include(c=>c.Queue.Employee)
+            .ThenInclude(c => c.Service);
 
         return complaints;
     }

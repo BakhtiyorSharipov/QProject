@@ -19,5 +19,8 @@ public interface IQueueService
 
     IEnumerable<QueueResponseModel> GetQueuesByCustomer(int customerId);
     IEnumerable<QueueResponseModel> GetQueuesByEmployee(int employeeId);
-    
+
+    IEnumerable<QueueResponseModel> GetQueuesByService(int serviceId);
+    IEnumerable<QueueResponseModel> GetQueuesByCompany(int companyId);
+
 }

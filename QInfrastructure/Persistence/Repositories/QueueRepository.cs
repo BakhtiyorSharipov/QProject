@@ -64,12 +64,27 @@ public class QueueRepository:  IQueueRepository
         return found;
     }
 
+    public IQueryable<QueueEntity> GetQueuesByService(int serviceId)
+    {
+        var found = _dbQueue.Where(q => q.Service.Id == serviceId);
+        return found;
+    }
+
+    public IQueryable<QueueEntity> GetQueuesByCompany(int companyId)
+    {
+        var found = _dbQueue.Where(q => q.Service.CompanyId == companyId);
+        return found;
+    }
+
     public IQueryable<QueueEntity> GetAllQueues()
     {
         var queues = _dbQueue
             .Include(q => q.Employee)
-            .Include(q=>q.Customer)
-            .Include(q=>q.Service);
+            .Include(q => q.Customer)
+            .Include(q => q.Service)
+            .Include(q => q.Service.Company)
+            .Include(s => s.Customer.Reviews)
+            .Include(s => s.Customer.Complaints);
         return queues;
     }
 }

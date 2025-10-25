@@ -35,6 +35,26 @@ public class CustomerService: ICustomerService
         return response;
     }
 
+    public IEnumerable<CustomerResponseModel> GetAllCustomerByCompany(int companyId)
+    {
+        var dbCustomer = _repository.GetAllCustomersByCompany(companyId);
+        if (!dbCustomer.Any())
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(CustomerEntity));
+        }
+        var response = dbCustomer.Select(customer => new CustomerResponseModel
+        {
+            Id = customer.Id,
+            FirstName = customer.Customer.FirstName,
+            LastName = customer.Customer.LastName,
+            EmailAddress = customer.Customer.EmailAddress,
+            PhoneNumber = customer.Customer.PhoneNumber,
+            Password = customer.Customer.Password
+        }).ToList();
+
+        return response;
+    }
+
     public CustomerResponseModel GetById(int id)
     {
         var dbCustomer = _repository.FindById(id);

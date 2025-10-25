@@ -21,6 +21,12 @@ public class BlockedCustomerRepository : IBlockedCustomerRepository
         return _dbBlockedCustomer.Skip((pageNumber - 1) * pageList).Take(pageList);
     }
 
+    public IQueryable<BlockedCustomerEntity> GetAllBlockedCustomersByCompany(int companyId)
+    {
+        var found = _dbBlockedCustomer.Where(s => s.CompanyId == companyId);
+        return found;
+    }
+
     public BlockedCustomerEntity FindById(int id)
     {
         var foundEntity = _dbBlockedCustomer.Find(id);

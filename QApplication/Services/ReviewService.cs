@@ -42,7 +42,26 @@ public class ReviewService:  IReviewService
     public IEnumerable<ReviewResponseModel> GetAllReviewsByQueue(int queueId)
     {
         var dbReview = _repository.GetAllReviewsByQueue(queueId);
-        if (dbReview==null)
+        if (!dbReview.Any())
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
+        }
+        var response = dbReview.Select(review => new ReviewResponseModel
+        {
+            Id = review.Id,
+            CustomerId = review.CustomerId,
+            QueueId = review.QueueId,
+            Grade = review.Grade,
+            ReviewText = review.ReviewText
+        }).ToList();
+
+        return response;
+    }
+
+    public IEnumerable<ReviewResponseModel> GetAllReviewsByCompany(int companyId)
+    {
+        var dbReview = _repository.GetAllReviewsByCompany(companyId);
+        if (!dbReview.Any())
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
         }
@@ -126,7 +145,6 @@ public class ReviewService:  IReviewService
         {
             Id = review.Id,
             CustomerId = review.CustomerId,
-  
             QueueId = review.QueueId,
             Grade = review.Grade,
             ReviewText = review.ReviewText

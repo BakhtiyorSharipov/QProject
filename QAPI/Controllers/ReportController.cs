@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using QApplication.Interfaces;
+using QApplication.Requests.ReportRequest;
 using QApplication.Responses.ReportResponse;
 
 namespace QAPI.Controllers;
@@ -15,27 +16,40 @@ public class ReportController : ControllerBase
         _reportService = reportService;
     }
 
-    [HttpGet("employee/report{employeeId}")]
-    public EmployeeReportResponseModel GetEmployeeReport([FromRoute] int employeeId)
+    [HttpGet("company/report")]
+    public CompanyReportItemResponseModel GetCompanyReport([FromQuery] CompanyReportRequest request)
     {
-        return _reportService.GetEmployeeReport(employeeId);
+        return _reportService.GetCompanyReport(request);
     }
-
-    [HttpGet("queue/report")]
-    public QueueReportResponseModel GetQueueReport()
+    
+    [HttpGet("employee/report ")]
+    public EmployeeReportResponseModel GetEmployeeReport([FromQuery] EmployeeReportRequest request)
     {
-        return _reportService.GetQueueReport();
+        return _reportService.GetEmployeeReport(request);
+    }
+    
+    
+    [HttpGet("queue/report")]
+    public QueueReportResponseModel GetQueueReport([FromQuery]QueueReportRequest request)
+    {
+        return _reportService.GetQueueReport(request);
     }
 
     [HttpGet("complaint/report")]
-    public ComplaintReportResponseModel GetComplaintReport()
+    public ComplaintReportResponseModel GetComplaintReport([FromQuery]ComplaintReportRequest request)
     {
-        return _reportService.GetComplaintReport();
+        return _reportService.GetComplaintReport(request);
     }
 
     [HttpGet("review/report")]
-    public ReviewReportResponseModel GetReviewReport()
+    public ReviewReportResponseModel GetReviewReport([FromQuery] ReviewReportRequest request)
     {
-        return _reportService.GetReviewReport();
+        return _reportService.GetReviewReport(request);
+    }
+
+    [HttpGet("service/report")]
+    public ServiceReportResponseModel GetServiceReport([FromQuery] ServiceReportRequest request)
+    {
+        return _reportService.GetServiceReport(request);
     }
 }
