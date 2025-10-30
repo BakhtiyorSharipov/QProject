@@ -1,4 +1,6 @@
+using QDomain.Enums;
 using QDomain.Models;
+using DayOfWeek = System.DayOfWeek;
 
 namespace QApplication.Responses;
 
@@ -9,6 +11,8 @@ public class AvailabilityScheduleResponseModel: BaseResponse
     
     public string? Description { get; set; }
     public DayOfWeek DayOfWeek { get; set; }
+    public RepeatSlot RepeatSlot { get; set; }
+    public int? RepeatDuration { get; set; }
     
     public List<Interval<DateTimeOffset>> AvailableSlots { get; set; } = [];
 }

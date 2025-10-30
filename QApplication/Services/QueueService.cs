@@ -97,15 +97,9 @@ public class QueueService : IQueueService
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(ServiceEntity));
         }
-
-        var dayOfWeek = schedule.Where(s => s.DayOfWeek == requestToCreate.StartTime.DayOfWeek).ToList();
-
-        if (!dayOfWeek.Any())
-        {
-            throw new Exception("No schedule found for this day!");
-        }
-
-        var slotExists = dayOfWeek.Any(s => s.AvailableSlots.Any(slot =>
+        
+        
+        var slotExists = schedule.Any(s => s.AvailableSlots.Any(slot =>
             requestToCreate.StartTime >= slot.From && requestToCreate.StartTime.AddHours(1) < slot.To
         ));
 

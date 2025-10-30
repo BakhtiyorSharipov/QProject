@@ -34,13 +34,16 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                         .IsRequired()
                         .HasColumnType("jsonb");
 
-                    b.Property<int>("DayOfWeek")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
                     b.Property<int>("EmployeeId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("RepeatDuration")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("RepeatSlot")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");

@@ -21,10 +21,10 @@ public class CustomerRepository:  ICustomerRepository
         return _dbCustomer.Skip((pageNumber - 1) * pageList).Take(pageList);
     }
 
-    public IQueryable<QueueEntity> GetAllCustomersByCompany(int companyId)
+    public IQueryable<CustomerEntity> GetAllCustomersByCompany(int companyId)
     {
         var found = _dbCustomer
-            .SelectMany(s => s.Queues).Where(s => s.Service.CompanyId == companyId);
+            .Where(c => c.Queues.Any(q => q.Service.CompanyId == companyId));
 
         return found;
     }

@@ -42,6 +42,20 @@ public class ReportService : IReportService
 
     public CompanyReportItemResponseModel GetCompanyReport(CompanyReportRequest request)
     {
+        var company = _companyRepository.FindById(request.CompanyId);
+        if (company== null)
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(CompanyEntity));
+        }
+        
+        if (request.To.HasValue)
+        {
+            if (request.From.HasValue && request.From.Value> request.To.Value)
+            {
+                throw new Exception("'From' must be less than 'To'");
+            }
+        }
+        
         var queues = _queueRepository.GetQueuesByCompany(request.CompanyId);
         var employees = _employeeRepository.GetEmployeeByCompany(request.CompanyId);
         var services = _serviceRepository.GetAllServicesByCompany(request.CompanyId);
@@ -49,15 +63,16 @@ public class ReportService : IReportService
         var reviews = _reviewRepository.GetAllReviewsByCompany(request.CompanyId);
         var complaints = _complaintRepository.GetAllComplaintsByCompany(request.CompanyId);
         var blockedCustomers = _blockedCustomerRepository.GetAllBlockedCustomersByCompany(request.CompanyId);
-
+        
+        
         if (request.From.HasValue)
         {
-            queues = queues.Where(s => s.StartTime >= request.From.Value);
+            queues = queues.Where(s => s.StartTime >= request.From.Value.ToUniversalTime());
         }
 
         if (request.To.HasValue)
         {
-            queues = queues.Where(s => (s.EndTime.HasValue ? s.EndTime.Value : s.StartTime.AddHours(1)) <= request.To);
+            queues = queues.Where(s => (s.EndTime.HasValue ? s.EndTime.Value : s.StartTime.AddHours(1)) <= request.To.Value.ToUniversalTime());
         }
 
         var totalQueues = queues.Count();
@@ -88,8 +103,8 @@ public class ReportService : IReportService
 
         var response = new CompanyReportItemResponseModel
         {
-            CompanyId = request.CompanyId,
-            CompanyName = " ",
+            CompanyId = company.Id,
+            CompanyName = company.CompanyName,
             TotalQueues = totalQueues,
             CompletedCount = completedQueues,
             CancelledCount = cancelledQueues,

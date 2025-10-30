@@ -45,11 +45,11 @@ public class CustomerService: ICustomerService
         var response = dbCustomer.Select(customer => new CustomerResponseModel
         {
             Id = customer.Id,
-            FirstName = customer.Customer.FirstName,
-            LastName = customer.Customer.LastName,
-            EmailAddress = customer.Customer.EmailAddress,
-            PhoneNumber = customer.Customer.PhoneNumber,
-            Password = customer.Customer.Password
+            FirstName = customer.FirstName,
+            LastName = customer.LastName,
+            EmailAddress = customer.EmailAddress,
+            PhoneNumber = customer.PhoneNumber,
+            Password = customer.Password
         }).ToList();
 
         return response;
