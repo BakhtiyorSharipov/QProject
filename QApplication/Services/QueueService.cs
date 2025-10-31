@@ -80,7 +80,7 @@ public class QueueService : IQueueService
             throw new HttpStatusCodeException(HttpStatusCode.BadRequest, nameof(QueueEntity));
         }
 
-        var schedule = _scheduleRepository.GetEmployeeById(requestToCreate.EmployeeId);
+        var schedule = _scheduleRepository.GetEmployeeById(requestToCreate.EmployeeId).ToList();
         if (!schedule.Any())
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(EmployeeEntity));
@@ -119,7 +119,7 @@ public class QueueService : IQueueService
             var existingStart = s.StartTime;
             var existingEnd = s.EndTime;
             return (newQueueStart < existingEnd && newQueueEnd > existingStart) &&
-                   (s.Status == QueueStatus.Confirmed);
+                   (s.Status == QueueStatus.Confirmed || s.Status == QueueStatus.Pending);
         }); 
         
         
@@ -137,9 +137,6 @@ public class QueueService : IQueueService
         {
             throw new Exception("You are blocked by this company!");
         }
-
-        
-        
         
         var queue = new QueueEntity()
         {

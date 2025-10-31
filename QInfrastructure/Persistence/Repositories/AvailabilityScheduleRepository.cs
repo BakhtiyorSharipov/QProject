@@ -33,6 +33,11 @@ public class AvailabilityScheduleRepository : IAvailabilityScheduleRepository
         return foundEntity;
     }
 
+    public IQueryable<AvailabilityScheduleEntity> GetAllSchedules()
+    {
+        return _dbAvailabilitySchedule;
+    }
+
     public void Add(AvailabilityScheduleEntity entity)
     {
         _dbAvailabilitySchedule.Add(entity);

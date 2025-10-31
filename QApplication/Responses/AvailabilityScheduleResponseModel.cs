@@ -8,6 +8,7 @@ public class AvailabilityScheduleResponseModel: BaseResponse
 {
     public int Id { get; set; }
     public int EmployeeId { get; set; }
+    public int? GroupId { get; set; }
     
     public string? Description { get; set; }
     public DayOfWeek DayOfWeek { get; set; }

@@ -43,9 +43,9 @@ public class AvailabilityScheduleController: ControllerBase
     }
 
     [HttpDelete("{id}")]
-    public IActionResult Delete([FromRoute] int id)
+    public IActionResult Delete([FromRoute] int id, [FromQuery] bool deleteAllSlots)
     {
-        var delete = _service.Delete(id);
+        var delete = _service.Delete(id, deleteAllSlots);
         return NoContent();
     }
 }

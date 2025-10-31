@@ -5,6 +5,7 @@ namespace QDomain.Models;
 
 public class AvailabilityScheduleEntity : BaseEntity
 {
+    public int? GroupId { get; set; }
     public string? Description { get; set; }
     public RepeatSlot RepeatSlot { get; set; } = RepeatSlot.None;
     public int? RepeatDuration { get; set; }

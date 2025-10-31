@@ -7,7 +7,8 @@ public interface IAvailabilityScheduleRepository
 {
     IQueryable<AvailabilityScheduleEntity> GetAll(int pageList, int pageNumber);
     AvailabilityScheduleEntity FindById(int id);
-   IQueryable<AvailabilityScheduleEntity>  GetEmployeeById(int employeeId);
+    IQueryable<AvailabilityScheduleEntity>  GetEmployeeById(int employeeId);
+    IQueryable<AvailabilityScheduleEntity> GetAllSchedules();
     void Add(AvailabilityScheduleEntity entity);
     void Update(AvailabilityScheduleEntity entity);
     void Delete(AvailabilityScheduleEntity entity);
