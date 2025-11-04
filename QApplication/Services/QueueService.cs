@@ -97,8 +97,7 @@ public class QueueService : IQueueService
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(ServiceEntity));
         }
-        
-        
+
         var slotExists = schedule.Any(s => s.AvailableSlots.Any(slot =>
             requestToCreate.StartTime >= slot.From && requestToCreate.StartTime.AddMinutes(30) <= slot.To
         ));
@@ -138,13 +137,14 @@ public class QueueService : IQueueService
             throw new Exception("You are blocked by this company!");
         }
         
-       
+     
+
         var queue = new QueueEntity()
         {
             CustomerId = requestToCreate.CustomerId,
             EmployeeId = requestToCreate.EmployeeId,
             ServiceId = requestToCreate.ServiceId,
-            StartTime = requestToCreate.StartTime.ToUniversalTime(),
+            StartTime = requestToCreate.StartTime,
             Status = QueueStatus.Pending
         };
 
@@ -159,7 +159,7 @@ public class QueueService : IQueueService
             CustomerId = queue.CustomerId,
             EmployeeId = queue.EmployeeId,
             ServiceId = queue.ServiceId,
-            StartTime = queue.StartTime.ToLocalTime(),
+            StartTime = queue.StartTime,
             Status = queue.Status
         };
 
@@ -251,8 +251,14 @@ public class QueueService : IQueueService
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
         }
-        
 
+        var employeeSchedule = _scheduleRepository.GetEmployeeById(dbQueue.EmployeeId).ToList();
+        if (!employeeSchedule.Any())
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(AvailabilityScheduleEntity));
+        }
+        
+        
        
 
         switch (dbQueue.Status)
@@ -313,27 +319,48 @@ public class QueueService : IQueueService
 
         if (request.newStatus == QueueStatus.Confirmed )
         {
-            
+            DateTimeOffset startTimeUtc = dbQueue.StartTime.ToUniversalTime();
+            DateTimeOffset endTimeUtc;
             if (request.EndTime.HasValue)
             {
-               
+                 endTimeUtc = request.EndTime.Value.ToUniversalTime();
 
-                if (request.EndTime.Value <= dbQueue.StartTime)
+                if (endTimeUtc <= startTimeUtc)
                 {
                     throw new Exception($"EndTime must be later than StartTime. " +
-                                        $"Start: {dbQueue.StartTime:dd.MM.yyyy HH:mm:ss} (your time), " +
-                                        $"End: {request.EndTime.Value:dd.MM.yyyy HH:mm:ss} (your time)");
+                                        $"Start: {startTimeUtc:dd.MM.yyyy HH:mm:ss} (UTC), " +
+                                        $"End: {endTimeUtc:dd.MM.yyyy HH:mm:ss} (UTC)");
+                }
+
+                var slotExists = employeeSchedule.Any(s => s.AvailableSlots.Any(slot =>
+                    startTimeUtc >= slot.From && endTimeUtc <= slot.To));
+
+                if (!slotExists)
+                {
+                    throw new Exception("The updated queue time is outside the employee's working hours.");
+                }
+
+                var allQueueByEmployee = _repository.GetQueuesByEmployee(dbQueue.EmployeeId)
+                    .Where(q => q.Status == QueueStatus.Pending || q.Status == QueueStatus.Confirmed)
+                    .Where(q => q.Id != dbQueue.Id)
+                    .ToList();
+
+                var isOverlap = allQueueByEmployee.Any(s => startTimeUtc <(s.EndTime.HasValue? s.EndTime.Value: s.StartTime.AddMinutes(30)) && endTimeUtc > s.StartTime);
+
+                if (isOverlap)
+                {
+                    throw new Exception("The updated queue time overlaps with another existing queue.");
                 }
         
-                dbQueue.EndTime = request.EndTime.Value.ToUniversalTime();
+                dbQueue.EndTime = endTimeUtc;
             }
             else
             {
                 dbQueue.EndTime = dbQueue.StartTime.AddMinutes(30);
             }
-            
-
         }
+        
+        
         
         dbQueue.Status = request.newStatus;
         _repository.SaveChanges();
