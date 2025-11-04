@@ -10,7 +10,7 @@ public class QueueTableConfiguration: IEntityTypeConfiguration<QueueEntity>
     {
         builder.ToTable("Queues");
         builder.HasKey(s => s.Id);
-
+        
         builder.HasOne(s => s.Customer)
             .WithMany(s => s.Queues)
             .HasForeignKey(s => s.CustomerId);

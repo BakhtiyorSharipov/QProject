@@ -100,12 +100,12 @@ public class QueueService : IQueueService
         
         
         var slotExists = schedule.Any(s => s.AvailableSlots.Any(slot =>
-            requestToCreate.StartTime >= slot.From && requestToCreate.StartTime.AddHours(1) < slot.To
+            requestToCreate.StartTime >= slot.From && requestToCreate.StartTime.AddMinutes(30) <= slot.To
         ));
 
         if (!slotExists)
         {
-            throw new Exception("The selected time slot is not available for a 1-hour booking. Please choose a start time that fits within the employee's working hours.");
+            throw new Exception("The selected time slot is not available for a 30-minute booking. Please choose a start time that fits within the employee's working hours.");
         }
 
 
@@ -113,7 +113,7 @@ public class QueueService : IQueueService
             .Where(q=>q.Status == QueueStatus.Pending || q.Status == QueueStatus.Confirmed );
 
         var newQueueStart = requestToCreate.StartTime;
-        var newQueueEnd = newQueueStart.AddHours(1);
+        var newQueueEnd = newQueueStart.AddMinutes(30);
         var isDouble = allQueuesByEmployee.Any(s =>
         {
             var existingStart = s.StartTime;
@@ -138,25 +138,28 @@ public class QueueService : IQueueService
             throw new Exception("You are blocked by this company!");
         }
         
+       
         var queue = new QueueEntity()
         {
             CustomerId = requestToCreate.CustomerId,
             EmployeeId = requestToCreate.EmployeeId,
             ServiceId = requestToCreate.ServiceId,
-            StartTime = requestToCreate.StartTime,
+            StartTime = requestToCreate.StartTime.ToUniversalTime(),
             Status = QueueStatus.Pending
         };
 
+        
         _repository.Add(queue);
         _repository.SaveChanges();
 
+        
         var response = new AddQueueResponseModel()
         {
             Id = queue.Id,
             CustomerId = queue.CustomerId,
             EmployeeId = queue.EmployeeId,
             ServiceId = queue.ServiceId,
-            StartTime = queue.StartTime,
+            StartTime = queue.StartTime.ToLocalTime(),
             Status = queue.Status
         };
 
@@ -248,6 +251,9 @@ public class QueueService : IQueueService
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
         }
+        
+
+       
 
         switch (dbQueue.Status)
         {
@@ -280,30 +286,53 @@ public class QueueService : IQueueService
             throw new Exception("Invalid status update by employee");
         }
 
-
-        var count = _repository.GetQueuesByCustomer(dbQueue.CustomerId)
-            .Count(s => s.Status == QueueStatus.DidNotCome);
-
-        if (count >= 3)
-
+        if (request.newStatus == QueueStatus.DidNotCome)
         {
-            BlockedCustomerEntity blockedCustomer = new BlockedCustomerEntity
-            {
-                CustomerId = dbQueue.CustomerId,
-                CompanyId = dbQueue.Service.CompanyId,
-                DoesBanForever = true,
-                Reason = "Did not come 3 times",
-                BannedUntil = DateTime.MaxValue
-            };
+            var count = _repository.GetQueuesByCustomer(dbQueue.CustomerId)
+                .Count(s => s.Status == QueueStatus.DidNotCome);
 
-            _blockedCustomerRepository.Add(blockedCustomer);
-            _blockedCustomerRepository.SaveChanges();
-            throw new Exception("Customer has been automatically blocked due to multiple DidNotCome.");
+            if (count >= 3 && !_blockedCustomerRepository.Exists(dbQueue.CustomerId, dbQueue.Service.CompanyId))
+
+            {
+                BlockedCustomerEntity blockedCustomer = new BlockedCustomerEntity
+                {
+                    CustomerId = dbQueue.CustomerId,
+                    CompanyId = dbQueue.Service.CompanyId,
+                    DoesBanForever = true,
+                    Reason = "Did not come 3 times",
+                    BannedUntil = DateTime.MaxValue
+                };
+
+                _blockedCustomerRepository.Add(blockedCustomer);
+                _blockedCustomerRepository.SaveChanges();
+                throw new Exception("Customer has been automatically blocked due to multiple DidNotCome.");
+            }
         }
+
+        
 
         if (request.newStatus == QueueStatus.Confirmed )
         {
-            dbQueue.EndTime = dbQueue.StartTime.AddHours(1);
+            
+            if (request.EndTime.HasValue)
+            {
+               
+
+                if (request.EndTime.Value <= dbQueue.StartTime)
+                {
+                    throw new Exception($"EndTime must be later than StartTime. " +
+                                        $"Start: {dbQueue.StartTime:dd.MM.yyyy HH:mm:ss} (your time), " +
+                                        $"End: {request.EndTime.Value:dd.MM.yyyy HH:mm:ss} (your time)");
+                }
+        
+                dbQueue.EndTime = request.EndTime.Value.ToUniversalTime();
+            }
+            else
+            {
+                dbQueue.EndTime = dbQueue.StartTime.AddMinutes(30);
+            }
+            
+
         }
         
         dbQueue.Status = request.newStatus;

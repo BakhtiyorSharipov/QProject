@@ -9,5 +9,7 @@ public interface IBlockedCustomerRepository
     BlockedCustomerEntity FindById(int id);
     void Add(BlockedCustomerEntity entity);
     void Delete(BlockedCustomerEntity entity);
+    bool Exists(int customerId, int companyId);
+
     int SaveChanges();
 }

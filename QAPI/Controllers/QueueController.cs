@@ -60,6 +60,16 @@ public class QueueController : ControllerBase
     [HttpPut("status/update")]
     public ActionResult<QueueResponseModel> UpdateStatus([FromQuery] UpdateQueueRequest request)
     {
+        Console.WriteLine("=== REQUEST DEBUG ===");
+        Console.WriteLine($"Incoming QueueId: {request.QueueId}");
+        Console.WriteLine($"Incoming newStatus: {request.newStatus}");
+        if (request.EndTime.HasValue)
+        {
+            Console.WriteLine($"Incoming EndTime: {request.EndTime.Value}");
+            Console.WriteLine($"Incoming EndTime Offset: {request.EndTime.Value.Offset}");
+            Console.WriteLine($"Incoming EndTime UTC: {request.EndTime.Value.ToUniversalTime()}");
+        }
+        Console.WriteLine($"=== END REQUEST DEBUG ===");
         var result = _service.UpdateQueueStatus(request);
         return Ok(result);
     }

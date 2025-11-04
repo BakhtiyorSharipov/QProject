@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using QInfrastructure.Persistence.DataBase;
@@ -11,9 +12,11 @@ using QInfrastructure.Persistence.DataBase;
 namespace QInfrastructure.Persistence.DataBase.Migrations
 {
     [DbContext(typeof(QueueDbContext))]
-    partial class EFContextModelSnapshot : ModelSnapshot
+    [Migration("20251103175050_ChangedDateTimetoDateTimeOffSet")]
+    partial class ChangedDateTimetoDateTimeOffSet
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

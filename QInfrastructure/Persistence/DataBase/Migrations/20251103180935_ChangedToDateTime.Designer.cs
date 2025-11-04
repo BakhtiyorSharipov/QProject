@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using QInfrastructure.Persistence.DataBase;
@@ -11,9 +12,11 @@ using QInfrastructure.Persistence.DataBase;
 namespace QInfrastructure.Persistence.DataBase.Migrations
 {
     [DbContext(typeof(QueueDbContext))]
-    partial class EFContextModelSnapshot : ModelSnapshot
+    [Migration("20251103180935_ChangedToDateTime")]
+    partial class ChangedToDateTime
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -245,13 +248,13 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                     b.Property<int>("EmployeeId")
                         .HasColumnType("integer");
 
-                    b.Property<DateTimeOffset?>("EndTime")
+                    b.Property<DateTime?>("EndTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("ServiceId")
                         .HasColumnType("integer");
 
-                    b.Property<DateTimeOffset>("StartTime")
+                    b.Property<DateTime>("StartTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Status")

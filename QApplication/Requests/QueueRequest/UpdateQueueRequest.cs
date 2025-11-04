@@ -6,4 +6,5 @@ public class UpdateQueueRequest
 {
    public int QueueId { get; set; }
    public QueueStatus newStatus { get; set; }
+   public DateTimeOffset? EndTime { get; set; }
 }

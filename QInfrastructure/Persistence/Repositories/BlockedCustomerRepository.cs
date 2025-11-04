@@ -44,6 +44,19 @@ public class BlockedCustomerRepository : IBlockedCustomerRepository
         _dbBlockedCustomer.Remove(entity);
     }
 
+    public bool Exists(int customerId, int companyId)
+    {
+        var customer = _dbBlockedCustomer.Where(s => s.CustomerId == customerId);
+        var company = _dbBlockedCustomer.Where(s => s.CompanyId == companyId);
+
+        if (customer.Any() && company.Any())
+        {
+            return true;
+        }
+
+        return false;
+    }
+
     public int SaveChanges()
     {
         return _context.SaveChanges();
