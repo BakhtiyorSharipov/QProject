@@ -1,0 +1,306 @@
+[2025-11-07 13:35:41 WRN] Failed to determine the https port for redirect. { EventId: { Id: 3, Name: "FailedToDeterminePort" }, SourceContext: "Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware", RequestId: "0HNGTR21HCSOD:00000002", RequestPath: "/api/AvailabilitySchedule/6", ConnectionId: "0HNGTR21HCSOD", Application: "QProject" }
+[2025-11-07 13:35:43 WRN] The property 'AvailabilityScheduleEntity.AvailableSlots' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly. { EventId: { Id: 10620, Name: "Microsoft.EntityFrameworkCore.Model.Validation.CollectionWithoutComparer" }, SourceContext: "Microsoft.EntityFrameworkCore.Model.Validation", ActionId: "bb0e7c15-ce09-4282-b429-c9bb956e8628", ActionName: "QAPI.Controllers.AvailabilityScheduleController.GetById (QAPI)", RequestId: "0HNGTR21HCSOD:00000002", RequestPath: "/api/AvailabilitySchedule/6", ConnectionId: "0HNGTR21HCSOD", Application: "QProject" }
+[2025-11-07 13:35:43 INF] Getting schedule with Id 6 { SourceContext: "QApplication.Services.AvailabilityScheduleService", ActionId: "bb0e7c15-ce09-4282-b429-c9bb956e8628", ActionName: "QAPI.Controllers.AvailabilityScheduleController.GetById (QAPI)", RequestId: "0HNGTR21HCSOD:00000002", RequestPath: "/api/AvailabilitySchedule/6", ConnectionId: "0HNGTR21HCSOD", Application: "QProject" }
+[2025-11-07 13:35:44 INF] Schedule with Id 6 fetched successfully { SourceContext: "QApplication.Services.AvailabilityScheduleService", ActionId: "bb0e7c15-ce09-4282-b429-c9bb956e8628", ActionName: "QAPI.Controllers.AvailabilityScheduleController.GetById (QAPI)", RequestId: "0HNGTR21HCSOD:00000002", RequestPath: "/api/AvailabilitySchedule/6", ConnectionId: "0HNGTR21HCSOD", Application: "QProject" }
+[2025-11-07 13:36:42 INF] Adding new schedule for EmployeeId 1 { SourceContext: "QApplication.Services.AvailabilityScheduleService", ActionId: "9d7cf596-7244-4f5d-9a48-2088c5322b15", ActionName: "QAPI.Controllers.AvailabilityScheduleController.Post (QAPI)", RequestId: "0HNGTR21HCSOD:00000003", RequestPath: "/api/AvailabilitySchedule", ConnectionId: "0HNGTR21HCSOD", Application: "QProject" }
+[2025-11-07 13:36:42 INF] Successfully added schedules for EmployeeId: 1 { SourceContext: "QApplication.Services.AvailabilityScheduleService", ActionId: "9d7cf596-7244-4f5d-9a48-2088c5322b15", ActionName: "QAPI.Controllers.AvailabilityScheduleController.Post (QAPI)", RequestId: "0HNGTR21HCSOD:00000003", RequestPath: "/api/AvailabilitySchedule", ConnectionId: "0HNGTR21HCSOD", Application: "QProject" }
+[2025-11-07 13:38:00 INF] Updating schedule with Id: 91 { SourceContext: "QApplication.Services.AvailabilityScheduleService", ActionId: "1c4bee2d-3a85-4730-b5c7-fb4fedea9557", ActionName: "QAPI.Controllers.AvailabilityScheduleController.Update (QAPI)", RequestId: "0HNGTR21HCSOD:00000004", RequestPath: "/api/AvailabilitySchedule/91", ConnectionId: "0HNGTR21HCSOD", Application: "QProject" }
+[2025-11-07 13:38:01 INF] Repeat slot or repeat duration changed. { SourceContext: "QApplication.Services.AvailabilityScheduleService", ActionId: "1c4bee2d-3a85-4730-b5c7-fb4fedea9557", ActionName: "QAPI.Controllers.AvailabilityScheduleController.Update (QAPI)", RequestId: "0HNGTR21HCSOD:00000004", RequestPath: "/api/AvailabilitySchedule/91", ConnectionId: "0HNGTR21HCSOD", Application: "QProject" }
+[2025-11-07 13:38:01 ERR] Failed executing DbCommand (17ms) [Parameters=[@p6='?' (DbType = Int32), @p0='?' (DbType = Object), @p1='?', @p2='?' (DbType = Int32), @p3='?' (DbType = Int32), @p4='?' (DbType = Int32), @p5='?' (DbType = Int32), @p7='?' (DbType = Object), @p8='?', @p9='?' (DbType = Int32), @p10='?' (DbType = Int32), @p11='?' (DbType = Int32), @p12='?' (DbType = Int32), @p13='?' (DbType = Object), @p14='?', @p15='?' (DbType = Int32), @p16='?' (DbType = Int32), @p17='?' (DbType = Int32), @p18='?' (DbType = Int32), @p19='?' (DbType = Object), @p20='?', @p21='?' (DbType = Int32), @p22='?' (DbType = Int32), @p23='?' (DbType = Int32), @p24='?' (DbType = Int32), @p25='?' (DbType = Object), @p26='?', @p27='?' (DbType = Int32), @p28='?' (DbType = Int32), @p29='?' (DbType = Int32), @p30='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+UPDATE "AvailabilitySchedules" SET "AvailableSlots" = @p0, "Description" = @p1, "EmployeeId" = @p2, "GroupId" = @p3, "RepeatDuration" = @p4, "RepeatSlot" = @p5
+WHERE "Id" = @p6;
+INSERT INTO "AvailabilitySchedules" ("AvailableSlots", "Description", "EmployeeId", "GroupId", "RepeatDuration", "RepeatSlot")
+VALUES (@p7, @p8, @p9, @p10, @p11, @p12)
+RETURNING "Id";
+INSERT INTO "AvailabilitySchedules" ("AvailableSlots", "Description", "EmployeeId", "GroupId", "RepeatDuration", "RepeatSlot")
+VALUES (@p13, @p14, @p15, @p16, @p17, @p18)
+RETURNING "Id";
+INSERT INTO "AvailabilitySchedules" ("AvailableSlots", "Description", "EmployeeId", "GroupId", "RepeatDuration", "RepeatSlot")
+VALUES (@p19, @p20, @p21, @p22, @p23, @p24)
+RETURNING "Id";
+INSERT INTO "AvailabilitySchedules" ("AvailableSlots", "Description", "EmployeeId", "GroupId", "RepeatDuration", "RepeatSlot")
+VALUES (@p25, @p26, @p27, @p28, @p29, @p30)
+RETURNING "Id"; { EventId: { Id: 20102, Name: "Microsoft.EntityFrameworkCore.Database.Command.CommandError" }, SourceContext: "Microsoft.EntityFrameworkCore.Database.Command", ActionId: "1c4bee2d-3a85-4730-b5c7-fb4fedea9557", ActionName: "QAPI.Controllers.AvailabilityScheduleController.Update (QAPI)", RequestId: "0HNGTR21HCSOD:00000004", RequestPath: "/api/AvailabilitySchedule/91", ConnectionId: "0HNGTR21HCSOD", Application: "QProject" }
+[2025-11-07 13:38:01 ERR] An exception occurred in the database while saving changes for context type 'QInfrastructure.Persistence.DataBase.QueueDbContext'.
+Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.
+ ---> Npgsql.PostgresException (0x80004005): 23503: INSERT или UPDATE в таблице "AvailabilitySchedules" нарушает ограничение внешнего ключа "FK_AvailabilitySchedules_Employees_EmployeeId"
+
+DETAIL: Detail redacted as it may contain sensitive data. Specify 'Include Error Detail' in the connection string to include this information.
+   at Npgsql.Internal.NpgsqlConnector.ReadMessageLong(Boolean async, DataRowLoadingMode dataRowLoadingMode, Boolean readingNotifications, Boolean isReadingPrependedMessage)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult()
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(CommandBehavior behavior)
+   at Npgsql.NpgsqlCommand.ExecuteDbDataReader(CommandBehavior behavior)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReader(RelationalCommandParameterObject parameterObject)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.Execute(IRelationalConnection connection)
+  Exception data:
+    Severity: ОШИБКА
+    SqlState: 23503
+    MessageText: INSERT или UPDATE в таблице "AvailabilitySchedules" нарушает ограничение внешнего ключа "FK_AvailabilitySchedules_Employees_EmployeeId"
+    Detail: Detail redacted as it may contain sensitive data. Specify 'Include Error Detail' in the connection string to include this information.
+    SchemaName: public
+    TableName: AvailabilitySchedules
+    ConstraintName: FK_AvailabilitySchedules_Employees_EmployeeId
+    File: ri_triggers.c
+    Line: 2610
+    Routine: ri_ReportViolation
+   --- End of inner exception stack trace ---
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.Execute(IRelationalConnection connection)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.Execute(IEnumerable`1 commandBatches, IRelationalConnection connection)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabase.SaveChanges(IList`1 entries)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChanges(IList`1 entriesToSave)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChanges(StateManager stateManager, Boolean acceptAllChangesOnSuccess)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.<>c.<SaveChanges>b__112_0(DbContext _, ValueTuple`2 t)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.Execute[TState,TResult](TState state, Func`3 operation, Func`3 verifySucceeded)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChanges(Boolean acceptAllChangesOnSuccess)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChanges(Boolean acceptAllChangesOnSuccess) { EventId: { Id: 10000, Name: "Microsoft.EntityFrameworkCore.Update.SaveChangesFailed" }, SourceContext: "Microsoft.EntityFrameworkCore.Update", ActionId: "1c4bee2d-3a85-4730-b5c7-fb4fedea9557", ActionName: "QAPI.Controllers.AvailabilityScheduleController.Update (QAPI)", RequestId: "0HNGTR21HCSOD:00000004", RequestPath: "/api/AvailabilitySchedule/91", ConnectionId: "0HNGTR21HCSOD", Application: "QProject" }
+Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.
+ ---> Npgsql.PostgresException (0x80004005): 23503: INSERT или UPDATE в таблице "AvailabilitySchedules" нарушает ограничение внешнего ключа "FK_AvailabilitySchedules_Employees_EmployeeId"
+
+DETAIL: Detail redacted as it may contain sensitive data. Specify 'Include Error Detail' in the connection string to include this information.
+   at Npgsql.Internal.NpgsqlConnector.ReadMessageLong(Boolean async, DataRowLoadingMode dataRowLoadingMode, Boolean readingNotifications, Boolean isReadingPrependedMessage)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult()
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(CommandBehavior behavior)
+   at Npgsql.NpgsqlCommand.ExecuteDbDataReader(CommandBehavior behavior)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReader(RelationalCommandParameterObject parameterObject)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.Execute(IRelationalConnection connection)
+  Exception data:
+    Severity: ОШИБКА
+    SqlState: 23503
+    MessageText: INSERT или UPDATE в таблице "AvailabilitySchedules" нарушает ограничение внешнего ключа "FK_AvailabilitySchedules_Employees_EmployeeId"
+    Detail: Detail redacted as it may contain sensitive data. Specify 'Include Error Detail' in the connection string to include this information.
+    SchemaName: public
+    TableName: AvailabilitySchedules
+    ConstraintName: FK_AvailabilitySchedules_Employees_EmployeeId
+    File: ri_triggers.c
+    Line: 2610
+    Routine: ri_ReportViolation
+   --- End of inner exception stack trace ---
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.Execute(IRelationalConnection connection)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.Execute(IEnumerable`1 commandBatches, IRelationalConnection connection)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabase.SaveChanges(IList`1 entries)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChanges(IList`1 entriesToSave)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChanges(StateManager stateManager, Boolean acceptAllChangesOnSuccess)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.<>c.<SaveChanges>b__112_0(DbContext _, ValueTuple`2 t)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.Execute[TState,TResult](TState state, Func`3 operation, Func`3 verifySucceeded)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChanges(Boolean acceptAllChangesOnSuccess)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChanges(Boolean acceptAllChangesOnSuccess)
+[2025-11-07 13:38:01 ERR] An unhandled exception has occurred while executing the request. { EventId: { Id: 1, Name: "UnhandledException" }, SourceContext: "Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddleware", RequestId: "0HNGTR21HCSOD:00000004", RequestPath: "/api/AvailabilitySchedule/91", ConnectionId: "0HNGTR21HCSOD", Application: "QProject" }
+Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.
+ ---> Npgsql.PostgresException (0x80004005): 23503: INSERT или UPDATE в таблице "AvailabilitySchedules" нарушает ограничение внешнего ключа "FK_AvailabilitySchedules_Employees_EmployeeId"
+
+DETAIL: Detail redacted as it may contain sensitive data. Specify 'Include Error Detail' in the connection string to include this information.
+   at Npgsql.Internal.NpgsqlConnector.ReadMessageLong(Boolean async, DataRowLoadingMode dataRowLoadingMode, Boolean readingNotifications, Boolean isReadingPrependedMessage)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult()
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(CommandBehavior behavior)
+   at Npgsql.NpgsqlCommand.ExecuteDbDataReader(CommandBehavior behavior)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReader(RelationalCommandParameterObject parameterObject)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.Execute(IRelationalConnection connection)
+  Exception data:
+    Severity: ОШИБКА
+    SqlState: 23503
+    MessageText: INSERT или UPDATE в таблице "AvailabilitySchedules" нарушает ограничение внешнего ключа "FK_AvailabilitySchedules_Employees_EmployeeId"
+    Detail: Detail redacted as it may contain sensitive data. Specify 'Include Error Detail' in the connection string to include this information.
+    SchemaName: public
+    TableName: AvailabilitySchedules
+    ConstraintName: FK_AvailabilitySchedules_Employees_EmployeeId
+    File: ri_triggers.c
+    Line: 2610
+    Routine: ri_ReportViolation
+   --- End of inner exception stack trace ---
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.Execute(IRelationalConnection connection)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.Execute(IEnumerable`1 commandBatches, IRelationalConnection connection)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabase.SaveChanges(IList`1 entries)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChanges(IList`1 entriesToSave)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChanges(StateManager stateManager, Boolean acceptAllChangesOnSuccess)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.<>c.<SaveChanges>b__112_0(DbContext _, ValueTuple`2 t)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.Execute[TState,TResult](TState state, Func`3 operation, Func`3 verifySucceeded)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChanges(Boolean acceptAllChangesOnSuccess)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChanges(Boolean acceptAllChangesOnSuccess)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChanges()
+   at QInfrastructure.Persistence.Repositories.AvailabilityScheduleRepository.SaveChanges() in D:\Programmer\C#\QProject\QInfrastructure\Persistence\Repositories\AvailabilityScheduleRepository.cs:line 58
+   at QApplication.Services.AvailabilityScheduleService.Update(Int32 id, UpdateAvailabilityScheduleRequest requestToUpdate) in D:\Programmer\C#\QProject\QApplication\Services\AvailabilityScheduleService.cs:line 570
+   at QAPI.Controllers.AvailabilityScheduleController.Update(Int32 id, UpdateAvailabilityScheduleRequest request) in D:\Programmer\C#\QProject\QAPI\Controllers\AvailabilityScheduleController.cs:line 41
+   at lambda_method246(Closure, Object, Object[])
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.SyncActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeActionMethodAsync()
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeNextActionFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddlewareImpl.Invoke(HttpContext context)
+[2025-11-07 13:40:02 WRN] Failed to determine the https port for redirect. { EventId: { Id: 3, Name: "FailedToDeterminePort" }, SourceContext: "Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware", RequestId: "0HNGTR4NFPQQ4:00000002", RequestPath: "/api/AvailabilitySchedule/91", ConnectionId: "0HNGTR4NFPQQ4", Application: "QProject" }
+[2025-11-07 13:40:04 WRN] The property 'AvailabilityScheduleEntity.AvailableSlots' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly. { EventId: { Id: 10620, Name: "Microsoft.EntityFrameworkCore.Model.Validation.CollectionWithoutComparer" }, SourceContext: "Microsoft.EntityFrameworkCore.Model.Validation", ActionId: "05148935-ff41-461c-90b7-3667a0e4d24f", ActionName: "QAPI.Controllers.AvailabilityScheduleController.Update (QAPI)", RequestId: "0HNGTR4NFPQQ4:00000002", RequestPath: "/api/AvailabilitySchedule/91", ConnectionId: "0HNGTR4NFPQQ4", Application: "QProject" }
+[2025-11-07 13:40:12 INF] Updating schedule with Id: 91 { SourceContext: "QApplication.Services.AvailabilityScheduleService", ActionId: "05148935-ff41-461c-90b7-3667a0e4d24f", ActionName: "QAPI.Controllers.AvailabilityScheduleController.Update (QAPI)", RequestId: "0HNGTR4NFPQQ4:00000002", RequestPath: "/api/AvailabilitySchedule/91", ConnectionId: "0HNGTR4NFPQQ4", Application: "QProject" }
+[2025-11-07 13:44:48 INF] Repeat slot or repeat duration changed. { SourceContext: "QApplication.Services.AvailabilityScheduleService", ActionId: "05148935-ff41-461c-90b7-3667a0e4d24f", ActionName: "QAPI.Controllers.AvailabilityScheduleController.Update (QAPI)", RequestId: "0HNGTR4NFPQQ4:00000002", RequestPath: "/api/AvailabilitySchedule/91", ConnectionId: "0HNGTR4NFPQQ4", Application: "QProject" }
+[2025-11-07 13:47:10 ERR] Failed executing DbCommand (33ms) [Parameters=[@p6='?' (DbType = Int32), @p0='?' (DbType = Object), @p1='?', @p2='?' (DbType = Int32), @p3='?' (DbType = Int32), @p4='?' (DbType = Int32), @p5='?' (DbType = Int32), @p7='?' (DbType = Object), @p8='?', @p9='?' (DbType = Int32), @p10='?' (DbType = Int32), @p11='?' (DbType = Int32), @p12='?' (DbType = Int32), @p13='?' (DbType = Object), @p14='?', @p15='?' (DbType = Int32), @p16='?' (DbType = Int32), @p17='?' (DbType = Int32), @p18='?' (DbType = Int32), @p19='?' (DbType = Object), @p20='?', @p21='?' (DbType = Int32), @p22='?' (DbType = Int32), @p23='?' (DbType = Int32), @p24='?' (DbType = Int32), @p25='?' (DbType = Object), @p26='?', @p27='?' (DbType = Int32), @p28='?' (DbType = Int32), @p29='?' (DbType = Int32), @p30='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+UPDATE "AvailabilitySchedules" SET "AvailableSlots" = @p0, "Description" = @p1, "EmployeeId" = @p2, "GroupId" = @p3, "RepeatDuration" = @p4, "RepeatSlot" = @p5
+WHERE "Id" = @p6;
+INSERT INTO "AvailabilitySchedules" ("AvailableSlots", "Description", "EmployeeId", "GroupId", "RepeatDuration", "RepeatSlot")
+VALUES (@p7, @p8, @p9, @p10, @p11, @p12)
+RETURNING "Id";
+INSERT INTO "AvailabilitySchedules" ("AvailableSlots", "Description", "EmployeeId", "GroupId", "RepeatDuration", "RepeatSlot")
+VALUES (@p13, @p14, @p15, @p16, @p17, @p18)
+RETURNING "Id";
+INSERT INTO "AvailabilitySchedules" ("AvailableSlots", "Description", "EmployeeId", "GroupId", "RepeatDuration", "RepeatSlot")
+VALUES (@p19, @p20, @p21, @p22, @p23, @p24)
+RETURNING "Id";
+INSERT INTO "AvailabilitySchedules" ("AvailableSlots", "Description", "EmployeeId", "GroupId", "RepeatDuration", "RepeatSlot")
+VALUES (@p25, @p26, @p27, @p28, @p29, @p30)
+RETURNING "Id"; { EventId: { Id: 20102, Name: "Microsoft.EntityFrameworkCore.Database.Command.CommandError" }, SourceContext: "Microsoft.EntityFrameworkCore.Database.Command", ActionId: "05148935-ff41-461c-90b7-3667a0e4d24f", ActionName: "QAPI.Controllers.AvailabilityScheduleController.Update (QAPI)", RequestId: "0HNGTR4NFPQQ4:00000002", RequestPath: "/api/AvailabilitySchedule/91", ConnectionId: "0HNGTR4NFPQQ4", Application: "QProject" }
+[2025-11-07 13:47:10 ERR] An exception occurred in the database while saving changes for context type 'QInfrastructure.Persistence.DataBase.QueueDbContext'.
+Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.
+ ---> Npgsql.PostgresException (0x80004005): 23503: INSERT или UPDATE в таблице "AvailabilitySchedules" нарушает ограничение внешнего ключа "FK_AvailabilitySchedules_Employees_EmployeeId"
+
+DETAIL: Detail redacted as it may contain sensitive data. Specify 'Include Error Detail' in the connection string to include this information.
+   at Npgsql.Internal.NpgsqlConnector.ReadMessageLong(Boolean async, DataRowLoadingMode dataRowLoadingMode, Boolean readingNotifications, Boolean isReadingPrependedMessage)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult()
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(CommandBehavior behavior)
+   at Npgsql.NpgsqlCommand.ExecuteDbDataReader(CommandBehavior behavior)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReader(RelationalCommandParameterObject parameterObject)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.Execute(IRelationalConnection connection)
+  Exception data:
+    Severity: ОШИБКА
+    SqlState: 23503
+    MessageText: INSERT или UPDATE в таблице "AvailabilitySchedules" нарушает ограничение внешнего ключа "FK_AvailabilitySchedules_Employees_EmployeeId"
+    Detail: Detail redacted as it may contain sensitive data. Specify 'Include Error Detail' in the connection string to include this information.
+    SchemaName: public
+    TableName: AvailabilitySchedules
+    ConstraintName: FK_AvailabilitySchedules_Employees_EmployeeId
+    File: ri_triggers.c
+    Line: 2610
+    Routine: ri_ReportViolation
+   --- End of inner exception stack trace ---
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.Execute(IRelationalConnection connection)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.Execute(IEnumerable`1 commandBatches, IRelationalConnection connection)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabase.SaveChanges(IList`1 entries)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChanges(IList`1 entriesToSave)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChanges(StateManager stateManager, Boolean acceptAllChangesOnSuccess)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.<>c.<SaveChanges>b__112_0(DbContext _, ValueTuple`2 t)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.Execute[TState,TResult](TState state, Func`3 operation, Func`3 verifySucceeded)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChanges(Boolean acceptAllChangesOnSuccess)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChanges(Boolean acceptAllChangesOnSuccess) { EventId: { Id: 10000, Name: "Microsoft.EntityFrameworkCore.Update.SaveChangesFailed" }, SourceContext: "Microsoft.EntityFrameworkCore.Update", ActionId: "05148935-ff41-461c-90b7-3667a0e4d24f", ActionName: "QAPI.Controllers.AvailabilityScheduleController.Update (QAPI)", RequestId: "0HNGTR4NFPQQ4:00000002", RequestPath: "/api/AvailabilitySchedule/91", ConnectionId: "0HNGTR4NFPQQ4", Application: "QProject" }
+Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.
+ ---> Npgsql.PostgresException (0x80004005): 23503: INSERT или UPDATE в таблице "AvailabilitySchedules" нарушает ограничение внешнего ключа "FK_AvailabilitySchedules_Employees_EmployeeId"
+
+DETAIL: Detail redacted as it may contain sensitive data. Specify 'Include Error Detail' in the connection string to include this information.
+   at Npgsql.Internal.NpgsqlConnector.ReadMessageLong(Boolean async, DataRowLoadingMode dataRowLoadingMode, Boolean readingNotifications, Boolean isReadingPrependedMessage)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult()
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(CommandBehavior behavior)
+   at Npgsql.NpgsqlCommand.ExecuteDbDataReader(CommandBehavior behavior)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReader(RelationalCommandParameterObject parameterObject)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.Execute(IRelationalConnection connection)
+  Exception data:
+    Severity: ОШИБКА
+    SqlState: 23503
+    MessageText: INSERT или UPDATE в таблице "AvailabilitySchedules" нарушает ограничение внешнего ключа "FK_AvailabilitySchedules_Employees_EmployeeId"
+    Detail: Detail redacted as it may contain sensitive data. Specify 'Include Error Detail' in the connection string to include this information.
+    SchemaName: public
+    TableName: AvailabilitySchedules
+    ConstraintName: FK_AvailabilitySchedules_Employees_EmployeeId
+    File: ri_triggers.c
+    Line: 2610
+    Routine: ri_ReportViolation
+   --- End of inner exception stack trace ---
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.Execute(IRelationalConnection connection)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.Execute(IEnumerable`1 commandBatches, IRelationalConnection connection)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabase.SaveChanges(IList`1 entries)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChanges(IList`1 entriesToSave)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChanges(StateManager stateManager, Boolean acceptAllChangesOnSuccess)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.<>c.<SaveChanges>b__112_0(DbContext _, ValueTuple`2 t)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.Execute[TState,TResult](TState state, Func`3 operation, Func`3 verifySucceeded)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChanges(Boolean acceptAllChangesOnSuccess)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChanges(Boolean acceptAllChangesOnSuccess)
+[2025-11-07 13:52:23 ERR] An unhandled exception has occurred while executing the request. { EventId: { Id: 1, Name: "UnhandledException" }, SourceContext: "Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddleware", RequestId: "0HNGTR4NFPQQ4:00000002", RequestPath: "/api/AvailabilitySchedule/91", ConnectionId: "0HNGTR4NFPQQ4", Application: "QProject" }
+Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.
+ ---> Npgsql.PostgresException (0x80004005): 23503: INSERT или UPDATE в таблице "AvailabilitySchedules" нарушает ограничение внешнего ключа "FK_AvailabilitySchedules_Employees_EmployeeId"
+
+DETAIL: Detail redacted as it may contain sensitive data. Specify 'Include Error Detail' in the connection string to include this information.
+   at Npgsql.Internal.NpgsqlConnector.ReadMessageLong(Boolean async, DataRowLoadingMode dataRowLoadingMode, Boolean readingNotifications, Boolean isReadingPrependedMessage)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult()
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(CommandBehavior behavior)
+   at Npgsql.NpgsqlCommand.ExecuteDbDataReader(CommandBehavior behavior)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReader(RelationalCommandParameterObject parameterObject)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.Execute(IRelationalConnection connection)
+  Exception data:
+    Severity: ОШИБКА
+    SqlState: 23503
+    MessageText: INSERT или UPDATE в таблице "AvailabilitySchedules" нарушает ограничение внешнего ключа "FK_AvailabilitySchedules_Employees_EmployeeId"
+    Detail: Detail redacted as it may contain sensitive data. Specify 'Include Error Detail' in the connection string to include this information.
+    SchemaName: public
+    TableName: AvailabilitySchedules
+    ConstraintName: FK_AvailabilitySchedules_Employees_EmployeeId
+    File: ri_triggers.c
+    Line: 2610
+    Routine: ri_ReportViolation
+   --- End of inner exception stack trace ---
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.Execute(IRelationalConnection connection)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.Execute(IEnumerable`1 commandBatches, IRelationalConnection connection)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabase.SaveChanges(IList`1 entries)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChanges(IList`1 entriesToSave)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChanges(StateManager stateManager, Boolean acceptAllChangesOnSuccess)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.<>c.<SaveChanges>b__112_0(DbContext _, ValueTuple`2 t)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.Execute[TState,TResult](TState state, Func`3 operation, Func`3 verifySucceeded)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChanges(Boolean acceptAllChangesOnSuccess)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChanges(Boolean acceptAllChangesOnSuccess)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChanges()
+   at QInfrastructure.Persistence.Repositories.AvailabilityScheduleRepository.SaveChanges() in D:\Programmer\C#\QProject\QInfrastructure\Persistence\Repositories\AvailabilityScheduleRepository.cs:line 58
+   at QApplication.Services.AvailabilityScheduleService.Update(Int32 id, UpdateAvailabilityScheduleRequest requestToUpdate) in D:\Programmer\C#\QProject\QApplication\Services\AvailabilityScheduleService.cs:line 570
+   at QAPI.Controllers.AvailabilityScheduleController.Update(Int32 id, UpdateAvailabilityScheduleRequest request) in D:\Programmer\C#\QProject\QAPI\Controllers\AvailabilityScheduleController.cs:line 41
+   at lambda_method2(Closure, Object, Object[])
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.SyncActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeActionMethodAsync()
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeNextActionFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddlewareImpl.Invoke(HttpContext context)

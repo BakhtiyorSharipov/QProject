@@ -5,6 +5,7 @@ using QInfrastructure.Persistence.Repositories;
 using QApplication.Interfaces.Repository;
 using QApplication.Services;
 using QInfrastructure.Persistence.DataBase;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
@@ -40,6 +41,12 @@ builder.Services.AddDbContext<QueueDbContext>(
         options.UseNpgsql(datasource);
     });
 
+
+builder.Host.UseSerilog((context, services, configuration) =>
+{
+    configuration.ReadFrom.Configuration(context.Configuration);
+    configuration.ReadFrom.Services(services);
+});
 var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
