@@ -26,9 +26,10 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
 
     public IEnumerable<AvailabilityScheduleResponseModel> GetAll(int pageList, int pageNumber)
     {
-        _logger.LogInformation("Getting all schedules: PageNumber: {pageNumber}, PageList: {pageList}", pageNumber, pageList);
+        _logger.LogInformation("Getting all schedules: PageNumber: {pageNumber}, PageList: {pageList}", pageNumber,
+            pageList);
         var dbAvailabilitySchedule = _repository.GetAll(pageList, pageNumber);
-        
+
         var response = dbAvailabilitySchedule.Select(schedule => new AvailabilityScheduleResponseModel
         {
             Id = schedule.Id,
@@ -84,7 +85,7 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
 
         var employee = _employeeRepository.FindById(request.EmployeeId);
         if (employee == null)
-        {   
+        {
             _logger.LogWarning("Employee with Id {id} not found", request.EmployeeId);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(EmployeeEntity));
         }
@@ -104,7 +105,7 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
                 _logger.LogError("Invalid slot time. 'From' and 'To' cannot be the same time.");
                 throw new Exception("'From' and 'To' cannot be the same time.");
             }
-            
+
             DateTimeOffset newTo;
             if (slot.To < slot.From)
             {
@@ -129,7 +130,9 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
                 _logger.LogError("Invalid repeat duration. Repeat duration must be greater than 0");
                 throw new Exception("Repeat duration must be greater than 0");
             }
-            _logger.LogDebug("Repeat Slot: {slot}, Duration: {duration}", requestToCreate.RepeatSlot, requestToCreate.RepeatDuration);
+
+            _logger.LogDebug("Repeat Slot: {slot}, Duration: {duration}", requestToCreate.RepeatSlot,
+                requestToCreate.RepeatDuration);
         }
 
         if (requestToCreate.RepeatSlot == RepeatSlot.None)
@@ -197,7 +200,7 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
             }
         }
 
-        
+
         _logger.LogDebug("Checking for schedule overlap for EmployeeId: {id}", requestToCreate.EmployeeId);
         var schedulesByEmployee = _repository.GetEmployeeById(requestToCreate.EmployeeId).ToList();
         foreach (var schedule in schedulesByEmployee)
@@ -206,7 +209,7 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
             {
                 var slotFrom = slot.From;
                 DateTimeOffset slotTo;
-                if (slot.To< slot.From)
+                if (slot.To < slot.From)
                 {
                     slotTo = slot.To.AddDays(1);
                 }
@@ -214,11 +217,12 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
                 {
                     slotTo = slot.To;
                 }
+
                 foreach (var newSlot in scheduleInterval)
                 {
                     var newFrom = newSlot.From;
                     DateTimeOffset newTo;
-                    if (newSlot.To< newSlot.From)
+                    if (newSlot.To < newSlot.From)
                     {
                         newTo = newSlot.To.AddDays(1);
                     }
@@ -226,18 +230,19 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
                     {
                         newTo = newSlot.To;
                     }
-                    
+
                     bool overlap = !(newTo <= slotFrom || newFrom >= slotTo);
                     if (overlap)
                     {
-                        _logger.LogError("Overlapping schedule for EmployeeId: {employeeId}", requestToCreate.EmployeeId);
+                        _logger.LogError("Overlapping schedule for EmployeeId: {employeeId}",
+                            requestToCreate.EmployeeId);
                         throw new Exception("This time slot already exists or overlaps with an existing schedule.");
                     }
                 }
             }
         }
 
-        
+
         _logger.LogDebug("Creating schedule entities.");
         var schedules = new List<AvailabilityScheduleEntity>();
         foreach (var interval in scheduleInterval)
@@ -278,9 +283,10 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
         return responses;
     }
 
-    public AvailabilityScheduleResponseModel Update(int id, UpdateAvailabilityScheduleRequest requestToUpdate)
+    public AvailabilityScheduleResponseModel Update(int id, UpdateAvailabilityScheduleRequest requestToUpdate, bool updateAllSlots)
     {
         _logger.LogInformation("Updating schedule with Id: {id}", id);
+
         var dbAvailabilitySchedule = _repository.FindById(id);
         if (dbAvailabilitySchedule == null)
         {
@@ -290,8 +296,9 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
 
         var employee = _employeeRepository.FindById(dbAvailabilitySchedule.EmployeeId);
         if (employee == null)
-        {            
-            _logger.LogWarning("Employee with Id {EmployeeId} not found for schedule update", dbAvailabilitySchedule.EmployeeId);
+        {
+            _logger.LogWarning("Employee with Id {EmployeeId} not found for schedule update",
+                dbAvailabilitySchedule.EmployeeId);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(EmployeeEntity));
         }
 
@@ -311,18 +318,8 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
                 throw new Exception("'From' must be earlier than 'To'");
             }
 
-            DateTimeOffset newTo;
-            if (slot.To < slot.From)
-            {
-                _logger.LogDebug("Day is cross day");
-                newTo = slot.To.AddDays(1);
-            }
-            else
-            {
-                _logger.LogDebug("Day is not cross day");
-                newTo = slot.To;
-            }
 
+            DateTimeOffset newTo = slot.To < slot.From ? slot.To.AddDays(1) : slot.To;
             crossDay.Add(new Interval<DateTimeOffset>(slot.From, newTo));
         }
 
@@ -335,13 +332,14 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
                 _logger.LogError("Invalid repeat duration. Repeat duration must be greater than 0");
                 throw new Exception("Repeat duration must be greater than 0");
             }
-            _logger.LogDebug("Repeat Slot: {slot}, Duration: {duration}", requestToUpdate.RepeatSlot, requestToUpdate.RepeatDuration);
 
+            _logger.LogDebug("Repeat Slot: {slot}, Duration: {duration}", requestToUpdate.RepeatSlot,
+                requestToUpdate.RepeatDuration);
         }
 
         List<AvailabilityScheduleEntity> schedulesToUpdate = new List<AvailabilityScheduleEntity>();
 
-        if (dbAvailabilitySchedule.GroupId.HasValue && requestToUpdate.UpdateAllSlots)
+        if (dbAvailabilitySchedule.GroupId.HasValue && updateAllSlots)
         {
             _logger.LogDebug("Updating all slots in group {id}", dbAvailabilitySchedule.GroupId);
             schedulesToUpdate = _repository.GetAllSchedules()
@@ -360,10 +358,29 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
             _logger.LogDebug("Updating single schedule with Id: {id}", id);
         }
 
-
-        var schedulesByEmployee = _repository.GetEmployeeById(employee.Id)
-            .Where(s => !schedulesToUpdate.Contains(s))
-            .ToList();
+        List<AvailabilityScheduleEntity> schedulesByEmployee;
+        if (dbAvailabilitySchedule.GroupId.HasValue)
+        {
+            if (updateAllSlots)
+            {
+                schedulesByEmployee = _repository.GetEmployeeById(employee.Id)
+                    .Where(s => !schedulesToUpdate.Contains(s)).ToList();
+                _logger.LogDebug("Checking overlap against schedules outside GroupId {groupId}", dbAvailabilitySchedule.GroupId);
+            }
+            else
+            {
+                schedulesByEmployee = _repository.GetAllSchedules()
+                    .Where(s => s.EmployeeId == employee.Id &&
+                                (!s.GroupId.HasValue || s.GroupId != dbAvailabilitySchedule.GroupId)).ToList();
+                _logger.LogDebug("Checking overlap only outside group because UpdateAllSlots = false");
+            }
+        }
+        else
+        {
+            schedulesByEmployee = _repository.GetAllSchedules()
+                .Where(s => s.EmployeeId == employee.Id && s.Id != dbAvailabilitySchedule.Id).ToList();
+        }
+        
 
         _logger.LogDebug("Checking for schedule overlap.");
         foreach (var schedule in schedulesByEmployee)
@@ -371,28 +388,12 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
             foreach (var slot in schedule.AvailableSlots)
             {
                 var slotFrom = slot.From;
-                DateTimeOffset slotTo;
-                if (slot.To < slot.From)
-                {
-                    slotTo = slot.To.AddDays(1);
-                }
-                else
-                {
-                    slotTo = slot.To;
-                }
+                DateTimeOffset slotTo = slot.To < slot.From ? slot.To.AddDays(1) : slot.To;
 
                 foreach (var newSlot in requestToUpdate.AvailableSlots)
                 {
                     var newFrom = newSlot.From;
-                    DateTimeOffset newTo;
-                    if (newSlot.To < slot.From)
-                    {
-                        newTo = newSlot.To.AddDays(1);
-                    }
-                    else
-                    {
-                        newTo = newSlot.To;
-                    }
+                    DateTimeOffset newTo = newSlot.To < newSlot.From ? newSlot.To.AddDays(1) : newSlot.To;
 
                     bool overlap = !(newTo <= slotFrom || newFrom >= slotTo);
                     if (overlap)
@@ -404,7 +405,7 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
             }
         }
 
-        
+
         _logger.LogDebug("Updating schedule entities");
         foreach (var schedule in schedulesToUpdate)
         {
@@ -413,30 +414,40 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
         }
 
 
-        if ((requestToUpdate.RepeatSlot != dbAvailabilitySchedule.RepeatSlot) ||
-            (requestToUpdate.RepeatDuration != dbAvailabilitySchedule.RepeatDuration))
+        bool repeatChanged = requestToUpdate.RepeatSlot != dbAvailabilitySchedule.RepeatSlot ||
+                             requestToUpdate.RepeatDuration != dbAvailabilitySchedule.RepeatDuration;
+
+        if (repeatChanged && updateAllSlots)
         {
             _logger.LogInformation("Repeat slot or repeat duration changed.");
-            if (requestToUpdate.RepeatDuration < dbAvailabilitySchedule.RepeatDuration)
+
+            if (!dbAvailabilitySchedule.GroupId.HasValue)
             {
-                var index = dbAvailabilitySchedule.RepeatDuration.Value - requestToUpdate.RepeatDuration.Value;
-                _logger.LogDebug("Deleting repeat duration");
-                for (int i = schedulesToUpdate.Count - index; i < schedulesToUpdate.Count; i++)
-                {
-                    _repository.Delete(schedulesToUpdate[i]);
-                    _logger.LogDebug("Deleted schedule Id: {scheduleId}", schedulesToUpdate[i].Id);
-                }
+                dbAvailabilitySchedule.GroupId = (_repository.GetAllSchedules().Max(s => s.GroupId) ?? 0) + 1;
+                _logger.LogDebug("Assigned new GroupId: {groupId}", dbAvailabilitySchedule.GroupId);
             }
 
-            if (requestToUpdate.RepeatDuration > dbAvailabilitySchedule.RepeatDuration)
+
+            var oldGroupSchedules = _repository.GetAllSchedules()
+                .Where(s => s.GroupId == dbAvailabilitySchedule.GroupId && s.Id != dbAvailabilitySchedule.Id)
+                .ToList();
+
+            foreach (var oldSchedule in oldGroupSchedules)
             {
-                var index = requestToUpdate.RepeatDuration.Value - dbAvailabilitySchedule.RepeatDuration.Value;
-                _logger.LogDebug("Increasing repeat duration");
+                _repository.Delete(oldSchedule);
+                _logger.LogDebug("Deleted old schedule Id: {id}", oldSchedule.Id);
+            }
+
+
+            if (requestToUpdate.RepeatSlot != RepeatSlot.None)
+            {
                 
-                var baseSchedule = schedulesToUpdate.First();
-                for (int i = 1; i < index; i++)
+                int totalSchedules = requestToUpdate.RepeatDuration.Value;
+                var baseSchedule = dbAvailabilitySchedule;
+
+                for (int i = 1; i < totalSchedules; i++)
                 {
-                    var newSlots = new List<Interval<DateTimeOffset>>();
+                    var newSlot = new List<Interval<DateTimeOffset>>();
                     foreach (var slot in baseSchedule.AvailableSlots)
                     {
                         var from = slot.From;
@@ -475,75 +486,7 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
                                 break;
                         }
 
-                        newSlots.Add(new Interval<DateTimeOffset>(from, to));
-                    }
-
-                    _repository.Add(new AvailabilityScheduleEntity
-                    {
-                        EmployeeId = baseSchedule.Id,
-                        GroupId = baseSchedule.GroupId,
-                        Description = requestToUpdate.Description,
-                        AvailableSlots = newSlots,
-                        RepeatSlot = requestToUpdate.RepeatSlot,
-                        RepeatDuration = requestToUpdate.RepeatDuration
-                    });
-                    _logger.LogDebug("Added new schedule.");
-
-                }
-            }
-
-            if (requestToUpdate.RepeatSlot != dbAvailabilitySchedule.RepeatSlot)
-            {
-                _logger.LogDebug("Repeat slot changed.");
-                var baseSchedule = schedulesToUpdate.First();
-                for (int i = 1; i < schedulesToUpdate.Count; i++)
-                {
-                    _repository.Delete(schedulesToUpdate[i]);
-                    _logger.LogDebug("Deleted old schedule Id: {id}", schedulesToUpdate[i].Id);
-                }
-
-                for (int i = 1; i < requestToUpdate.RepeatDuration.Value; i++)
-                {
-                    var newSlots = new List<Interval<DateTimeOffset>>();
-                    foreach (var slot in baseSchedule.AvailableSlots)
-                    {
-                        var from = slot.From;
-                        var to = slot.To;
-                        switch (requestToUpdate.RepeatSlot)
-                        {
-                            case RepeatSlot.Daily:
-                                from = from.AddDays(i);
-                                to = to.AddDays(i);
-                                break;
-                            case RepeatSlot.Weekly:
-                                from = from.AddDays(i * 7);
-                                to = to.AddDays(i * 7);
-                                break;
-                            case RepeatSlot.BiWeekly:
-                                from = from.AddDays(i * 14);
-                                to = to.AddDays(i * 14);
-                                break;
-                            case RepeatSlot.TriWeekly:
-                                from = from.AddDays(i * 21);
-                                to = to.AddDays(i * 21);
-                                break;
-                            case RepeatSlot.TwiceAMonth:
-                                from = from.AddDays(i * 15);
-                                to = to.AddDays(i * 15);
-                                break;
-                            case RepeatSlot.ThreeTimesAMonth:
-                                from = from.AddDays(i * 10);
-                                to = to.AddDays(i * 10);
-                                break;
-                            case RepeatSlot.Monthly:
-                                from = from.AddMonths(i);
-                                to = to.AddMonths(i);
-                                break;
-                            case RepeatSlot.None:
-                                break;
-                        }
-
-                        newSlots.Add(new Interval<DateTimeOffset>(from, to));
+                        newSlot.Add(new Interval<DateTimeOffset>(from, to));
                     }
 
                     _repository.Add(new AvailabilityScheduleEntity
@@ -551,20 +494,24 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
                         EmployeeId = baseSchedule.EmployeeId,
                         GroupId = baseSchedule.GroupId,
                         Description = requestToUpdate.Description,
-                        AvailableSlots = newSlots,
+                        AvailableSlots = newSlot,
                         RepeatSlot = requestToUpdate.RepeatSlot,
                         RepeatDuration = requestToUpdate.RepeatDuration
                     });
-                    
-                    _logger.LogDebug("Added new schedule with update repeat type.");
+
+                    _logger.LogDebug("Added new repeated schedule for EmployeeId: {employeeId}",
+                        baseSchedule.EmployeeId);
                 }
             }
-
+            else
+            {
+                dbAvailabilitySchedule.GroupId = null;
+                dbAvailabilitySchedule.RepeatDuration = 1;
+            }
             dbAvailabilitySchedule.RepeatSlot = requestToUpdate.RepeatSlot;
             dbAvailabilitySchedule.RepeatDuration = requestToUpdate.RepeatDuration;
         }
-
-
+        
         _logger.LogDebug("Saving updated schedules to repository");
         _repository.Update(dbAvailabilitySchedule);
         _repository.SaveChanges();
@@ -627,7 +574,7 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
 
         _repository.SaveChanges();
         _logger.LogInformation("Deletion successfully completed for schedule Id {id}", id);
-        
+
         return true;
     }
 }

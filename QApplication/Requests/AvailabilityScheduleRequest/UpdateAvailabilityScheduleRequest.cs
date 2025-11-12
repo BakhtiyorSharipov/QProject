@@ -9,5 +9,4 @@ public class UpdateAvailabilityScheduleRequest
     public RepeatSlot RepeatSlot { get; set; } = RepeatSlot.None;
     public int? RepeatDuration { get; set; }
     public List<Interval<DateTimeOffset>> AvailableSlots { get; set; } = [];
-    public bool UpdateAllSlots { get; set; } 
 }

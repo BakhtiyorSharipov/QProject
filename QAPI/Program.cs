@@ -44,10 +44,12 @@ builder.Services.AddDbContext<QueueDbContext>(
 
 builder.Host.UseSerilog((context, services, configuration) =>
 {
-    configuration.ReadFrom.Configuration(context.Configuration);
-    configuration.ReadFrom.Services(services);
+    configuration.ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services)
+        .Enrich.FromLogContext();
 });
 var app = builder.Build();
+app.UseSerilogRequestLogging();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
