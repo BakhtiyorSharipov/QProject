@@ -1,4 +1,5 @@
 using System.Net;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
 using QApplication.Interfaces;
@@ -32,10 +33,11 @@ public class QueueService : IQueueService
         _logger = logger;
     }
 
-    public IEnumerable<QueueResponseModel> GetAll(int pageList, int pageNumber)
+    public async Task<IEnumerable<QueueResponseModel>> GetAllAsync(int pageList, int pageNumber)
     {
-        _logger.LogInformation("Getting all queues. PageNumber: {pageNumber}, PageList: {pageList}", pageNumber, pageList);
-        var dbQueue = _repository.GetAll(pageList, pageNumber);
+        _logger.LogInformation("Getting all queues. PageNumber: {pageNumber}, PageList: {pageList}", pageNumber,
+            pageList);
+        var dbQueue = await _repository.GetAll(pageList, pageNumber).ToListAsync();
         if (dbQueue == null)
         {
             _logger.LogWarning("No queues found in system");
@@ -56,11 +58,10 @@ public class QueueService : IQueueService
         return response;
     }
 
-
-    public QueueResponseModel GetById(int id)
+    public async Task<QueueResponseModel> GetByIdAsync(int id)
     {
         _logger.LogInformation("Getting queue by Id {id}", id);
-        var dbQueue = _repository.FindById(id);
+        var dbQueue = await _repository.FindByIdAsync(id);
         if (dbQueue == null)
         {
             _logger.LogWarning("Queue with Id {id} not found", id);
@@ -76,13 +77,13 @@ public class QueueService : IQueueService
             StartTime = dbQueue.StartTime,
             Status = dbQueue.Status
         };
-        
+
         _logger.LogInformation("Queue with Id {id} fetched successfully", id);
 
         return response;
     }
 
-    public AddQueueResponseModel Add(QueueRequestModel requestModel)
+    public async Task<AddQueueResponseModel> AddAsync(QueueRequestModel requestModel)
     {
         _logger.LogInformation("Adding new queue for EmployeeId {id}", requestModel.EmployeeId);
         var requestToCreate = requestModel as CreateQueueRequest;
@@ -92,74 +93,79 @@ public class QueueService : IQueueService
             throw new HttpStatusCodeException(HttpStatusCode.BadRequest, nameof(QueueEntity));
         }
 
-        var schedule = _scheduleRepository.GetEmployeeById(requestToCreate.EmployeeId).ToList();
+        var schedule = await _scheduleRepository.GetEmployeeById(requestToCreate.EmployeeId).ToListAsync();
         if (!schedule.Any())
         {
-            _logger.LogWarning("Employee with Id {id} not found in schedule entities for adding new queue", requestToCreate.EmployeeId);
+            _logger.LogWarning("Employee with Id {id} not found in schedule entities for adding new queue",
+                requestToCreate.EmployeeId);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(EmployeeEntity));
         }
 
-        var customer = _customerRepository.FindById(requestToCreate.CustomerId);
+        var customer = await _customerRepository.FindByIdAsync(requestToCreate.CustomerId);
         if (customer == null)
         {
             _logger.LogWarning("Customer with Id {id} not found for adding new queue ", requestToCreate.CustomerId);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(CustomerEntity));
         }
 
-        var service = _serviceRepository.FindById(requestToCreate.ServiceId);
+        var service = await _serviceRepository.FindByIdAsync(requestToCreate.ServiceId);
         if (service == null)
         {
             _logger.LogWarning("Service with Id {id} not found for adding new queue");
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(ServiceEntity));
         }
 
-        _logger.LogDebug("Checking if time slot {startTime} is available for 30- minute booking", requestToCreate.StartTime);
+        _logger.LogDebug("Checking if time slot {startTime} is available for 30- minute booking",
+            requestToCreate.StartTime);
         var slotExists = schedule.Any(s => s.AvailableSlots.Any(slot =>
             requestToCreate.StartTime >= slot.From && requestToCreate.StartTime.AddMinutes(30) <= slot.To
         ));
 
         if (!slotExists)
         {
-            _logger.LogWarning("Time slot {startTime} not available for EmployeeId: {id}", requestToCreate.StartTime, requestToCreate.EmployeeId);
-            throw new Exception("The selected time slot is not available for a 30-minute booking. Please choose a start time that fits within the employee's working hours.");
+            _logger.LogWarning("Time slot {startTime} not available for EmployeeId: {id}", requestToCreate.StartTime,
+                requestToCreate.EmployeeId);
+            throw new Exception(
+                "The selected time slot is not available for a 30-minute booking. Please choose a start time that fits within the employee's working hours.");
         }
 
 
-        
         _logger.LogDebug("Checking for overlapping queues for EmployeeId: {employeeId}", requestToCreate.EmployeeId);
-        var allQueuesByEmployee = GetQueuesByEmployee(requestToCreate.EmployeeId)
-            .Where(q=>q.Status == QueueStatus.Pending || q.Status == QueueStatus.Confirmed );
+        var allQueuesByEmployee = await GetQueuesByEmployeeAsync(requestToCreate.EmployeeId);
+
+        var allQueuesByEmployeeAfterFilter =
+            allQueuesByEmployee.Where(q => q.Status == QueueStatus.Pending || q.Status == QueueStatus.Confirmed);
 
         var newQueueStart = requestToCreate.StartTime;
         var newQueueEnd = newQueueStart.AddMinutes(30);
-        var isDouble = allQueuesByEmployee.Any(s =>
+        var isDouble = allQueuesByEmployeeAfterFilter.Any(s =>
         {
             var existingStart = s.StartTime;
             var existingEnd = s.EndTime;
             return (newQueueStart < existingEnd && newQueueEnd > existingStart) &&
                    (s.Status == QueueStatus.Confirmed || s.Status == QueueStatus.Pending);
-        }); 
-        
-        
+        });
+
+
         if (isDouble)
         {
             _logger.LogWarning("Time slot is already booked for employee Id {id}", requestToCreate.EmployeeId);
             throw new Exception("This slot is already booked!");
         }
 
-        
-        
+
         _logger.LogDebug("Checking if is customer blocked for CompanyId: {id}", service.CompanyId);
-        var blocked = _blockedCustomerRepository.FindById(requestToCreate.CustomerId);
+        var blocked = await _blockedCustomerRepository.FindByIdAsync(requestToCreate.CustomerId);
         if (blocked != null &&
             blocked.DoesBanForever &&
             service.CompanyId == blocked.CompanyId)
         {
-            _logger.LogWarning("Customer {id} is blocked from Company {companyId}", requestToCreate.CustomerId, service.CompanyId);
+            _logger.LogWarning("Customer {id} is blocked from Company {companyId}", requestToCreate.CustomerId,
+                service.CompanyId);
             throw new Exception("You are blocked by this company!");
         }
-        
-     
+
+
         _logger.LogInformation("Creating new queue entity");
         var queue = new QueueEntity()
         {
@@ -170,12 +176,12 @@ public class QueueService : IQueueService
             Status = QueueStatus.Pending
         };
 
-        
-        _repository.Add(queue);
-        _logger.LogDebug("Saving new queue to repository");
-        _repository.SaveChanges();
 
-        
+        await _repository.AddAsync(queue);
+        _logger.LogDebug("Saving new queue to repository");
+        await _repository.SaveChangesAsync();
+
+
         var response = new AddQueueResponseModel()
         {
             Id = queue.Id,
@@ -185,16 +191,15 @@ public class QueueService : IQueueService
             StartTime = queue.StartTime,
             Status = queue.Status
         };
-        
+
         _logger.LogInformation("Successfully added new queue with Id: {id}", queue.Id);
         return response;
     }
 
-
-    public bool Delete(int id)
+    public async Task<bool> DeleteAsync(int id)
     {
         _logger.LogInformation("Deleting queue with Id: {id}", id);
-        var dbQueue = _repository.FindById(id);
+        var dbQueue = await _repository.FindByIdAsync(id);
         if (dbQueue == null)
         {
             _logger.LogWarning("Queue with Id {id} not found for deleting", id);
@@ -202,22 +207,21 @@ public class QueueService : IQueueService
         }
 
         _repository.Delete(dbQueue);
-        _repository.SaveChanges();
+        await _repository.SaveChangesAsync();
         _logger.LogInformation("Queue with Id {id} successfully deleted", id);
         return true;
     }
 
-
-    public QueueResponseModel CancelQueueByCustomer(QueueCancelRequest request)
+    public async Task<QueueResponseModel> CancelQueueByCustomerAsync(QueueCancelRequest request)
     {
         _logger.LogInformation("Cancelling queue Id {id} by customer", request.QueueId);
-        var dbQueue = _repository.FindById(request.QueueId);
+        var dbQueue = await _repository.FindByIdAsync(request.QueueId);
         if (dbQueue == null)
         {
             _logger.LogWarning("Queue with Id {QueueId} not found for customer cancellation", request.QueueId);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
         }
-        
+
         _logger.LogDebug("Current queue status: {Status}", dbQueue.Status);
         if (dbQueue.Status != QueueStatus.Pending && dbQueue.Status != QueueStatus.Confirmed)
         {
@@ -225,7 +229,8 @@ public class QueueService : IQueueService
             throw new HttpStatusCodeException(HttpStatusCode.BadRequest, nameof(QueueEntity));
         }
 
-        _logger.LogDebug("Time until queue start: {minutes} minutes", (dbQueue.StartTime-DateTimeOffset.Now).TotalMinutes);
+        _logger.LogDebug("Time until queue start: {minutes} minutes",
+            (dbQueue.StartTime - DateTimeOffset.Now).TotalMinutes);
         if ((dbQueue.StartTime - DateTime.Now).TotalMinutes < 10)
         {
             _logger.LogWarning("Cancellation is than 10 minutes before start time");
@@ -236,7 +241,7 @@ public class QueueService : IQueueService
         dbQueue.CancelReason = request.CancelReason;
 
         _logger.LogDebug("Saving cancellation changes to repository");
-        _repository.SaveChanges();
+        await _repository.SaveChangesAsync();
 
         var response = new QueueResponseModel
         {
@@ -252,11 +257,11 @@ public class QueueService : IQueueService
         return response;
     }
 
-    public QueueResponseModel CancelQueueByEmployee(QueueCancelRequest request)
+    public async Task<QueueResponseModel> CancelQueueByEmployeeAsync(QueueCancelRequest request)
     {
         _logger.LogInformation("Cancelling queue Id {id} by employee", request.QueueId);
 
-        var dbQueue = _repository.FindById(request.QueueId);
+        var dbQueue = await _repository.FindByIdAsync(request.QueueId);
         if (dbQueue == null)
         {
             _logger.LogWarning("Queue with Id {QueueId} not found for employee cancellation", request.QueueId);
@@ -265,9 +270,9 @@ public class QueueService : IQueueService
 
         dbQueue.Status = QueueStatus.CancelledByEmployee;
         dbQueue.CancelReason = request.CancelReason;
-        
+
         _logger.LogDebug("Saving employee cancellation changes to repository");
-        _repository.SaveChanges();
+        await _repository.SaveChangesAsync();
 
         var response = new QueueResponseModel
         {
@@ -278,29 +283,32 @@ public class QueueService : IQueueService
             StartTime = dbQueue.StartTime,
             Status = dbQueue.Status
         };
-        
+
         _logger.LogInformation("Successfully cancelled queue Id {id} by employee", request.QueueId);
         return response;
     }
 
-    public UpdateQueueStatusResponseModel UpdateQueueStatus(UpdateQueueRequest request)
+    public async Task<UpdateQueueStatusResponseModel> UpdateQueueStatusAsync(UpdateQueueRequest request)
     {
-        _logger.LogInformation("Updating queue status for QueueId: {QueueId} to {NewStatus}", request.QueueId, request.newStatus);
-        var dbQueue = _repository.FindById(request.QueueId);
+        _logger.LogInformation("Updating queue status for QueueId: {QueueId} to {NewStatus}", request.QueueId,
+            request.newStatus);
+        var dbQueue = await _repository.FindByIdAsync(request.QueueId);
         if (dbQueue == null)
         {
             _logger.LogWarning("Queue with Id {QueueId} not found for status update", request.QueueId);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
         }
 
-        _logger.LogDebug("Current queue status: {CurrentStatus}, requested new status: {NewStatus}", dbQueue.Status, request.newStatus);
-        var employeeSchedule = _scheduleRepository.GetEmployeeById(dbQueue.EmployeeId).ToList();
+        _logger.LogDebug("Current queue status: {CurrentStatus}, requested new status: {NewStatus}", dbQueue.Status,
+            request.newStatus);
+        var employeeSchedule = await _scheduleRepository.GetEmployeeById(dbQueue.EmployeeId).ToListAsync();
         if (!employeeSchedule.Any())
         {
-            _logger.LogWarning("Employee with Id {id} not found in schedule entities for adding new queue", dbQueue.EmployeeId);
+            _logger.LogWarning("Employee with Id {id} not found in schedule entities for adding new queue",
+                dbQueue.EmployeeId);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(AvailabilityScheduleEntity));
         }
- 
+
         switch (dbQueue.Status)
         {
             case QueueStatus.Pending:
@@ -339,12 +347,13 @@ public class QueueService : IQueueService
         if (request.newStatus == QueueStatus.DidNotCome)
         {
             _logger.LogDebug("Checking DidNotCome count for CustomerId: {CustomerId}", dbQueue.CustomerId);
-            var count = _repository.GetQueuesByCustomer(dbQueue.CustomerId)
-                .Count(s => s.Status == QueueStatus.DidNotCome);
+            var queuesByCustomer = await _repository.GetQueuesByCustomer(dbQueue.CustomerId).ToListAsync();
 
+            var count = queuesByCustomer.Count(s => s.Status == QueueStatus.DidNotCome);
             if (count >= 3 && !_blockedCustomerRepository.Exists(dbQueue.CustomerId, dbQueue.Service.CompanyId))
             {
-                _logger.LogWarning("CustomerId {id} automatically blocked for CompanyId {companyId}: 3+ DidNotCome", dbQueue.CustomerId, dbQueue.Service.CompanyId);
+                _logger.LogWarning("CustomerId {id} automatically blocked for CompanyId {companyId}: 3+ DidNotCome",
+                    dbQueue.CustomerId, dbQueue.Service.CompanyId);
                 BlockedCustomerEntity blockedCustomer = new BlockedCustomerEntity
                 {
                     CustomerId = dbQueue.CustomerId,
@@ -354,27 +363,27 @@ public class QueueService : IQueueService
                     BannedUntil = DateTime.MaxValue
                 };
 
-                _blockedCustomerRepository.Add(blockedCustomer);
-                _blockedCustomerRepository.SaveChanges();
+                await _blockedCustomerRepository.AddAsync(blockedCustomer);
+                await _blockedCustomerRepository.SaveChangesAsync();
                 throw new Exception("Customer has been automatically blocked due to multiple DidNotCome.");
             }
         }
 
-        
 
-        if (request.newStatus == QueueStatus.Confirmed )
+        if (request.newStatus == QueueStatus.Confirmed)
         {
             DateTimeOffset startTimeUtc = dbQueue.StartTime.ToUniversalTime();
             DateTimeOffset endTimeUtc;
             if (request.EndTime.HasValue)
             {
-                 endTimeUtc = request.EndTime.Value.ToUniversalTime();
-                
-                 _logger.LogDebug("Custom end time: {endTime} (UTC)", endTimeUtc);
-                 
+                endTimeUtc = request.EndTime.Value.ToUniversalTime();
+
+                _logger.LogDebug("Custom end time: {endTime} (UTC)", endTimeUtc);
+
                 if (endTimeUtc <= startTimeUtc)
                 {
-                    _logger.LogError("Invalid end time. Start: {StartTime} (UTC), End: {EndTime} (UTC)", startTimeUtc, endTimeUtc);
+                    _logger.LogError("Invalid end time. Start: {StartTime} (UTC), End: {EndTime} (UTC)", startTimeUtc,
+                        endTimeUtc);
                     throw new Exception($"EndTime must be later than StartTime. " +
                                         $"Start: {startTimeUtc:dd.MM.yyyy HH:mm:ss} (UTC), " +
                                         $"End: {endTimeUtc:dd.MM.yyyy HH:mm:ss} (UTC)");
@@ -385,23 +394,27 @@ public class QueueService : IQueueService
 
                 if (!slotExists)
                 {
-                    _logger.LogWarning("Updated queue time outside employee working hours. Start: {StartTime}, End: {EndTime}", startTimeUtc, endTimeUtc);
+                    _logger.LogWarning(
+                        "Updated queue time outside employee working hours. Start: {StartTime}, End: {EndTime}",
+                        startTimeUtc, endTimeUtc);
                     throw new Exception("The updated queue time is outside the employee's working hours.");
                 }
 
-                var allQueueByEmployee = _repository.GetQueuesByEmployee(dbQueue.EmployeeId)
+                var allQueueByEmployee = await _repository.GetQueuesByEmployee(dbQueue.EmployeeId)
                     .Where(q => q.Status == QueueStatus.Pending || q.Status == QueueStatus.Confirmed)
                     .Where(q => q.Id != dbQueue.Id)
-                    .ToList();
+                    .ToListAsync();
 
-                var isOverlap = allQueueByEmployee.Any(s => startTimeUtc <(s.EndTime.HasValue? s.EndTime.Value: s.StartTime.AddMinutes(30)) && endTimeUtc > s.StartTime);
+                var isOverlap = allQueueByEmployee.Any(s =>
+                    startTimeUtc < (s.EndTime.HasValue ? s.EndTime.Value : s.StartTime.AddMinutes(30)) &&
+                    endTimeUtc > s.StartTime);
 
                 if (isOverlap)
                 {
                     _logger.LogWarning("Time overlap detected for EmployeeId: {EmployeeId}", dbQueue.EmployeeId);
                     throw new Exception("The updated queue time overlaps with another existing queue.");
                 }
-        
+
                 dbQueue.EndTime = endTimeUtc;
                 _logger.LogDebug("Set custom end time: {EndTime} (UTC)", endTimeUtc);
             }
@@ -411,12 +424,11 @@ public class QueueService : IQueueService
                 _logger.LogDebug("Set default end time (30 minutes): {EndTime} (UTC)", dbQueue.EndTime);
             }
         }
-        
-        
-        
+
+
         dbQueue.Status = request.newStatus;
         _logger.LogDebug("Saving status update to repository");
-        _repository.SaveChanges();
+        await _repository.SaveChangesAsync();
 
         var response = new UpdateQueueStatusResponseModel
         {
@@ -429,14 +441,15 @@ public class QueueService : IQueueService
             Status = dbQueue.Status
         };
 
-        _logger.LogInformation("Successfully updated queue {QueueId} status to {NewStatus}", request.QueueId, request.newStatus);
+        _logger.LogInformation("Successfully updated queue {QueueId} status to {NewStatus}", request.QueueId,
+            request.newStatus);
         return response;
     }
 
-    public IEnumerable<QueueResponseModel> GetQueuesByCustomer(int customerId)
+    public async Task<IEnumerable<QueueResponseModel>> GetQueuesByCustomerAsync(int customerId)
     {
         _logger.LogInformation("Getting queues for CustomerId: {CustomerId}", customerId);
-        var dbQueue = _repository.GetQueuesByCustomer(customerId);
+        var dbQueue = await _repository.GetQueuesByCustomer(customerId).ToListAsync();
         if (!dbQueue.Any())
         {
             _logger.LogWarning("No queues found for CustomerId: {CustomerId}", customerId);
@@ -453,14 +466,15 @@ public class QueueService : IQueueService
             Status = queue.Status
         }).ToList();
 
-        _logger.LogInformation("Successfully fetched {QueueCount} queues for CustomerId: {CustomerId}", response.Count, customerId);
+        _logger.LogInformation("Successfully fetched {QueueCount} queues for CustomerId: {CustomerId}", response.Count,
+            customerId);
         return response;
     }
 
-    public IEnumerable<QueueResponseModel> GetQueuesByEmployee(int employeeId)
+    public async Task<IEnumerable<QueueResponseModel>> GetQueuesByEmployeeAsync(int employeeId)
     {
         _logger.LogInformation("Getting queues for EmployeeId: {EmployeeId}", employeeId);
-        var dbQueue = _repository.GetQueuesByEmployee(employeeId);
+        var dbQueue = await _repository.GetQueuesByEmployee(employeeId).ToListAsync();
         if (!dbQueue.Any())
         {
             _logger.LogWarning("No queues found for EmployeeId: {EmployeeId}", employeeId);
@@ -474,18 +488,19 @@ public class QueueService : IQueueService
             EmployeeId = queue.EmployeeId,
             ServiceId = queue.ServiceId,
             StartTime = queue.StartTime,
-            EndTime= queue.EndTime ?? queue.StartTime.AddMinutes(30),
+            EndTime = queue.EndTime ?? queue.StartTime.AddMinutes(30),
             Status = queue.Status
         }).ToList();
 
-        _logger.LogInformation("Successfully fetched {QueueCount} queues for EmployeeId: {EmployeeId}", response.Count, employeeId);
+        _logger.LogInformation("Successfully fetched {QueueCount} queues for EmployeeId: {EmployeeId}", response.Count,
+            employeeId);
         return response;
     }
 
-    public IEnumerable<QueueResponseModel> GetQueuesByService(int serviceId)
+    public async Task<IEnumerable<QueueResponseModel>> GetQueuesByServiceAsync(int serviceId)
     {
         _logger.LogInformation("Getting queues for ServiceId: {ServiceId}", serviceId);
-        var dbQueue = _repository.GetQueuesByService(serviceId);
+        var dbQueue = await _repository.GetQueuesByService(serviceId).ToListAsync();
         if (!dbQueue.Any())
         {
             _logger.LogWarning("No queues found for ServiceId: {ServiceId}", serviceId);
@@ -503,14 +518,15 @@ public class QueueService : IQueueService
             Status = queue.Status
         }).ToList();
 
-        _logger.LogInformation("Successfully fetched {QueueCount} queues for ServiceId: {ServiceId}", response.Count, serviceId);
+        _logger.LogInformation("Successfully fetched {QueueCount} queues for ServiceId: {ServiceId}", response.Count,
+            serviceId);
         return response;
     }
 
-    public IEnumerable<QueueResponseModel> GetQueuesByCompany(int companyId)
+    public async Task<IEnumerable<QueueResponseModel>> GetQueuesByCompanyAsync(int companyId)
     {
         _logger.LogInformation("Getting queues for CompanyId: {CompanyId}", companyId);
-        var dbQueue = _repository.GetQueuesByCompany(companyId);
+        var dbQueue = await _repository.GetQueuesByCompany(companyId).ToListAsync();
         if (!dbQueue.Any())
         {
             _logger.LogWarning("No queues found for CompanyId: {CompanyId}", companyId);
@@ -528,7 +544,8 @@ public class QueueService : IQueueService
             Status = queue.Status
         }).ToList();
 
-        _logger.LogInformation("Successfully fetched {QueueCount} queues for CompanyId: {CompanyId}", response.Count, companyId);
+        _logger.LogInformation("Successfully fetched {QueueCount} queues for CompanyId: {CompanyId}", response.Count,
+            companyId);
         return response;
     }
 }

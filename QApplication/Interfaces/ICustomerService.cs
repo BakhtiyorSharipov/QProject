@@ -7,10 +7,10 @@ namespace QApplication.Interfaces;
 
 public interface ICustomerService
 {
-    IEnumerable<CustomerResponseModel> GetAll(int pageList, int pageNumber);
-    IEnumerable<CustomerResponseModel> GetAllCustomerByCompany(int companyId);
-    CustomerResponseModel GetById(int id);
-    CustomerResponseModel Add(CustomerRequestModel request);
-    CustomerResponseModel Update(int id, CustomerRequestModel request);
-    bool Delete(int id);
+    Task<IEnumerable<CustomerResponseModel>> GetAllAsync(int pageList, int pageNumber);
+    Task<IEnumerable<CustomerResponseModel>> GetAllCustomerByCompanyAsync(int companyId);
+    Task<CustomerResponseModel> GetByIdAsync(int id);
+    Task<CustomerResponseModel> AddAsync(CustomerRequestModel request);
+    Task<CustomerResponseModel> UpdateAsync(int id, CustomerRequestModel request);
+    Task<bool> DeleteAsync(int id);
 }

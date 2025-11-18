@@ -20,11 +20,11 @@ public class AvailabilityScheduleRepository : IAvailabilityScheduleRepository
     {
         return _dbAvailabilitySchedule.Skip((pageNumber - 1) * pageList).Take(pageList);
     }
-
-    public AvailabilityScheduleEntity FindById(int id)
+    
+    public async Task<AvailabilityScheduleEntity> FindByIdAsync(int id)
     {
-        var foundSchedule = _dbAvailabilitySchedule.Find(id);
-        return foundSchedule;
+        var found = await _dbAvailabilitySchedule.FindAsync(id);
+        return found;
     }
 
     public IQueryable<AvailabilityScheduleEntity> GetEmployeeById(int employeeId)
@@ -37,10 +37,10 @@ public class AvailabilityScheduleRepository : IAvailabilityScheduleRepository
     {
         return _dbAvailabilitySchedule;
     }
-
-    public void Add(AvailabilityScheduleEntity entity)
+    
+    public async Task AddAsync(AvailabilityScheduleEntity entity)
     {
-        _dbAvailabilitySchedule.Add(entity);
+        await _dbAvailabilitySchedule.AddAsync(entity);
     }
 
     public void Update(AvailabilityScheduleEntity entity)
@@ -52,9 +52,9 @@ public class AvailabilityScheduleRepository : IAvailabilityScheduleRepository
     {
         _dbAvailabilitySchedule.Remove(entity);
     }
-
-    public int SaveChanges()
+    
+    public async Task<int> SaveChangesAsync()
     {
-        return _context.SaveChanges();
+        return await _context.SaveChangesAsync();
     }
 }

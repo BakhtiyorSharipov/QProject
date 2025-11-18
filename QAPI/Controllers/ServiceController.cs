@@ -19,47 +19,47 @@ public class ServiceController: ControllerBase
     }
 
     [HttpGet]
-    public ActionResult< IEnumerable<ServiceResponseModel>> GetAll(int pageList, int pageNumber)
+    public async Task<ActionResult< IEnumerable<ServiceResponseModel>>> GetAllAsync(int pageList, int pageNumber)
     {
         _logger.LogInformation("Received request to get all services. PageList: {PageList}, PageNumber: {PageNumber}", pageList, pageNumber);
-        var services= _service.GetAll(pageList, pageNumber);
+        var services=await _service.GetAllAsync(pageList, pageNumber);
         _logger.LogInformation("Successfully returned {serviceCount} services.", services.Count());
         return Ok(services);
 
     }
 
     [HttpGet("{id}")]
-    public ActionResult<ServiceResponseModel> GetById([FromRoute] int id)
+    public async Task<ActionResult<ServiceResponseModel>> GetByIdAsync([FromRoute] int id)
     {
         _logger.LogInformation("Received request to get service with Id: {serviceId}", id);
-        var service= _service.GetById(id);
+        var service=await _service.GetByIdAsync(id);
         _logger.LogInformation("Successfully returned service with Id: {serviceId}", id);
         return Ok(service);
     }
 
     [HttpPost]
-    public IActionResult Post([FromBody] CreateServiceRequest request)
+    public async Task<IActionResult> PostAsync([FromBody] CreateServiceRequest request)
     {
         _logger.LogInformation("Received request to create service. ServiceName: {serviceName}", request.ServiceName);
-        var service = _service.Add(request);
+        var service =await _service.AddAsync(request);
         _logger.LogInformation("Successfully created service with Id: {serviceId}", service.Id);
-        return CreatedAtAction(nameof(GetById), new { id = service.Id }, service);
+        return CreatedAtAction(nameof(GetByIdAsync), new { id = service.Id }, service);
     }
 
     [HttpPut("{id}")]
-    public IActionResult Put([FromRoute] int id, [FromBody] UpdateServiceRequest request)
+    public async Task<IActionResult> Put([FromRoute] int id, [FromBody] UpdateServiceRequest request)
     {
         _logger.LogInformation("Received request to update service with Id: {serviceId}", id);
-       var update= _service.Update(id, request);
+       var update=await _service.UpdateAsync(id, request);
        _logger.LogInformation("Successfully updated service with Id: {serviceId}", id);
        return Ok(update);
     }
 
     [HttpDelete("{id}")]
-    public IActionResult Delete([FromRoute] int id)
+    public async Task<IActionResult> Delete([FromRoute] int id)
     {
         _logger.LogInformation("Received request to delete service with Id: {serviceId}", id);
-       var delete= _service.Delete(id);
+       var delete=await _service.DeleteAsync(id);
        _logger.LogInformation("Successfully deleted service with Id: {serviceId}", id);
        return NoContent();
     }

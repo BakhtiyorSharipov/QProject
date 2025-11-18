@@ -21,82 +21,82 @@ public class QueueController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult< IEnumerable<QueueResponseModel>> GetAll(int pageList, int pageNumber)
+    public async Task<ActionResult< IEnumerable<QueueResponseModel>>> GetAllAsync(int pageList, int pageNumber)
     {
         _logger.LogInformation("Received request to get all queues. PageList: {PageList}, PageNumber: {PageNumber}", pageList, pageNumber);
-        var queues= _service.GetAll(pageList, pageNumber);
+        var queues=await _service.GetAllAsync(pageList, pageNumber);
         _logger.LogInformation("Successfully returned {queueCount} queues.", queues.Count());
         return Ok(queues);
     }
 
     [HttpGet("{id}")]
-    public ActionResult< QueueResponseModel> GetById([FromRoute] int id)
+    public async Task<ActionResult< QueueResponseModel>> GetByIdAsync([FromRoute] int id)
     {
         _logger.LogInformation("Received request to get queue by Id: {queueId}", id);
-        var queue= _service.GetById(id);
+        var queue=await _service.GetByIdAsync(id);
         _logger.LogInformation("Successfully returned queue with Id: {queueId}", id);
         return Ok(queue);
     }
 
     [HttpPost("book")]
-    public IActionResult Post([FromBody] CreateQueueRequest request)
+    public async Task<IActionResult> PostAsync([FromBody] CreateQueueRequest request)
     {
         _logger.LogInformation("Received request to create queue.");
-        var queue = _service.Add(request);
+        var queue =await _service.AddAsync(request);
         _logger.LogInformation("Successfully created queue with Id: {queueId}", queue.Id);
-        return Created(nameof(GetById), queue);
+        return Created(nameof(GetByIdAsync), queue);
     }
     
     [HttpDelete("{id}")]
-    public IActionResult Delete([FromRoute] int id)
+    public async Task<IActionResult> DeleteAsync([FromRoute] int id)
     {
         _logger.LogInformation("Received request to delete queue with Id: {queueId}", id);
-        var delete = _service.Delete(id);
+        var delete =await _service.DeleteAsync(id);
         _logger.LogInformation("Successfully deleted queue with Id: {queueId}", id);
         return NoContent();
     }
 
     [HttpPut("cancel/customer")]
-    public IActionResult CancelQueueByCustomer([FromBody] QueueCancelRequest request)
+    public async Task<IActionResult> CancelQueueByCustomerAsync([FromBody] QueueCancelRequest request)
     {
         _logger.LogInformation("Received request to cancel queue with Id {queueId} by customer.", request.QueueId );
-        var cancel = _service.CancelQueueByCustomer(request);
+        var cancel =await _service.CancelQueueByCustomerAsync(request);
         _logger.LogInformation("Successfully canceled queue with Id: {queueId} by customer.");
         return Ok(cancel);
     }
 
     [HttpPut("cancel/employee")]
-    public IActionResult CancelQueueByEmployee([FromBody] QueueCancelRequest request)
+    public async Task<IActionResult> CancelQueueByEmployeeAsync([FromBody] QueueCancelRequest request)
     {
         _logger.LogInformation("Received request to cancel queue with Id {queueId} by employee.", request.QueueId);
-        var cancel = _service.CancelQueueByEmployee(request);
+        var cancel =await _service.CancelQueueByEmployeeAsync(request);
         _logger.LogInformation("Successfully canceled queue with Id {queueId} by employee.", request.QueueId);
         return Ok(cancel);
     }
 
     [HttpPut("status/update")]
-    public ActionResult<QueueResponseModel> UpdateStatus([FromBody] UpdateQueueRequest request)
+    public async Task<ActionResult<QueueResponseModel>> UpdateStatusAsync([FromBody] UpdateQueueRequest request)
     {
         _logger.LogInformation("Received request to update queue status {newStatus} with Id: {queueId}",request.newStatus, request.QueueId);
-        var result = _service.UpdateQueueStatus(request);
+        var result =await _service.UpdateQueueStatusAsync(request);
         _logger.LogInformation("Successfully updated queue status with Id: {queueId}", request.QueueId);
         return Ok(result);
     }
 
     [HttpGet("history/customer/{customerId}")]
-    public IEnumerable<QueueResponseModel> GetQueuesByCustomer([FromRoute] int customerId)
+    public async Task<IEnumerable<QueueResponseModel>> GetQueuesByCustomerAsync([FromRoute] int customerId)
     {
         _logger.LogInformation("Received request to get customer queue history with Id: {customerId}", customerId);
-        var queue = _service.GetQueuesByCustomer(customerId);
+        var queue =await _service.GetQueuesByCustomerAsync(customerId);
         _logger.LogInformation("Successfully returned {queueCount} queues.");
         return queue;
     }
 
     [HttpGet("history/employee/{employeeId}")]
-    public IEnumerable<QueueResponseModel> GetQueuesByEmployee([FromRoute] int employeeId)
+    public async Task<IEnumerable<QueueResponseModel>> GetQueuesByEmployeeAsync([FromRoute] int employeeId)
     {
         _logger.LogInformation("Received request to get employee queue history with Id: {employeeId}", employeeId);
-        var queue = _service.GetQueuesByEmployee(employeeId);
+        var queue =await _service.GetQueuesByEmployeeAsync(employeeId);
         _logger.LogInformation("Successfully returned {queueCount} queues.", employeeId );
         return queue;
     }

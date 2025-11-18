@@ -5,12 +5,11 @@ namespace QApplication.Interfaces;
 
 public interface IReportService
 {
-    CompanyReportItemResponseModel GetCompanyReport(CompanyReportRequest request);
-    EmployeeReportResponseModel GetEmployeeReport(EmployeeReportRequest request);
-    QueueReportResponseModel GetQueueReport(QueueReportRequest request);
-    ComplaintReportResponseModel GetComplaintReport(ComplaintReportRequest request);
-    ReviewReportResponseModel GetReviewReport( ReviewReportRequest request);
-    ServiceReportResponseModel GetServiceReport(ServiceReportRequest request);
-    
+    Task<CompanyReportItemResponseModel> GetCompanyReportAsync(CompanyReportRequest request);
+    Task<EmployeeReportResponseModel> GetEmployeeReportAsync(EmployeeReportRequest request);
+    Task<QueueReportResponseModel> GetQueueReportAsync(QueueReportRequest request);
+    Task<ComplaintReportResponseModel> GetComplaintReportAsync(ComplaintReportRequest request);
+    Task<ReviewReportResponseModel> GetReviewReportAsync(ReviewReportRequest request);
+    Task<ServiceReportResponseModel> GetServiceReportAsync(ServiceReportRequest request);
     
 }

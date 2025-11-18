@@ -5,11 +5,11 @@ namespace QApplication.Interfaces.Repository;
 public interface IQueueRepository
 {
     IQueryable<QueueEntity> GetAll(int pageList, int pageNumber);
-    QueueEntity FindById(int id);
-    void Add(QueueEntity entity);
+    Task<QueueEntity> FindByIdAsync(int id);
+    Task AddAsync(QueueEntity entity);
     void Update(QueueEntity entity);
     void Delete(QueueEntity entity);
-    int SaveChanges();
+    Task<int> SaveChangesAsync();
 
     IQueryable<QueueEntity> GetQueuesByCustomer(int customerId);
     IQueryable<QueueEntity> GetQueuesByEmployee(int employeeId);

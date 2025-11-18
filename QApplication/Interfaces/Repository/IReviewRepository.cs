@@ -8,7 +8,7 @@ public interface IReviewRepository
     IQueryable<ReviewEntity> GetAllReviewsByQueue(int queueId);
     IQueryable<ReviewEntity> GetAllReviewsByCompany(int companyId);
     IQueryable<ReviewEntity> GetAllReviewsForReport();
-    ReviewEntity FindById(int id);
-    void Add(ReviewEntity entity);
-    int SaveChanges();
+    Task<ReviewEntity> FindByIdAsync(int id);
+    Task AddAsync(ReviewEntity entity);
+    Task<int> SaveChangesAsync();
 }

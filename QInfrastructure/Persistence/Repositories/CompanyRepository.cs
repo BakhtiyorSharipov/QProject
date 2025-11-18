@@ -21,6 +21,8 @@ public class CompanyRepository : ICompanyRepository
         return _dbCompany.Skip((pageNumber - 1) * pageList).Take(pageList);
     }
 
+   
+
     public IQueryable<CompanyEntity> GetAllCompanies()
     {
         return _dbCompany
@@ -32,29 +34,34 @@ public class CompanyRepository : ICompanyRepository
                 .ThenInclude(s => s.Customer.Complaints);
     }
 
-    public CompanyEntity FindById(int id)
+    public async Task<CompanyEntity> FindByIdAsync(int id)
     {
-        var found = _dbCompany.Find(id);
+        var found = await _dbCompany.FindAsync(id);
         return found;
     }
 
-    public void Add(CompanyEntity entity)
+   
+
+    public async Task AddAsync(CompanyEntity entity)
     {
-        _dbCompany.Add(entity);
+       await _dbCompany.AddAsync(entity);
     }
 
     public void Update(CompanyEntity entity)
     {
         _dbCompany.Update(entity);
     }
+    
 
     public void Delete(CompanyEntity entity)
     {
         _dbCompany.Remove(entity);
     }
+    
+    
 
-    public int SaveChanges()
+    public async Task<int> SaveChangesAsync()
     {
-        return _context.SaveChanges();
+        return await _context.SaveChangesAsync();
     }
 }

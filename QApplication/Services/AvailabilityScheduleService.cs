@@ -1,4 +1,5 @@
 using System.Net;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
 using QApplication.Interfaces;
@@ -24,11 +25,11 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
         _logger = logger;
     }
 
-    public IEnumerable<AvailabilityScheduleResponseModel> GetAll(int pageList, int pageNumber)
+    public async Task<IEnumerable<AvailabilityScheduleResponseModel>> GetAllAsync(int pageList, int pageNumber)
     {
         _logger.LogInformation("Getting all schedules: PageNumber: {pageNumber}, PageList: {pageList}", pageNumber,
             pageList);
-        var dbAvailabilitySchedule = _repository.GetAll(pageList, pageNumber);
+        var dbAvailabilitySchedule = await _repository.GetAll(pageList, pageNumber).ToListAsync();
 
         var response = dbAvailabilitySchedule.Select(schedule => new AvailabilityScheduleResponseModel
         {
@@ -46,10 +47,10 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
         return response;
     }
 
-    public AvailabilityScheduleResponseModel GetById(int id)
+    public async Task<AvailabilityScheduleResponseModel> GetByIdAsync(int id)
     {
         _logger.LogInformation("Getting schedule with Id {id}", id);
-        var dbAvailabilitySchedule = _repository.FindById(id);
+        var dbAvailabilitySchedule = await _repository.FindByIdAsync(id);
         if (dbAvailabilitySchedule == null)
         {
             _logger.LogWarning("Schedule with Id {id} not found", id);
@@ -73,7 +74,7 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
         return response;
     }
 
-    public IEnumerable<AvailabilityScheduleResponseModel> Add(AvailabilityScheduleRequestModel request)
+    public async Task<IEnumerable<AvailabilityScheduleResponseModel>> AddAsync(AvailabilityScheduleRequestModel request)
     {
         _logger.LogInformation("Adding new schedule for EmployeeId {id}", request.EmployeeId);
         var requestToCreate = request as CreateAvailabilityScheduleRequest;
@@ -83,7 +84,7 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
             throw new HttpStatusCodeException(HttpStatusCode.BadRequest, nameof(AvailabilityScheduleEntity));
         }
 
-        var employee = _employeeRepository.FindById(request.EmployeeId);
+        var employee = await _employeeRepository.FindByIdAsync(request.EmployeeId);
         if (employee == null)
         {
             _logger.LogWarning("Employee with Id {id} not found", request.EmployeeId);
@@ -150,7 +151,7 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
         }
         else
         {
-            _logger.LogDebug("Assigned GoupId: {groupId}", nextGroupId);
+            _logger.LogDebug("Assigned GroupId: {groupId}", nextGroupId);
         }
 
         var scheduleInterval = new List<Interval<DateTimeOffset>>();
@@ -202,7 +203,7 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
 
 
         _logger.LogDebug("Checking for schedule overlap for EmployeeId: {id}", requestToCreate.EmployeeId);
-        var schedulesByEmployee = _repository.GetEmployeeById(requestToCreate.EmployeeId).ToList();
+        var schedulesByEmployee = await _repository.GetEmployeeById(requestToCreate.EmployeeId).ToListAsync();
         foreach (var schedule in schedulesByEmployee)
         {
             foreach (var slot in schedule.AvailableSlots)
@@ -261,10 +262,10 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
 
         foreach (var schedule in schedules)
         {
-            _repository.Add(schedule);
+            await _repository.AddAsync(schedule);
         }
 
-        _repository.SaveChanges();
+        await _repository.SaveChangesAsync();
         _logger.LogDebug("Schedules saved to repository.");
 
         var responses = schedules.Select(slot => new AvailabilityScheduleResponseModel
@@ -283,18 +284,19 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
         return responses;
     }
 
-    public AvailabilityScheduleResponseModel Update(int id, UpdateAvailabilityScheduleRequest requestToUpdate, bool updateAllSlots)
+    public async Task<AvailabilityScheduleResponseModel> UpdateAsync(int id,
+        UpdateAvailabilityScheduleRequest requestToUpdate, bool updateAllSlots)
     {
         _logger.LogInformation("Updating schedule with Id: {id}", id);
 
-        var dbAvailabilitySchedule = _repository.FindById(id);
+        var dbAvailabilitySchedule = await _repository.FindByIdAsync(id);
         if (dbAvailabilitySchedule == null)
         {
             _logger.LogWarning("Schedule with Id {ScheduleId} not found for update", id);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(AvailabilityScheduleEntity));
         }
 
-        var employee = _employeeRepository.FindById(dbAvailabilitySchedule.EmployeeId);
+        var employee = await _employeeRepository.FindByIdAsync(dbAvailabilitySchedule.EmployeeId);
         if (employee == null)
         {
             _logger.LogWarning("Employee with Id {EmployeeId} not found for schedule update",
@@ -317,7 +319,6 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
                 _logger.LogError("Invalid slot time. 'From' and 'To' cannot be the same time.");
                 throw new Exception("'From' must be earlier than 'To'");
             }
-
 
             DateTimeOffset newTo = slot.To < slot.From ? slot.To.AddDays(1) : slot.To;
             crossDay.Add(new Interval<DateTimeOffset>(slot.From, newTo));
@@ -342,9 +343,9 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
         if (dbAvailabilitySchedule.GroupId.HasValue && updateAllSlots)
         {
             _logger.LogDebug("Updating all slots in group {id}", dbAvailabilitySchedule.GroupId);
-            schedulesToUpdate = _repository.GetAllSchedules()
+            schedulesToUpdate = await _repository.GetAllSchedules()
                 .Where(s => s.GroupId == dbAvailabilitySchedule.GroupId)
-                .ToList();
+                .ToListAsync();
 
             if (!schedulesToUpdate.Any())
             {
@@ -363,24 +364,25 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
         {
             if (updateAllSlots)
             {
-                schedulesByEmployee = _repository.GetEmployeeById(employee.Id)
-                    .Where(s => !schedulesToUpdate.Contains(s)).ToList();
-                _logger.LogDebug("Checking overlap against schedules outside GroupId {groupId}", dbAvailabilitySchedule.GroupId);
+                schedulesByEmployee = await _repository.GetEmployeeById(employee.Id)
+                    .Where(s => !schedulesToUpdate.Contains(s)).ToListAsync();
+                _logger.LogDebug("Checking overlap against schedules outside GroupId {groupId}",
+                    dbAvailabilitySchedule.GroupId);
             }
             else
             {
-                schedulesByEmployee = _repository.GetAllSchedules()
+                schedulesByEmployee = await _repository.GetAllSchedules()
                     .Where(s => s.EmployeeId == employee.Id &&
-                                (!s.GroupId.HasValue || s.GroupId != dbAvailabilitySchedule.GroupId)).ToList();
+                                (!s.GroupId.HasValue || s.GroupId != dbAvailabilitySchedule.GroupId)).ToListAsync();
                 _logger.LogDebug("Checking overlap only outside group because UpdateAllSlots = false");
             }
         }
         else
         {
-            schedulesByEmployee = _repository.GetAllSchedules()
-                .Where(s => s.EmployeeId == employee.Id && s.Id != dbAvailabilitySchedule.Id).ToList();
+            schedulesByEmployee = await _repository.GetAllSchedules()
+                .Where(s => s.EmployeeId == employee.Id && s.Id != dbAvailabilitySchedule.Id).ToListAsync();
         }
-        
+
 
         _logger.LogDebug("Checking for schedule overlap.");
         foreach (var schedule in schedulesByEmployee)
@@ -428,9 +430,9 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
             }
 
 
-            var oldGroupSchedules = _repository.GetAllSchedules()
+            var oldGroupSchedules = await _repository.GetAllSchedules()
                 .Where(s => s.GroupId == dbAvailabilitySchedule.GroupId && s.Id != dbAvailabilitySchedule.Id)
-                .ToList();
+                .ToListAsync();
 
             foreach (var oldSchedule in oldGroupSchedules)
             {
@@ -441,7 +443,6 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
 
             if (requestToUpdate.RepeatSlot != RepeatSlot.None)
             {
-                
                 int totalSchedules = requestToUpdate.RepeatDuration.Value;
                 var baseSchedule = dbAvailabilitySchedule;
 
@@ -489,7 +490,7 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
                         newSlot.Add(new Interval<DateTimeOffset>(from, to));
                     }
 
-                    _repository.Add(new AvailabilityScheduleEntity
+                    await _repository.AddAsync(new AvailabilityScheduleEntity
                     {
                         EmployeeId = baseSchedule.EmployeeId,
                         GroupId = baseSchedule.GroupId,
@@ -508,13 +509,14 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
                 dbAvailabilitySchedule.GroupId = null;
                 dbAvailabilitySchedule.RepeatDuration = 1;
             }
+
             dbAvailabilitySchedule.RepeatSlot = requestToUpdate.RepeatSlot;
             dbAvailabilitySchedule.RepeatDuration = requestToUpdate.RepeatDuration;
         }
-        
+
         _logger.LogDebug("Saving updated schedules to repository");
         _repository.Update(dbAvailabilitySchedule);
-        _repository.SaveChanges();
+        await _repository.SaveChangesAsync();
 
         var response = new AvailabilityScheduleResponseModel()
         {
@@ -532,10 +534,10 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
         return response;
     }
 
-    public bool Delete(int id, bool deleteAllSlots)
+    public async Task<bool> DeleteAsync(int id, bool deleteAllSlots)
     {
         _logger.LogInformation("Deleting schedule with Id: {id}, DeleteAllSlots: {delete}", id, deleteAllSlots);
-        var dbAvailabilitySchedule = _repository.FindById(id);
+        var dbAvailabilitySchedule = await _repository.FindByIdAsync(id);
         if (dbAvailabilitySchedule == null)
         {
             _logger.LogWarning("Schedule with Id {id} not found for deleting", id);
@@ -551,8 +553,8 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
                 throw new Exception("This schedule is not part of a group, nothing to delete in group.");
             }
 
-            var scheduleToDelete = _repository.GetAllSchedules()
-                .Where(s => s.GroupId == dbAvailabilitySchedule.GroupId).ToList();
+            var scheduleToDelete = await _repository.GetAllSchedules()
+                .Where(s => s.GroupId == dbAvailabilitySchedule.GroupId).ToListAsync();
 
             if (!scheduleToDelete.Any())
             {
@@ -572,7 +574,7 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
             _logger.LogDebug("Deleted single schedule with Id: {schduleId}", id);
         }
 
-        _repository.SaveChanges();
+        await _repository.SaveChangesAsync();
         _logger.LogInformation("Deletion successfully completed for schedule Id {id}", id);
 
         return true;

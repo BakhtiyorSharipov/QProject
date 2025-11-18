@@ -7,9 +7,9 @@ namespace QApplication.Interfaces;
 
 public interface IReviewService
 {
-    IEnumerable<ReviewResponseModel> GetAll(int pageList, int pageNumber);
-    IEnumerable<ReviewResponseModel> GetAllReviewsByQueue(int queueId);
-    IEnumerable<ReviewResponseModel> GetAllReviewsByCompany(int companyId);
-    ReviewResponseModel GetById(int id);
-    ReviewResponseModel Add(ReviewRequestModel request);
+    Task<IEnumerable<ReviewResponseModel>> GetAllAsync(int pageList, int pageNumber);
+    Task<IEnumerable<ReviewResponseModel>> GetAllReviewsByQueueAsync(int queueId);
+    Task<IEnumerable<ReviewResponseModel>> GetAllReviewsByCompanyAsync(int companyId);
+    Task<ReviewResponseModel> GetByIdAsync(int id);
+    Task<ReviewResponseModel> AddAsync(ReviewRequestModel request);
 }

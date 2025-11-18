@@ -19,39 +19,39 @@ public class BlockedCustomerController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<IEnumerable<BlockedCustomerResponseModel>> GetAll(int pageList, int pageNumber)
+    public async Task<ActionResult<IEnumerable<BlockedCustomerResponseModel>>> GetAllAsync(int pageList, int pageNumber)
     {
         _logger.LogInformation("Received request to get all schedules. PageList: {PageList}, PageNumber: {PageNumber}",
             pageList, pageNumber);
-        var blockedCustomers = _service.GetAll(pageList, pageNumber);
+        var blockedCustomers = await _service.GetAllAsync(pageList, pageNumber);
         _logger.LogInformation("Successfully returned {blockedCustomers} blocked customers.", blockedCustomers.Count());
         return Ok(blockedCustomers);
     }
 
     [HttpGet("{id}")]
-    public ActionResult<BlockedCustomerResponseModel> GetById([FromRoute] int id)
+    public async Task<ActionResult<BlockedCustomerResponseModel>> GetById([FromRoute] int id)
     {
         _logger.LogInformation("Received request to get blocked customer by Id: {blockedCustomer}", id);
-        var blocked=_service.GetById(id);
+        var blocked=await _service.GetByIdAsync(id);
         _logger.LogInformation("Successfully returned blocked customers with Id: {blockedCustomer}", id);
         return Ok(blocked);
     }
 
     [HttpPost("block")]
-    public IActionResult Block([FromBody] CreateBlockedCustomerRequest request)
+    public async Task<IActionResult> Block([FromBody] CreateBlockedCustomerRequest request)
     {
         _logger.LogInformation("Received request to block customer with Id: {customerId}", request.CustomerId);
-        var blocked = _service.Block(request);
+        var blocked =await _service.BlockAsync(request);
         _logger.LogInformation("Successfully blocked customer with Id: {customerId}", request.CustomerId);
         return CreatedAtAction(nameof(GetById), new { id = blocked.Id }, blocked);
     }
 
 
     [HttpDelete("{id}/unblock")]
-    public IActionResult Unblock([FromRoute] int id)
+    public async Task<IActionResult> Unblock([FromRoute] int id)
     {
         _logger.LogInformation("Received request to unblock customer with Id: {customerId}", id);
-        var delete = _service.Unblock(id);
+        var delete =await _service.UnblockAsync(id);
         _logger.LogInformation("Successfully unblocked customer with Id: {customerId}", id);
         return Ok(delete);
     }

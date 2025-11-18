@@ -27,17 +27,18 @@ public class BlockedCustomerRepository : IBlockedCustomerRepository
         return found;
     }
 
-    public BlockedCustomerEntity FindById(int id)
+    public async Task<BlockedCustomerEntity> FindByIdAsync(int id)
     {
-        var foundEntity = _dbBlockedCustomer.Find(id);
-        return foundEntity;
-    }
-
-    public void Add(BlockedCustomerEntity entity)
-    {
-        _dbBlockedCustomer.Add(entity);
+        var found = await _dbBlockedCustomer.FindAsync(id);
+        return found;
     }
     
+
+    public async Task AddAsync(BlockedCustomerEntity entity)
+    {
+        await _dbBlockedCustomer.AddAsync(entity);
+    }
+
 
     public void Delete(BlockedCustomerEntity entity)
     {
@@ -56,9 +57,10 @@ public class BlockedCustomerRepository : IBlockedCustomerRepository
 
         return false;
     }
+    
 
-    public int SaveChanges()
+    public async Task<int> SaveChangesAsync()
     {
-        return _context.SaveChanges();
+        return await _context.SaveChangesAsync();
     }
 }

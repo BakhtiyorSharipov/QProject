@@ -33,15 +33,15 @@ public class ServiceRepository:IServiceRepository
         return _dbService.Where(s => s.CompanyId == companyId);
     }
 
-    public ServiceEntity FindById(int id)
+    public async Task<ServiceEntity> FindByIdAsync(int id)
     {
-        var found = _dbService.Find(id);
+        var found = await _dbService.FindAsync(id);
         return found;
     }
 
-    public void Add(ServiceEntity entity)
+    public async Task AddAsync(ServiceEntity entity)
     {
-        _dbService.Add(entity);
+        await _dbService.AddAsync(entity);
     }
 
     public void Update(ServiceEntity entity)
@@ -54,8 +54,9 @@ public class ServiceRepository:IServiceRepository
         _dbService.Remove(entity);
     }
 
-    public int SaveChanges()
+
+    public async Task<int> SaveChangesAsync()
     {
-        return _context.SaveChanges();
+        return await _context.SaveChangesAsync();
     }
 }

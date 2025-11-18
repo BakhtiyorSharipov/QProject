@@ -6,10 +6,12 @@ namespace QApplication.Interfaces;
 
 public interface ICompanyService
 {
-    IEnumerable<CompanyResponseModel> GetAll(int pageList, int pageNumber);
-    IEnumerable<CompanyResponseModel> GetAllCompanies();
-    CompanyResponseModel GetById(int id);
-    CompanyResponseModel Add(CompanyRequestModel request);
-    CompanyResponseModel Update(int id, CompanyRequestModel request);
-    bool Delete(int id);
+    Task<IEnumerable<CompanyResponseModel>> GetAllAsync(int pageList, int pageNumber);
+
+    Task<IEnumerable<CompanyResponseModel>> GetAllCompaniesAsync();
+    Task<CompanyResponseModel> GetByIdAsync(int id);
+    Task<CompanyResponseModel> AddAsync(CompanyRequestModel request);
+    Task<CompanyResponseModel> UpdateAsync(int id, CompanyRequestModel requestModel);
+
+    Task<bool> DeleteAsync(int id);
 }

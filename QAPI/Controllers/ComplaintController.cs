@@ -20,37 +20,37 @@ public class ComplaintController: ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<IEnumerable<ComplaintResponseModel>> GetAllComplaints(int pageList, int pageNumber)
+    public async Task<ActionResult<IEnumerable<ComplaintResponseModel>>> GetAllComplaintsAsync(int pageList, int pageNumber)
     {
         _logger.LogInformation("Received request to get all complaints. PageList: {PageList}, PageNumber: {PageNumber}", pageList, pageNumber);
-        var complaints= _complaintService.GetAllComplaints(pageList, pageNumber);
+        var complaints= await _complaintService.GetAllComplaintsAsync(pageList, pageNumber);
         _logger.LogInformation("Successfully returned {complaintsCount} complaints.", complaints.Count());
         return Ok(complaints);
     }
 
     [HttpGet("{id}")]
-    public ActionResult<ComplaintResponseModel> GetComplaintById([FromRoute]int id)
+    public async Task<ActionResult<ComplaintResponseModel>> GetComplaintByIdAsync([FromRoute]int id)
     {
         _logger.LogInformation("Received request to get complaint with Id: {complaintId}", id);
-        var complaint= _complaintService.GetComplaintById(id);
+        var complaint=await _complaintService.GetComplaintByIdAsync(id);
         _logger.LogInformation("Successfully returned complaint with Id: {complaintId}", id);
         return Ok(complaint);
     }
 
     [HttpPost]
-    public IActionResult AddComplaint([FromBody]CreateComplaintRequest request)
+    public async Task<IActionResult> AddComplaintAsync([FromBody]CreateComplaintRequest request)
     {
         _logger.LogInformation("Received request to create complaint to queueId: {id}", request.QueueId);
-        var complaint=  _complaintService.AddComplaint(request);
+        var complaint= await _complaintService.AddComplaintAsync(request);
         _logger.LogInformation("Successfully created complaint with Id: {complaintId}", complaint.Id);
-        return Created(nameof(GetComplaintById), complaint);
+        return Created(nameof(GetComplaintByIdAsync), complaint);
     }
 
     [HttpPut("{id}")]
-    public IActionResult UpdateComplaintStatus([FromRoute] int id, [FromBody] UpdateComplaintStatusRequest request)
+    public async Task<IActionResult> UpdateComplaintStatusAsync([FromRoute] int id, [FromBody] UpdateComplaintStatusRequest request)
     {
         _logger.LogInformation("Received complaint to update with Id: {complaintId}", id);
-        var complaint = _complaintService.UpdateComplaintStatus(id, request);
+        var complaint = await _complaintService.UpdateComplaintStatusAsync(id, request);
         _logger.LogInformation("Successfully updated complaint with Id: {complaintId}", id);
         return Ok(complaint);
     }

@@ -1,4 +1,5 @@
 using System.Net;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
 using QApplication.Interfaces;
@@ -16,8 +17,8 @@ public class BlockedCustomerService : IBlockedCustomerService
     private readonly ICompanyRepository _companyRepository;
     private readonly ILogger<BlockedCustomerService> _logger;
 
-    public BlockedCustomerService(IBlockedCustomerRepository repository,ICustomerRepository customerRepository , 
-            ICompanyRepository companyRepository, ILogger<BlockedCustomerService> logger)
+    public BlockedCustomerService(IBlockedCustomerRepository repository, ICustomerRepository customerRepository,
+        ICompanyRepository companyRepository, ILogger<BlockedCustomerService> logger)
     {
         _repository = repository;
         _customerRepository = customerRepository;
@@ -25,10 +26,11 @@ public class BlockedCustomerService : IBlockedCustomerService
         _logger = logger;
     }
 
-    public IEnumerable<BlockedCustomerResponseModel> GetAll(int pageList, int pageNumber)
+    public async Task<IEnumerable<BlockedCustomerResponseModel>> GetAllAsync(int pageList, int pageNumber)
     {
-        _logger.LogInformation("Getting blocked customers. PageNumber {pageNumber}, PageList {pageList}", pageNumber, pageList);
-        var dbBlockedCustomer = _repository.GetAll(pageList, pageNumber);
+        _logger.LogInformation("Getting blocked customers. PageNumber {pageNumber}, PageList {pageList}", pageNumber,
+            pageList);
+        var dbBlockedCustomer = await _repository.GetAll(pageList, pageNumber).ToListAsync();
         var response = dbBlockedCustomer.Select(blocked => new BlockedCustomerResponseModel()
         {
             Id = blocked.Id,
@@ -43,10 +45,10 @@ public class BlockedCustomerService : IBlockedCustomerService
         return response;
     }
 
-    public IEnumerable<BlockedCustomerResponseModel> GetAllBlockedCustomersByCompany(int companyId)
+    public async Task<IEnumerable<BlockedCustomerResponseModel>> GetAllBlockedCustomersByCompanyAsync(int companyId)
     {
         _logger.LogInformation("Getting all blocked customers by company Id {companyId}", companyId);
-        var dbBlockedCustomer = _repository.GetAllBlockedCustomersByCompany(companyId);
+        var dbBlockedCustomer = await _repository.GetAllBlockedCustomersByCompany(companyId).ToListAsync();
         if (!dbBlockedCustomer.Any())
         {
             _logger.LogWarning("No blocked customer found for this company Id {companyId}.", companyId);
@@ -63,15 +65,16 @@ public class BlockedCustomerService : IBlockedCustomerService
             Reason = blocked.Reason
         }).ToList();
 
-        _logger.LogInformation("Fetched {response.Count} blocked customers for this company Id {companyId}.", response.Count, companyId);
+        _logger.LogInformation("Fetched {response.Count} blocked customers for this company Id {companyId}.",
+            response.Count, companyId);
         return response;
     }
 
 
-    public BlockedCustomerResponseModel GetById(int id)
+    public async Task<BlockedCustomerResponseModel> GetByIdAsync(int id)
     {
         _logger.LogInformation("Getting blocked customer by Id {id}", id);
-        var dbBlockedCustomer = _repository.FindById(id);
+        var dbBlockedCustomer = await _repository.FindByIdAsync(id);
         if (dbBlockedCustomer == null)
         {
             _logger.LogInformation("Blocked customer with Id {id} not found.", id);
@@ -92,24 +95,24 @@ public class BlockedCustomerService : IBlockedCustomerService
         return response;
     }
 
-    public BlockedCustomerResponseModel Block(BlockedCustomerRequestModel request)
+    public async Task<BlockedCustomerResponseModel> BlockAsync(BlockedCustomerRequestModel request)
     {
         _logger.LogInformation("Blocking customer with Id {request.CustomerId}.", request.CustomerId);
 
-        var customer = _customerRepository.FindById(request.CustomerId);
-        if (customer== null)
+        var customer = await _customerRepository.FindByIdAsync(request.CustomerId);
+        if (customer == null)
         {
             _logger.LogWarning("Customer with Id {request.CustomerId} not found.", request.CustomerId);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(CustomerEntity));
         }
 
-        var company = _companyRepository.FindById(request.CompanyId);
-        if (company==null)
+        var company = await _companyRepository.FindByIdAsync(request.CompanyId);
+        if (company == null)
         {
             _logger.LogWarning("Company with Id {request.CompanyId} not found.", request.CompanyId);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(CompanyEntity));
         }
-        
+
         var requestToCreate = request as CreateBlockedCustomerRequest;
         if (requestToCreate == null)
         {
@@ -127,11 +130,11 @@ public class BlockedCustomerService : IBlockedCustomerService
         };
 
 
-        _repository.Add(blockedCustomer);
-        _repository.SaveChanges();
-        
+        await _repository.AddAsync(blockedCustomer);
+        await _repository.SaveChangesAsync();
+
         _logger.LogInformation("Customer with Id {request.CustomerId} blocked successfully.", request.CustomerId);
-        
+
         var response = new BlockedCustomerResponseModel()
         {
             Id = blockedCustomer.Id,
@@ -146,10 +149,10 @@ public class BlockedCustomerService : IBlockedCustomerService
     }
 
 
-    public bool Unblock(int id)
+    public async Task<bool> UnblockAsync(int id)
     {
         _logger.LogInformation("Unblocking customer with Id {id}.", id);
-        var dbBlockedCustomer = _repository.FindById(id);
+        var dbBlockedCustomer = await _repository.FindByIdAsync(id);
         if (dbBlockedCustomer == null)
         {
             _logger.LogWarning("Blocked customer with Id {id} not found.", id);
@@ -157,10 +160,10 @@ public class BlockedCustomerService : IBlockedCustomerService
         }
 
         _repository.Delete(dbBlockedCustomer);
-        _repository.SaveChanges();
-        
+        await _repository.SaveChangesAsync();
+
         _logger.LogInformation("Blocked customer with Id {id} unblocked successfully.", id);
-        
+
         return true;
     }
 }

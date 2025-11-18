@@ -6,25 +6,30 @@ using QApplication.Interfaces.Repository;
 using QApplication.Requests.CompanyRequest;
 using QApplication.Responses;
 using QDomain.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace QApplication.Services;
 
-public class CompanyService: ICompanyService
+public class CompanyService : ICompanyService
 {
     private readonly ICompanyRepository _repository;
     private readonly ILogger<CompanyService> _logger;
-    public CompanyService(ICompanyRepository repository, ILogger<CompanyService> logger) 
+
+    public CompanyService(ICompanyRepository repository, ILogger<CompanyService> logger)
     {
         _repository = repository;
         _logger = logger;
     }
 
-    public IEnumerable<CompanyResponseModel> GetAll(int pageList, int pageNumber)
+
+    public async Task<IEnumerable<CompanyResponseModel>> GetAllAsync(int pageList, int pageNumber)
     {
-        
-        _logger.LogInformation("Getting all companies. PageNumber: {pageNumber}, PageList: {pageNumber}", pageNumber, pageList);
-        var dbCompany = _repository.GetAll(pageList, pageNumber);
-        var response = dbCompany.Select(company => new CompanyResponseModel()
+        _logger.LogInformation("Getting all companies. PageNumber: {pageNumber}, PageList: {pageList}", pageNumber,
+            pageList);
+
+        var dbCompanies = await _repository.GetAll(pageList, pageNumber).ToListAsync();
+
+        var response = dbCompanies.Select(company => new CompanyResponseModel()
         {
             Id = company.Id,
             CompanyName = company.CompanyName,
@@ -37,17 +42,18 @@ public class CompanyService: ICompanyService
         return response;
     }
 
-    public IEnumerable<CompanyResponseModel> GetAllCompanies()
+
+    public async Task<IEnumerable<CompanyResponseModel>> GetAllCompaniesAsync()
     {
         _logger.LogInformation("Getting all companies without pagination");
 
-        var dbCompany = _repository.GetAllCompanies();
+        var dbCompany = await _repository.GetAllCompanies().ToListAsync();
         if (!dbCompany.Any())
         {
             _logger.LogWarning("No companies found in the system");
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(CompanyEntity));
         }
-        
+
         var response = dbCompany.Select(company => new CompanyResponseModel()
         {
             Id = company.Id,
@@ -60,11 +66,12 @@ public class CompanyService: ICompanyService
         return response;
     }
 
-    public CompanyResponseModel GetById(int id)
+
+    public async Task<CompanyResponseModel> GetByIdAsync(int id)
     {
         _logger.LogInformation("Getting company with Id {CompanyId}", id);
-        var dbCompany = _repository.FindById(id);
-        if (dbCompany==null)
+        var dbCompany = await _repository.FindByIdAsync(id);
+        if (dbCompany == null)
         {
             _logger.LogWarning("Company with Id {Company} not found", id);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(CompanyEntity));
@@ -78,18 +85,20 @@ public class CompanyService: ICompanyService
             EmailAddress = dbCompany.EmailAddress,
             PhoneNumber = dbCompany.PhoneNumber
         };
-        
-      _logger.LogInformation("Company with Id {CompanyId} fetched successfully", id);
+
+        _logger.LogInformation("Company with Id {CompanyId} fetched successfully", id);
 
         return response;
     }
 
-    public CompanyResponseModel Add(CompanyRequestModel request)
+
+    public async Task<CompanyResponseModel> AddAsync(CompanyRequestModel request)
     {
         _logger.LogInformation("Adding new company with Name {companyName}", request.CompanyName);
         var parsedToCreate = request as CreateCompanyRequest;
-        if (parsedToCreate==null)
-        {   _logger.LogError("Invalid request model while adding a company");
+        if (parsedToCreate == null)
+        {
+            _logger.LogError("Invalid request model while adding a company");
             throw new HttpStatusCodeException(HttpStatusCode.BadRequest, nameof(CompanyEntity));
         }
 
@@ -100,10 +109,11 @@ public class CompanyService: ICompanyService
             EmailAddress = parsedToCreate.EmailAddress,
             PhoneNumber = parsedToCreate.PhoneNumber
         };
-        
-        _repository.Add(company);
-        _repository.SaveChanges();
-        _logger.LogInformation("Company {companyName} added successfully with Id {companyId}", company.CompanyName, company.Id);
+
+        await _repository.AddAsync(company);
+        await _repository.SaveChangesAsync();
+        _logger.LogInformation("Company {companyName} added successfully with Id {companyId}", company.CompanyName,
+            company.Id);
         var response = new CompanyResponseModel()
         {
             Id = company.Id,
@@ -112,23 +122,23 @@ public class CompanyService: ICompanyService
             EmailAddress = company.EmailAddress,
             PhoneNumber = company.PhoneNumber
         };
-        
+
         return response;
     }
 
-    public CompanyResponseModel Update(int id, CompanyRequestModel request)
+
+    public async Task<CompanyResponseModel> UpdateAsync(int id, CompanyRequestModel requestModel)
     {
-        
         _logger.LogInformation("Updating company with Id {companyId}", id);
-        var dbCompany = _repository.FindById(id);
-        if (dbCompany==null)
-        {   
+        var dbCompany = await _repository.FindByIdAsync(id);
+        if (dbCompany == null)
+        {
             _logger.LogWarning("Company with Id {companyId} not found for updating.", id);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(CompanyEntity));
         }
 
-        var requestToUpdate = request as UpdateCompanyRequest;
-        if (requestToUpdate==null)
+        var requestToUpdate = requestModel as UpdateCompanyRequest;
+        if (requestToUpdate == null)
         {
             _logger.LogError("Invalid request model while updating company with Id {companyId}", id);
             throw new HttpStatusCodeException(HttpStatusCode.BadRequest, nameof(CompanyEntity));
@@ -139,13 +149,13 @@ public class CompanyService: ICompanyService
         dbCompany.Address = requestToUpdate.Address;
         dbCompany.EmailAddress = requestToUpdate.EmailAddress;
         dbCompany.PhoneNumber = requestToUpdate.PhoneNumber;
-        
-        
+
+
         _repository.Update(dbCompany);
-        _repository.SaveChanges();
+        await _repository.SaveChangesAsync();
 
         _logger.LogInformation("Company with Id {companyId} updated successfully", id);
-        
+
         var response = new CompanyResponseModel()
         {
             Id = dbCompany.Id,
@@ -156,24 +166,22 @@ public class CompanyService: ICompanyService
         };
 
         return response;
-
     }
 
 
-    public bool Delete(int id)
+    public async Task<bool> DeleteAsync(int id)
     {
-        
         _logger.LogInformation("Deleting company with Id {companyId}", id);
-        
-        var dbCompany = _repository.FindById(id);
-        if (dbCompany==null)
+
+        var dbCompany = await _repository.FindByIdAsync(id);
+        if (dbCompany == null)
         {
             _logger.LogWarning("Company with Id {companyId} not found for deleting", id);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(CompanyEntity));
         }
-        
+
         _repository.Delete(dbCompany);
-        _repository.SaveChanges();
+        await _repository.SaveChangesAsync();
         _logger.LogInformation("Company with Id {companyId} deleted successfully", id);
         return true;
     }

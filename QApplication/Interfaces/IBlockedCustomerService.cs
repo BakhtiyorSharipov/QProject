@@ -6,9 +6,10 @@ namespace QApplication.Interfaces;
 
 public interface IBlockedCustomerService
 {
-    IEnumerable<BlockedCustomerResponseModel> GetAll(int pageList, int pageNumber);
-    IEnumerable<BlockedCustomerResponseModel> GetAllBlockedCustomersByCompany(int companyId);
-    BlockedCustomerResponseModel GetById(int id);
-    BlockedCustomerResponseModel Block(BlockedCustomerRequestModel request);
-    bool Unblock(int id);
+    Task<IEnumerable<BlockedCustomerResponseModel>> GetAllAsync(int pageList, int pageNumber);
+
+    Task<IEnumerable<BlockedCustomerResponseModel>> GetAllBlockedCustomersByCompanyAsync(int companyId);
+    Task<BlockedCustomerResponseModel> GetByIdAsync(int id);
+    Task<BlockedCustomerResponseModel> BlockAsync(BlockedCustomerRequestModel request);
+    Task<bool> UnblockAsync(int id);
 }

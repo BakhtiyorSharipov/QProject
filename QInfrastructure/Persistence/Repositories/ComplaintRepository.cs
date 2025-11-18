@@ -44,15 +44,16 @@ public class ComplaintRepository: IComplaintRepository
         return complaints;
     }
 
-    public ComplaintEntity FindComplaintById(int id)
+    public async Task<ComplaintEntity> FindComplaintByIdAsync(int id)
     {
-        var found = _dbComplaint.Find(id);
+        var found = await _dbComplaint.FindAsync(id);
         return found;
     }
+    
 
-    public void AddComplaint(ComplaintEntity entity)
+    public async Task AddComplaintAsync(ComplaintEntity entity)
     {
-        _dbComplaint.Add(entity);
+        await _dbComplaint.AddAsync(entity);
     }
 
     public void UpdateComplaintStatus(ComplaintEntity entity)
@@ -60,8 +61,8 @@ public class ComplaintRepository: IComplaintRepository
         _dbComplaint.Update(entity);
     }
     
-    public int SaveChanges()
+    public async Task<int> SaveChangesAsync()
     {
-        return _context.SaveChanges();
+        return await _context.SaveChangesAsync();
     }
 }

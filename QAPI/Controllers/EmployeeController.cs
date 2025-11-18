@@ -21,46 +21,46 @@ public class EmployeeController: ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<IEnumerable<EmployeeResponseModel>> GetAll(int pageList, int pageNumber)
+    public async Task<ActionResult<IEnumerable<EmployeeResponseModel>>> GetAllAsync(int pageList, int pageNumber)
     {
         _logger.LogInformation("Received request to get all employees. PageList: {PageList}, PageNumber: {PageNumber}", pageList, pageNumber);
-        var employees= _service.GetAll(pageList, pageNumber);
+        var employees=await _service.GetAllAsync(pageList, pageNumber);
         _logger.LogInformation("Successfully returned {employeeCount} employees.", employees.Count());
         return Ok(employees);
     }
 
     [HttpGet("{id}")]
-    public ActionResult<EmployeeResponseModel> GetById([FromRoute] int id)
+    public async Task<ActionResult<EmployeeResponseModel>> GetByIdAsync([FromRoute] int id)
     {
         _logger.LogInformation("Received request to get employee with Id: {employeeId}", id);
-        var employee= _service.GetById(id);
+        var employee=await _service.GetByIdAsync(id);
         _logger.LogInformation("Successfully returned employee with Id: {employeeId}", id);
         return Ok(employee);
     }
 
     [HttpPost]
-    public IActionResult Post([FromBody] CreateEmployeeRequest request)
+    public async Task<IActionResult> PostAsync([FromBody] CreateEmployeeRequest request)
     {
         _logger.LogInformation("Received request to create employee with EmployeeName: {name}", request.FirstName );
-        var employee = _service.Add(request);
+        var employee =await _service.AddAsync(request);
         _logger.LogInformation("Successfully created employee with Id: {employeeId}", employee.Id);
-        return CreatedAtAction(nameof(GetById), new { id = employee.Id }, employee);
+        return CreatedAtAction(nameof(GetByIdAsync), new { id = employee.Id }, employee);
     }
 
     [HttpPut("{id}")]
-    public IActionResult Put([FromRoute] int id, [FromBody] UpdateEmployeeRequest request)
+    public async Task<IActionResult> PutAsync([FromRoute] int id, [FromBody] UpdateEmployeeRequest request)
     {
         _logger.LogInformation("Received request to update employee with Id: {employeeId}", id);
-        var update=_service.Update(id, request);
+        var update=await _service.UpdateAsync(id, request);
         _logger.LogInformation("Successfully updated employee with Id: {employeeId}", id);
         return Ok(update);
     }
 
     [HttpDelete("{id}")]
-    public IActionResult Delete([FromRoute] int id)
+    public async Task<IActionResult> Delete([FromRoute] int id)
     {
         _logger.LogInformation("Received request to delete employee with Id: {employeeId}", id);
-       var delete= _service.Delete(id);
+       var delete= await _service.DeleteAsync(id);
        _logger.LogInformation("Successfully deleted employee with Id: {employeeId}", id);
        return NoContent();
     }
