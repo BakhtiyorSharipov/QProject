@@ -6,9 +6,10 @@ public interface ICompanyRepository
 {
     IQueryable<CompanyEntity> GetAll(int pageList, int pageNumber);
     IQueryable<CompanyEntity> GetAllCompanies();
-    CompanyEntity FindById(int id);
-    void Add(CompanyEntity entity);
+    Task<CompanyEntity> FindByIdAsync(int id);
+    Task AddAsync(CompanyEntity entity);
     void Update(CompanyEntity entity);
     void Delete(CompanyEntity entity);
-    int SaveChanges();
+    Task<int> SaveChangesAsync();
+    
 }

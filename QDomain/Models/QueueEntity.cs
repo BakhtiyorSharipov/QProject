@@ -4,13 +4,13 @@ namespace QDomain.Models;
 
 public class QueueEntity: BaseEntity
 {
-    public DateTime StartTime { get; set; }
+    public DateTimeOffset StartTime { get; set; }
 
-    public DateTime? EndTime { get; set; }
+    public DateTimeOffset? EndTime { get; set; }
     public string? CancelReason { get; set; }
 
     public QueueStatus Status { get; set; } = QueueStatus.Pending;
-    
+    public DateTime CreatedAt { get; set; }= DateTime.UtcNow;
     public int EmployeeId { get; set; }
     public EmployeeEntity Employee { get; set; }
     

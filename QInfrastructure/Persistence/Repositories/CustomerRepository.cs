@@ -21,23 +21,25 @@ public class CustomerRepository:  ICustomerRepository
         return _dbCustomer.Skip((pageNumber - 1) * pageList).Take(pageList);
     }
 
-    public IQueryable<QueueEntity> GetAllCustomersByCompany(int companyId)
+    public IQueryable<CustomerEntity> GetAllCustomersByCompany(int companyId)
     {
         var found = _dbCustomer
-            .SelectMany(s => s.Queues).Where(s => s.Service.CompanyId == companyId);
+            .Where(c => c.Queues.Any(q => q.Service.CompanyId == companyId));
 
         return found;
     }
 
-    public CustomerEntity FindById(int id)
+
+    public async Task<CustomerEntity> FindByIdAsync(int id)
     {
-        var found = _dbCustomer.Find(id);
+        var found = await _dbCustomer.FindAsync(id);
         return found;
     }
+    
 
-    public void Add(CustomerEntity entity)
+    public async Task AddAsync(CustomerEntity entity)
     {
-        _dbCustomer.Add(entity);
+        await _dbCustomer.AddAsync(entity);
     }
 
     public void Update(CustomerEntity entity)
@@ -49,9 +51,10 @@ public class CustomerRepository:  ICustomerRepository
     {
         _dbCustomer.Remove(entity);
     }
+    
 
-    public int SaveChanges()
+    public async Task<int> SaveChangesAsync()
     {
-        return _context.SaveChanges();
+        return await _context.SaveChangesAsync();
     }
 }

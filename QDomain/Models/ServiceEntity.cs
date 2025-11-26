@@ -4,8 +4,7 @@ public class ServiceEntity: BaseEntity
 {
     public string ServiceName { get; set; }
     public string ServiceDescription { get; set; }
-    public bool IsActive { get; set; } = true;
-    
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public int CompanyId { get; set; }
     public CompanyEntity Company { get; set; }
 

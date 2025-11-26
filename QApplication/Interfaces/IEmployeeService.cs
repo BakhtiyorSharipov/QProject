@@ -6,10 +6,11 @@ namespace QApplication.Interfaces;
 
 public interface IEmployeeService
 {
-    IEnumerable<EmployeeResponseModel> GetAll(int pageList, int pageNumber);
-    IEnumerable<EmployeeResponseModel> GetEmployeesByCompany(int companyId);
-    EmployeeResponseModel GetById(int id);
-    EmployeeResponseModel Add(EmployeeRequestModel request);
-    EmployeeResponseModel Update(int id, EmployeeRequestModel request);
-    bool Delete(int id);
+    Task<IEnumerable<EmployeeResponseModel>> GetAllAsync(int pageList, int pageNumber);
+    Task<IEnumerable<EmployeeResponseModel>> GetEmployeesByCompanyAsync(int companyId);
+    Task<EmployeeResponseModel> GetByIdAsync(int id);
+    Task<EmployeeResponseModel> AddAsync(EmployeeRequestModel request);
+    Task<EmployeeResponseModel> UpdateAsync(int id, EmployeeRequestModel request);
+    Task<bool> DeleteAsync(int id);
+    
 }

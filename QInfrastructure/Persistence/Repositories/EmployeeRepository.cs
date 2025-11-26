@@ -35,15 +35,16 @@ public class EmployeeRepository: IEmployeeRepository
         return found;
     }
 
-    public EmployeeEntity FindById(int id)
+
+    public async Task<EmployeeEntity> FindByIdAsync(int id)
     {
-        var found = _dbEmployee.Find(id);
+        var found = await _dbEmployee.FindAsync(id);
         return found;
     }
 
-    public void Add(EmployeeEntity entity)
+    public async Task AddAsync(EmployeeEntity entity)
     {
-        _dbEmployee.Add(entity);
+        await _dbEmployee.AddAsync(entity);
     }
 
     public void Update(EmployeeEntity entity)
@@ -56,8 +57,8 @@ public class EmployeeRepository: IEmployeeRepository
         _dbEmployee.Remove(entity);
     }
 
-    public int SaveChanges()
+    public async Task<int> SaveChangesAsync()
     {
-        return _context.SaveChanges();
+        return await _context.SaveChangesAsync();
     }
 }

@@ -5,9 +5,9 @@ namespace QApplication.Interfaces;
 
 public interface IAvailabilityScheduleService
 {
-    IEnumerable<AvailabilityScheduleResponseModel> GetAll(int pageList, int pageNumber);
-    AvailabilityScheduleResponseModel GetById(int id);
-    AvailabilityScheduleResponseModel Add(AvailabilityScheduleRequestModel request);
-    AvailabilityScheduleResponseModel Update(int id, AvailabilityScheduleRequestModel request);
-    bool Delete(int id);
+    Task<IEnumerable<AvailabilityScheduleResponseModel>> GetAllAsync(int pageList, int pageNumber);
+    Task<AvailabilityScheduleResponseModel> GetByIdAsync(int id);
+    Task<IEnumerable<AvailabilityScheduleResponseModel>> AddAsync(AvailabilityScheduleRequestModel request);
+    Task<AvailabilityScheduleResponseModel> UpdateAsync(int id, UpdateAvailabilityScheduleRequest request, bool updateAllSchedules);
+    Task<bool> DeleteAsync(int id, bool deleteAllSlots);
 }

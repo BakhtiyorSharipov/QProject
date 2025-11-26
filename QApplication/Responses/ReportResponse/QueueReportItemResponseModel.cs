@@ -8,7 +8,7 @@ public class QueueReportItemResponseModel
     public string ServiceName { get; set; }
     public string CompanyName { get; set; }
     public string Status { get; set; }
-    public DateTime StartTime { get; set; }
-    public DateTime EndTime { get; set; }
+    public DateTimeOffset StartTime { get; set; }
+    public DateTimeOffset EndTime { get; set; }
     
 }

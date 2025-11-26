@@ -6,10 +6,12 @@ namespace QApplication.Interfaces;
 
 public interface IServiceService
 {
-    IEnumerable<ServiceResponseModel> GetAll(int pageList, int pageNumber);
-    IEnumerable<ServiceResponseModel> GetAllServicesByCompany(int companyId);
-    ServiceResponseModel GetById(int id);
-    ServiceResponseModel Add(ServiceRequestModel request);
-    ServiceResponseModel Update(int id, ServiceRequestModel request);
-    bool Delete(int id);
+
+    Task<IEnumerable<ServiceResponseModel>> GetAllAsync(int pageList, int pageNumber);
+    
+    Task<IEnumerable<ServiceResponseModel>> GetAllServicesByCompanyAsync(int companyId);
+    Task<ServiceResponseModel> GetByIdAsync(int id);
+    Task<ServiceResponseModel> AddAsync(ServiceRequestModel request);
+    Task<ServiceResponseModel> UpdateAsync(int id, ServiceRequestModel request);
+    Task<bool> DeleteAsync(int id);
 }

@@ -10,5 +10,7 @@ public class ReviewEntity: BaseEntity
 
     public int CustomerId { get; set; }
     public CustomerEntity Customer { get; set; }
+
+    public DateTime CreatedAt { get; set; }= DateTime.UtcNow;
     
 }

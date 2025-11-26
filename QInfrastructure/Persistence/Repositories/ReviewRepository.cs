@@ -43,20 +43,20 @@ public class ReviewRepository: IReviewRepository
         return reviews;
     }
 
-    public ReviewEntity FindById(int id)
+    public async Task<ReviewEntity> FindByIdAsync(int id)
     {
-        var found = _dbReview.Find(id);
+        var found = await _dbReview.FindAsync(id);
         return found;
-    }
-
-    public void Add(ReviewEntity entity)
-    {
-        _dbReview.Add(entity);
     }
     
 
-    public int SaveChanges()
+    public async Task AddAsync(ReviewEntity entity)
     {
-        return _context.SaveChanges();
+        await _dbReview.AddAsync(entity);
+    }
+
+    public async Task<int> SaveChangesAsync()
+    {
+        return await _context.SaveChangesAsync();
     }
 }

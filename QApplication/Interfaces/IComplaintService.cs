@@ -1,14 +1,15 @@
 using QApplication.Requests.ComplaintRequest;
 using QApplication.Responses;
+using QDomain.Models;
 
 namespace QApplication.Interfaces;
 
 public interface IComplaintService
 {
-    IEnumerable<ComplaintResponseModel> GetAllComplaints(int pageList, int pageNumber);
-    IEnumerable<ComplaintResponseModel> GetAllComplaintsByQueue(int id);
-    IEnumerable<ComplaintResponseModel> GetAllComplaintsByCompany(int companyId);
-    ComplaintResponseModel GetComplaintById(int id);
-    ComplaintResponseModel AddComplaint(ComplaintRequestModel request);
-    ComplaintResponseModel UpdateComplaintStatus(int id, UpdateComplaintStatusRequest request);
+    Task<IEnumerable<ComplaintResponseModel>> GetAllComplaintsAsync(int pageList, int pageNumber);
+    Task<IEnumerable<ComplaintResponseModel>> GetAllComplaintsByQueueAsync(int id);  
+    Task<IEnumerable<ComplaintResponseModel>> GetAllComplaintsByCompanyAsync(int companyId);
+    Task<ComplaintResponseModel> GetComplaintByIdAsync(int id);  
+    Task<ComplaintResponseModel> AddComplaintAsync(ComplaintRequestModel request);
+    Task<ComplaintResponseModel> UpdateComplaintStatusAsync(int id, UpdateComplaintStatusRequest request);
 }

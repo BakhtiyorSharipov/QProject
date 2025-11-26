@@ -9,8 +9,10 @@ public interface IComplaintRepository
 
     IQueryable<ComplaintEntity> GetAllComplaintsByCompany(int companyId);
     IQueryable<ComplaintEntity> GetAllComplaintsForReport();
-    ComplaintEntity FindComplaintById(int id);
-    void AddComplaint(ComplaintEntity entity);
+    Task<ComplaintEntity> FindComplaintByIdAsync(int id);    
+    
+    Task AddComplaintAsync(ComplaintEntity entity);
     void UpdateComplaintStatus(ComplaintEntity entity);
-    int SaveChanges();
+    Task<int> SaveChangesAsync();
+
 }

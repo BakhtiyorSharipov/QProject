@@ -1,53 +1,76 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QApplication.Interfaces;
 using QApplication.Requests.CompanyRequest;
 using QApplication.Responses;
+using QDomain.Enums;
 
 
 namespace QAPI.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class CompanyController: ControllerBase
+public class CompanyController : ControllerBase
 {
     private readonly ICompanyService _companyService;
+    private readonly ILogger<CompanyController> _logger;
 
-    public CompanyController(ICompanyService companyService)
+    public CompanyController(ICompanyService companyService, ILogger<CompanyController> logger)
     {
         _companyService = companyService;
-    }
-
-    [HttpGet]
-    public IEnumerable<CompanyResponseModel> GetAll(int pageList, int pageNumber)
-    {
-        return _companyService.GetAll(pageList, pageNumber);
-    }
-
-    [HttpGet("{id}")]
-    public CompanyResponseModel GetById([FromRoute] int id)
-    {
-        return _companyService.GetById(id);
-    }
-
-    [HttpPost]
-    public IActionResult Post([FromBody] CreateCompanyRequest request)
-    {
-        var createCompany = _companyService.Add(request);
-        return CreatedAtAction(nameof(GetById), new { id = createCompany.Id }, createCompany);
+        _logger = logger;
     }
     
-    [HttpPut("{id}")]
-    public IActionResult Put([FromRoute] int id, [FromBody] UpdateCompanyRequest request)
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin))]
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<CompanyResponseModel>>> GetAllAsync(int pageList, int pageNumber)
     {
-       var update= _companyService.Update(id, request);
-       return Ok(update);
-
+        _logger.LogInformation("Received request to get all companies. PageList: {PageList}, PageNumber: {PageNumber}",
+            pageList, pageNumber);
+        var companies = await _companyService.GetAllAsync(pageList, pageNumber);
+        _logger.LogInformation("Successfully returned {compnayCount} companies.", companies.Count());
+        return Ok(companies);
     }
 
-    [HttpDelete("{id}")]
-    public IActionResult Delete([FromRoute] int id)
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin))]
+    [HttpGet("{id}")]
+    public async Task<ActionResult<CompanyResponseModel>> GetByIdAsync([FromRoute] int id)
     {
-       var delete= _companyService.Delete(id);
-       return NoContent();
+        _logger.LogInformation("Received request to get company by Id: {companyId}", id);
+        var company = await _companyService.GetByIdAsync(id);
+        _logger.LogInformation("Successfully returned company with Id: {companyId}", id);
+
+        return Ok(company);
+    }
+
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin))]
+    [HttpPost]
+    public async Task<IActionResult> PostAsync([FromBody] CreateCompanyRequest request)
+    {
+        _logger.LogInformation("Received request to create new company. CompanyName: {companyName}",
+            request.CompanyName);
+        var createCompany = await _companyService.AddAsync(request);
+        _logger.LogInformation("Successfully created company with Id: {companyId}", createCompany.Id);
+        return CreatedAtAction(nameof(GetByIdAsync), new { id = createCompany.Id }, createCompany);
+    }
+
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin))]
+    [HttpPut("{id}")]
+    public async Task<IActionResult> PutAsync([FromRoute] int id, [FromBody] UpdateCompanyRequest request)
+    {
+        _logger.LogInformation("Received request to update company with Id: {companyId}", id);
+        var update = await _companyService.UpdateAsync(id, request);
+        _logger.LogInformation("Successfully updated company with Id: {companyId}", id);
+        return Ok(update);
+    }
+
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin))]
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteAsync([FromRoute] int id)
+    {
+        _logger.LogInformation("Received request to delete company with Id: {companyId}", id);
+        var delete = await _companyService.DeleteAsync(id);
+        _logger.LogInformation("Successfully deleted company with Id: {companyId}", id);
+        return NoContent();
     }
 }

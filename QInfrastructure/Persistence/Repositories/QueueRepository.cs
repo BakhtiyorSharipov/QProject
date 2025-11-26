@@ -22,19 +22,22 @@ public class QueueRepository:  IQueueRepository
         return _dbQueue.Skip((pageNumber - 1) * pageList).Take(pageList);
     }
     
-    public QueueEntity FindById(int id)
+
+    public async Task<QueueEntity> FindByIdAsync(int id)
     {
-        return _dbQueue
+        var found= await _dbQueue
             .Include(q => q.Service)
             .ThenInclude(s => s.Company)
             .Include(q => q.Customer)
             .Include(q => q.Employee)
-            .FirstOrDefault(q => q.Id == id);
+            .FirstOrDefaultAsync(q => q.Id == id);
+        return found;
     }
 
-    public void Add(QueueEntity entity)
+
+    public async Task AddAsync(QueueEntity entity)
     {
-        _dbQueue.Add(entity);
+        await _dbQueue.AddAsync(entity);
     }
 
     public void Update(QueueEntity entity)
@@ -46,12 +49,12 @@ public class QueueRepository:  IQueueRepository
     {
         _dbQueue.Remove(entity);
     }
-
-    public int SaveChanges()
-    {
-        return _context.SaveChanges();
-    }
     
+    public async Task<int> SaveChangesAsync()
+    {
+        return await _context.SaveChangesAsync();
+    }
+
     public IQueryable<QueueEntity> GetQueuesByCustomer(int customerId)
     {
         var found = _dbQueue.Where(q=>q.CustomerId==customerId);

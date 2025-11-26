@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QApplication.Interfaces;
 using QApplication.Requests.ReportRequest;
 using QApplication.Responses.ReportResponse;
+using QDomain.Enums;
 
 namespace QAPI.Controllers;
 
@@ -10,46 +12,71 @@ namespace QAPI.Controllers;
 public class ReportController : ControllerBase
 {
     private readonly IReportService _reportService;
-
-    public ReportController(IReportService reportService)
+    private readonly ILogger<ReportController> _logger;
+    public ReportController(IReportService reportService, ILogger<ReportController> logger)
     {
         _reportService = reportService;
+        _logger = logger;
     }
 
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin)+","+ nameof(UserRoles.SystemAdmin))]
     [HttpGet("company/report")]
-    public CompanyReportItemResponseModel GetCompanyReport([FromQuery] CompanyReportRequest request)
+    public async Task<ActionResult<CompanyReportItemResponseModel>> GetCompanyReportAsync([FromQuery] CompanyReportRequest request)
     {
-        return _reportService.GetCompanyReport(request);
+        _logger.LogInformation("Received request to get company report with Id: {compnayId}", request.CompanyId);
+        var companyReport=await _reportService.GetCompanyReportAsync(request);
+        _logger.LogInformation("Successfully returned company report with Id: {companyId}", request.CompanyId);
+        return Ok(companyReport);
     }
     
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin)+","+ nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.Employee))]
     [HttpGet("employee/report ")]
-    public EmployeeReportResponseModel GetEmployeeReport([FromQuery] EmployeeReportRequest request)
+    public async Task<ActionResult< EmployeeReportResponseModel>> GetEmployeeReportAsync([FromQuery] EmployeeReportRequest request)
     {
-        return _reportService.GetEmployeeReport(request);
+        _logger.LogInformation("Received request to get employee report with Id: {employeeId}", request.EmployeeId);
+        var employeeReport=await _reportService.GetEmployeeReportAsync(request);
+        _logger.LogInformation("Successfully returned employee report with Id: {employeeId}", request.EmployeeId);
+        return Ok(employeeReport);
     }
     
-    
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin)+","+ nameof(UserRoles.SystemAdmin))]
     [HttpGet("queue/report")]
-    public QueueReportResponseModel GetQueueReport([FromQuery]QueueReportRequest request)
+    public async Task<ActionResult<QueueReportResponseModel>> GetQueueReportAsync([FromQuery]QueueReportRequest request)
     {
-        return _reportService.GetQueueReport(request);
+        _logger.LogInformation("Received request to get queue report.");
+        var queueReport=await _reportService.GetQueueReportAsync(request);
+        _logger.LogInformation("Successfully returned queue report.");
+        return Ok(queueReport);
+        
     }
 
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin)+","+ nameof(UserRoles.SystemAdmin))]
     [HttpGet("complaint/report")]
-    public ComplaintReportResponseModel GetComplaintReport([FromQuery]ComplaintReportRequest request)
+    public async Task<ActionResult< ComplaintReportResponseModel>> GetComplaintReportAsync([FromQuery]ComplaintReportRequest request)
     {
-        return _reportService.GetComplaintReport(request);
+        _logger.LogInformation("Received request to get complaint report.");
+        var complaintReport=await _reportService.GetComplaintReportAsync(request);
+        _logger.LogInformation("Successfully returned complaint report.");
+        return Ok(complaintReport);
     }
 
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin)+","+ nameof(UserRoles.SystemAdmin))]
     [HttpGet("review/report")]
-    public ReviewReportResponseModel GetReviewReport([FromQuery] ReviewReportRequest request)
+    public async Task<ActionResult< ReviewReportResponseModel>> GetReviewReportAsync([FromQuery] ReviewReportRequest request)
     {
-        return _reportService.GetReviewReport(request);
+        _logger.LogInformation("Received request to get review report.");
+        var reviewReport=await _reportService.GetReviewReportAsync(request);
+        _logger.LogInformation("Successfully returned review report.");
+        return Ok(reviewReport);
     }
 
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin)+","+ nameof(UserRoles.SystemAdmin))]
     [HttpGet("service/report")]
-    public ServiceReportResponseModel GetServiceReport([FromQuery] ServiceReportRequest request)
+    public async Task<ActionResult< ServiceReportResponseModel>> GetServiceReportAsync([FromQuery] ServiceReportRequest request)
     {
-        return _reportService.GetServiceReport(request);
+        _logger.LogInformation("Received request to get service report.");
+        var serviceReport=await _reportService.GetServiceReportAsync(request);
+        _logger.LogInformation("Successfully returned service report.");
+        return Ok(serviceReport);
     }
 }

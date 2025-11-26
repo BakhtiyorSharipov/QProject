@@ -6,8 +6,9 @@ public interface IBlockedCustomerRepository
 {
     IQueryable<BlockedCustomerEntity> GetAll(int pageList, int pageNumber);
     IQueryable<BlockedCustomerEntity> GetAllBlockedCustomersByCompany(int companyId);
-    BlockedCustomerEntity FindById(int id);
-    void Add(BlockedCustomerEntity entity);
+    Task<BlockedCustomerEntity> FindByIdAsync(int id);
+    Task AddAsync(BlockedCustomerEntity entity);
     void Delete(BlockedCustomerEntity entity);
-    int SaveChanges();
+    bool Exists(int customerId, int companyId);
+    Task<int> SaveChangesAsync();
 }

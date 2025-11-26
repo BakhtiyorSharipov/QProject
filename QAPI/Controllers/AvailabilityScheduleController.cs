@@ -1,7 +1,10 @@
+using System.Collections.Immutable;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QApplication.Interfaces;
 using QApplication.Requests.AvailabilityScheduleRequest;
 using QApplication.Responses;
+using QDomain.Enums;
 
 namespace QAPI.Controllers;
 
@@ -10,42 +13,61 @@ namespace QAPI.Controllers;
 public class AvailabilityScheduleController: ControllerBase
 {
     private readonly IAvailabilityScheduleService _service;
+    private readonly ILogger<AvailabilityScheduleController> _logger;
 
-    public AvailabilityScheduleController(IAvailabilityScheduleService service)
+    public AvailabilityScheduleController(IAvailabilityScheduleService service, ILogger<AvailabilityScheduleController> logger)
     {
         _service = service;
+        _logger = logger;
     }
-
+    
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin) + "," + nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.Employee))]
     [HttpGet]
-    public IEnumerable<AvailabilityScheduleResponseModel> GetAll(int pageList, int pageNumber)
+    public async Task<ActionResult<IEnumerable<AvailabilityScheduleResponseModel>>> GetAllAsync(int pageList, int pageNumber)
     {
-        return _service.GetAll(pageList, pageNumber);
+        _logger.LogInformation("Received request to get all schedules. PageList: {PageList}, PageNumber: {PageNumber}", pageList, pageNumber);
+        var schedules=await _service.GetAllAsync(pageList, pageNumber);
+        _logger.LogInformation("Successfully returned {schedulesCount} schedules.", schedules.Count());
+        return Ok(schedules);
     }
 
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin) + "," + nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.Employee))]
     [HttpGet("{id}")]
-    public AvailabilityScheduleResponseModel GetById([FromRoute]int id)
+    public async Task<ActionResult< AvailabilityScheduleResponseModel>> GetByIdAsync([FromRoute]int id)
     {
-        return _service.GetById(id);
+        _logger.LogInformation("Received request to get schedule by Id: {scheduleId}", id);
+        var schedule=await _service.GetByIdAsync(id);
+        _logger.LogInformation("Successfully returned schedules with Id: {scheduleId}", id);
+        return Ok(schedule);
     }
 
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin) + "," + nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.Employee))]
     [HttpPost]
-    public IActionResult Post([FromBody] CreateAvailabilityScheduleRequest request)
+    public async Task<ActionResult> PostAsync([FromBody] CreateAvailabilityScheduleRequest request)
     {
-        var schedule = _service.Add(request);
-        return Created(nameof(GetById), schedule);
+        _logger.LogInformation("Received request to create new schedule.");
+        var schedule =await _service.AddAsync(request);
+        _logger.LogInformation("Successfully created schedule with Id: {scheduleId}", schedule.Select(s=>s.Id));
+        return Created(nameof(GetByIdAsync), schedule);
     }
 
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin) + "," + nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.Employee))]
     [HttpPut("{id}")]
-    public IActionResult Update([FromRoute] int id, [FromBody] UpdateAvailabilityScheduleRequest request)
+    public async Task<IActionResult> UpdateAsync([FromRoute] int id, [FromBody] UpdateAvailabilityScheduleRequest request,[FromQuery] bool updateAllSlots)
     {
-        var update = _service.Update(id, request);
+        _logger.LogInformation("Received request to update schedule with Id: {scheduleId}", id);
+        var update = await _service.UpdateAsync(id, request, updateAllSlots);
+        _logger.LogInformation("Successfully updated schedule with Id: {scheduleId}", id);
         return Ok(update);
     }
 
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin) + "," + nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.Employee))]
     [HttpDelete("{id}")]
-    public IActionResult Delete([FromRoute] int id)
+    public async Task<IActionResult> DeleteAsync([FromRoute] int id, [FromQuery] bool deleteAllSlots)
     {
-        var delete = _service.Delete(id);
+        _logger.LogInformation("Received request to delete company with Id: {scheduleId}", id);
+        var delete =await _service.DeleteAsync(id, deleteAllSlots);
+        _logger.LogInformation("Successfully deleted company with Id: {scheduleId}", id);
         return NoContent();
     }
 }

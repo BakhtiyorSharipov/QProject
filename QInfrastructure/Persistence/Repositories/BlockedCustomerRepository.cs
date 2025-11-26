@@ -27,25 +27,40 @@ public class BlockedCustomerRepository : IBlockedCustomerRepository
         return found;
     }
 
-    public BlockedCustomerEntity FindById(int id)
+    public async Task<BlockedCustomerEntity> FindByIdAsync(int id)
     {
-        var foundEntity = _dbBlockedCustomer.Find(id);
-        return foundEntity;
-    }
-
-    public void Add(BlockedCustomerEntity entity)
-    {
-        _dbBlockedCustomer.Add(entity);
+        var found = await _dbBlockedCustomer.FindAsync(id);
+        return found;
     }
     
+
+    public async Task AddAsync(BlockedCustomerEntity entity)
+    {
+        await _dbBlockedCustomer.AddAsync(entity);
+    }
+
 
     public void Delete(BlockedCustomerEntity entity)
     {
         _dbBlockedCustomer.Remove(entity);
     }
 
-    public int SaveChanges()
+    public bool Exists(int customerId, int companyId)
     {
-        return _context.SaveChanges();
+        var customer = _dbBlockedCustomer.Where(s => s.CustomerId == customerId);
+        var company = _dbBlockedCustomer.Where(s => s.CompanyId == companyId);
+
+        if (customer.Any() && company.Any())
+        {
+            return true;
+        }
+
+        return false;
+    }
+    
+
+    public async Task<int> SaveChangesAsync()
+    {
+        return await _context.SaveChangesAsync();
     }
 }
