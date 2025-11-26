@@ -20,7 +20,26 @@ public class CompanyService: ICompanyService
     public IEnumerable<CompanyResponseModel> GetAll(int pageList, int pageNumber)
     {
         var dbCompany = _repository.GetAll(pageList, pageNumber);
+        var response = dbCompany.Select(company => new CompanyResponseModel()
+        {
+            Id = company.Id,
+            CompanyName = company.CompanyName,
+            Address = company.Address,
+            EmailAddress = company.EmailAddress,
+            PhoneNumber = company.PhoneNumber
+        }).ToList();
 
+        return response;
+    }
+
+    public IEnumerable<CompanyResponseModel> GetAllCompanies()
+    {
+        var dbCompany = _repository.GetAllCompanies();
+        if (!dbCompany.Any())
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(CompanyEntity));
+        }
+        
         var response = dbCompany.Select(company => new CompanyResponseModel()
         {
             Id = company.Id,

@@ -13,5 +13,10 @@ public interface IQueueRepository
 
     IQueryable<QueueEntity> GetQueuesByCustomer(int customerId);
     IQueryable<QueueEntity> GetQueuesByEmployee(int employeeId);
+    IQueryable<QueueEntity> GetQueuesByService(int serviceId);
+    IQueryable<QueueEntity> GetQueuesByCompany(int companyId);
+    IQueryable<QueueEntity> GetAllQueues();
+
     
+
 }

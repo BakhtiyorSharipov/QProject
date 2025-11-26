@@ -21,6 +21,17 @@ public class CompanyRepository : ICompanyRepository
         return _dbCompany.Skip((pageNumber - 1) * pageList).Take(pageList);
     }
 
+    public IQueryable<CompanyEntity> GetAllCompanies()
+    {
+        return _dbCompany
+            .Include(s => s.Services)
+                .ThenInclude(s => s.Employees)
+                .ThenInclude(s => s.Queues)
+                .ThenInclude(s => s.Customer)
+                .ThenInclude(s => s.Reviews)
+                .ThenInclude(s => s.Customer.Complaints);
+    }
+
     public CompanyEntity FindById(int id)
     {
         var found = _dbCompany.Find(id);

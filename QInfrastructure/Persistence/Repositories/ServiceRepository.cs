@@ -21,6 +21,18 @@ public class ServiceRepository:IServiceRepository
         return _dbService.Skip((pageNumber - 1) * pageList).Take(pageList);
     }
 
+    public IQueryable<ServiceEntity> GetAllServices()
+    {
+        return _dbService
+            .Include(s => s.Company)
+            .Include(s => s.Employees);
+    }
+
+    public IQueryable<ServiceEntity> GetAllServicesByCompany(int companyId)
+    {
+        return _dbService.Where(s => s.CompanyId == companyId);
+    }
+
     public ServiceEntity FindById(int id)
     {
         var found = _dbService.Find(id);

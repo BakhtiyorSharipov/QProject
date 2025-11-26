@@ -36,6 +36,26 @@ public class ServiceService: IServiceService
         return response;
     }
 
+    public IEnumerable<ServiceResponseModel> GetAllServicesByCompany(int companyId)
+    {
+        var dbServices = _repository.GetAllServicesByCompany(companyId);
+        if (!dbServices.Any())
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(ServiceEntity));
+
+        }
+
+        var response = dbServices.Select(service => new ServiceResponseModel
+        {
+            Id = service.Id,
+            CompanyId = service.CompanyId,
+            ServiceName = service.ServiceName,
+            ServiceDescription = service.ServiceDescription
+        }).ToList();
+
+        return response;
+    }
+
     public ServiceResponseModel GetById(int id)
     {
         var dbService = _repository.FindById(id);

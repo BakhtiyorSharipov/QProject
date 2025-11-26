@@ -5,6 +5,7 @@ namespace QApplication.Interfaces.Repository;
 public interface ICompanyRepository
 {
     IQueryable<CompanyEntity> GetAll(int pageList, int pageNumber);
+    IQueryable<CompanyEntity> GetAllCompanies();
     CompanyEntity FindById(int id);
     void Add(CompanyEntity entity);
     void Update(CompanyEntity entity);

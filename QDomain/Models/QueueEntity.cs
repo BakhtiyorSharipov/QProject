@@ -5,6 +5,8 @@ namespace QDomain.Models;
 public class QueueEntity: BaseEntity
 {
     public DateTime StartTime { get; set; }
+
+    public DateTime? EndTime { get; set; }
     public string? CancelReason { get; set; }
 
     public QueueStatus Status { get; set; } = QueueStatus.Pending;

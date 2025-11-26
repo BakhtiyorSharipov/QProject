@@ -18,5 +18,9 @@ public class CustomerTableConfiguration: IEntityTypeConfiguration<CustomerEntity
         builder.HasMany(s => s.Queues)
             .WithOne(s => s.Customer)
             .HasForeignKey(s => s.CustomerId);
+
+        builder.HasMany(s => s.Complaints)
+            .WithOne(s => s.Customer)
+            .HasForeignKey(s => s.CustomerId);
     }
 }

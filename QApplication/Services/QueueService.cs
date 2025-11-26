@@ -72,7 +72,7 @@ public class QueueService : IQueueService
         return response;
     }
 
-    public QueueResponseModel Add(QueueRequestModel requestModel)
+    public AddQueueResponseModel Add(QueueRequestModel requestModel)
     {
         var requestToCreate = requestModel as CreateQueueRequest;
         if (requestToCreate == null)
@@ -106,26 +106,36 @@ public class QueueService : IQueueService
         }
 
         var slotExists = dayOfWeek.Any(s => s.AvailableSlots.Any(slot =>
-            requestToCreate.StartTime >= slot.From && requestToCreate.StartTime < slot.To
+            requestToCreate.StartTime >= slot.From && requestToCreate.StartTime.AddHours(1) < slot.To
         ));
 
         if (!slotExists)
         {
-            throw new Exception("Booking time is outside of employee working hours.");
+            throw new Exception("The selected time slot is not available for a 1-hour booking. Please choose a start time that fits within the employee's working hours.");
         }
 
 
-        var allQueuesByEmployee = GetQueuesByEmployee(requestToCreate.EmployeeId);
-        var isDouble = allQueuesByEmployee.Any(s =>
-            s.StartTime == requestToCreate.StartTime &&
-            s.Status == QueueStatus.Pending ||
-            s.Status == QueueStatus.Confirmed);
+        var allQueuesByEmployee = GetQueuesByEmployee(requestToCreate.EmployeeId)
+            .Where(q=>q.Status == QueueStatus.Pending || q.Status == QueueStatus.Confirmed );
 
+        var newQueueStart = requestToCreate.StartTime;
+        var newQueueEnd = newQueueStart.AddHours(1);
+        var isDouble = allQueuesByEmployee.Any(s =>
+        {
+            var existingStart = s.StartTime;
+            var existingEnd = s.EndTime;
+            return (newQueueStart < existingEnd && newQueueEnd > existingStart) &&
+                   (s.Status == QueueStatus.Confirmed);
+        }); 
+        
+        
         if (isDouble)
         {
             throw new Exception("This slot is already booked!");
         }
 
+        
+        
         var blocked = _blockedCustomerRepository.FindById(requestToCreate.CustomerId);
         if (blocked != null &&
             blocked.DoesBanForever &&
@@ -134,6 +144,9 @@ public class QueueService : IQueueService
             throw new Exception("You are blocked by this company!");
         }
 
+        
+        
+        
         var queue = new QueueEntity()
         {
             CustomerId = requestToCreate.CustomerId,
@@ -146,7 +159,7 @@ public class QueueService : IQueueService
         _repository.Add(queue);
         _repository.SaveChanges();
 
-        var response = new QueueResponseModel()
+        var response = new AddQueueResponseModel()
         {
             Id = queue.Id,
             CustomerId = queue.CustomerId,
@@ -237,9 +250,9 @@ public class QueueService : IQueueService
         return response;
     }
 
-    public QueueResponseModel UpdateQueueStatus(int id, QueueStatus newStatus)
+    public UpdateQueueStatusResponseModel UpdateQueueStatus(UpdateQueueRequest request)
     {
-        var dbQueue = _repository.FindById(id);
+        var dbQueue = _repository.FindById(request.QueueId);
         if (dbQueue == null)
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
@@ -248,15 +261,15 @@ public class QueueService : IQueueService
         switch (dbQueue.Status)
         {
             case QueueStatus.Pending:
-                if (newStatus != QueueStatus.Confirmed && newStatus != QueueStatus.CancelledByEmployee)
+                if (request.newStatus != QueueStatus.Confirmed && request.newStatus != QueueStatus.CancelledByEmployee)
                 {
                     throw new Exception("Pending queue can only be Confirmed or Cancelled!");
                 }
 
                 break;
             case QueueStatus.Confirmed:
-                if (newStatus != QueueStatus.Completed && newStatus != QueueStatus.DidNotCome &&
-                    newStatus != QueueStatus.CancelledByEmployee)
+                if (request.newStatus != QueueStatus.Completed && request.newStatus != QueueStatus.DidNotCome &&
+                    request.newStatus != QueueStatus.CancelledByEmployee)
                 {
                     throw new Exception("Confirmed queues can only be Completed, DidNotCome, Cancelled!");
                 }
@@ -270,8 +283,8 @@ public class QueueService : IQueueService
                 throw new Exception("This queue is already finalized and cannot be updated!");
         }
 
-        if (newStatus != QueueStatus.Completed && newStatus != QueueStatus.DidNotCome &&
-            newStatus != QueueStatus.Confirmed)
+        if (request.newStatus != QueueStatus.Completed && request.newStatus != QueueStatus.DidNotCome &&
+            request.newStatus != QueueStatus.Confirmed)
         {
             throw new Exception("Invalid status update by employee");
         }
@@ -297,16 +310,22 @@ public class QueueService : IQueueService
             throw new Exception("Customer has been automatically blocked due to multiple DidNotCome.");
         }
 
-        dbQueue.Status = newStatus;
+        if (request.newStatus == QueueStatus.Confirmed )
+        {
+            dbQueue.EndTime = dbQueue.StartTime.AddHours(1);
+        }
+        
+        dbQueue.Status = request.newStatus;
         _repository.SaveChanges();
 
-        var response = new QueueResponseModel
+        var response = new UpdateQueueStatusResponseModel
         {
             Id = dbQueue.Id,
             CustomerId = dbQueue.CustomerId,
             EmployeeId = dbQueue.EmployeeId,
             ServiceId = dbQueue.ServiceId,
             StartTime = dbQueue.StartTime,
+            EndTime = dbQueue.EndTime.Value,
             Status = dbQueue.Status
         };
 
@@ -316,9 +335,9 @@ public class QueueService : IQueueService
     public IEnumerable<QueueResponseModel> GetQueuesByCustomer(int customerId)
     {
         var dbQueue = _repository.GetQueuesByCustomer(customerId);
-        if (dbQueue == null)
+        if (!dbQueue.Any())
         {
-            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(ServiceEntity));
         }
 
         var response = dbQueue.Select(queue => new QueueResponseModel
@@ -337,18 +356,63 @@ public class QueueService : IQueueService
     public IEnumerable<QueueResponseModel> GetQueuesByEmployee(int employeeId)
     {
         var dbQueue = _repository.GetQueuesByEmployee(employeeId);
-        if (dbQueue == null)
+        if (!dbQueue.Any())
         {
-            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(ServiceEntity));
         }
 
         var response = dbQueue.Select(queue => new QueueResponseModel()
         {
             Id = queue.Id,
-            CustomerId = queue.Id,
+            CustomerId = queue.CustomerId,
             EmployeeId = queue.EmployeeId,
             ServiceId = queue.ServiceId,
             StartTime = queue.StartTime,
+            EndTime= queue.EndTime ?? queue.StartTime.AddHours(1),
+            Status = queue.Status
+        }).ToList();
+
+        return response;
+    }
+
+    public IEnumerable<QueueResponseModel> GetQueuesByService(int serviceId)
+    {
+        var dbQueue = _repository.GetQueuesByService(serviceId);
+        if (!dbQueue.Any())
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(ServiceEntity));
+        }
+
+        var response = dbQueue.Select(queue => new QueueResponseModel
+        {
+            Id = queue.Id,
+            CustomerId = queue.CustomerId,
+            EmployeeId = queue.EmployeeId,
+            ServiceId = queue.ServiceId,
+            StartTime = queue.StartTime,
+            EndTime = queue.EndTime ?? queue.StartTime.AddHours(1),
+            Status = queue.Status
+        }).ToList();
+
+        return response;
+    }
+
+    public IEnumerable<QueueResponseModel> GetQueuesByCompany(int companyId)
+    {
+        var dbQueue = _repository.GetQueuesByCompany(companyId);
+        if (!dbQueue.Any())
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(ServiceEntity));
+        }
+
+        var response = dbQueue.Select(queue => new QueueResponseModel
+        {
+            Id = queue.Id,
+            CustomerId = queue.CustomerId,
+            EmployeeId = queue.EmployeeId,
+            ServiceId = queue.ServiceId,
+            StartTime = queue.StartTime,
+            EndTime = queue.EndTime ?? queue.StartTime.AddHours(1),
             Status = queue.Status
         }).ToList();
 

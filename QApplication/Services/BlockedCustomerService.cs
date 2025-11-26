@@ -20,6 +20,22 @@ public class BlockedCustomerService : IBlockedCustomerService
     public IEnumerable<BlockedCustomerResponseModel> GetAll(int pageList, int pageNumber)
     {
         var dbBlockedCustomer = _repository.GetAll(pageList, pageNumber);
+        var response = dbBlockedCustomer.Select(blocked => new BlockedCustomerResponseModel()
+        {
+            Id = blocked.Id,
+            CompanyId = blocked.CompanyId,
+            CustomerId = blocked.CustomerId,
+            BannedUntil = blocked.BannedUntil,
+            DoesBanForever = blocked.DoesBanForever,
+            Reason = blocked.Reason
+        }).ToList();
+
+        return response;
+    }
+
+    public IEnumerable<BlockedCustomerResponseModel> GetAllBlockedCustomersByCompany(int companyId)
+    {
+        var dbBlockedCustomer = _repository.GetAllBlockedCustomersByCompany(companyId);
         if (!dbBlockedCustomer.Any())
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(BlockedCustomerEntity));
