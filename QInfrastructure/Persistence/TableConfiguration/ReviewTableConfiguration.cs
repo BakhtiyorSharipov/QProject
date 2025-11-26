@@ -15,10 +15,6 @@ public class ReviewTableConfiguration: IEntityTypeConfiguration<ReviewEntity>
             .WithMany(s => s.Reviews)
             .HasForeignKey(s => s.CustomerId);
 
-        builder.HasOne(s => s.Employee)
-            .WithMany()
-            .HasForeignKey(s => s.EmployeeId);
-
         builder.HasOne(s => s.Queue)
             .WithMany()
             .HasForeignKey(s => s.QueueId);

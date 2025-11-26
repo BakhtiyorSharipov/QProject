@@ -9,9 +9,9 @@ namespace QInfrastructure.Persistence.Repositories;
 public class QueueRepository:  IQueueRepository
 {
     private readonly DbSet<QueueEntity> _dbQueue;
-    private readonly EFContext _context;
+    private readonly QueueDbContext _context;
 
-    public QueueRepository(EFContext context)
+    public QueueRepository(QueueDbContext context)
     {
         _dbQueue = context.Set<QueueEntity>();
         _context = context;
@@ -24,8 +24,12 @@ public class QueueRepository:  IQueueRepository
     
     public QueueEntity FindById(int id)
     {
-        var found = _dbQueue.Find(id);
-        return found;
+        return _dbQueue
+            .Include(q => q.Service)
+            .ThenInclude(s => s.Company)
+            .Include(q => q.Customer)
+            .Include(q => q.Employee)
+            .FirstOrDefault(q => q.Id == id);
     }
 
     public void Add(QueueEntity entity)

@@ -12,8 +12,8 @@ using QInfrastructure.Persistence.DataBase;
 namespace QInfrastructure.Persistence.DataBase.Migrations
 {
     [DbContext(typeof(QueueDbContext))]
-    [Migration("20250922173625_Changes1")]
-    partial class Changes1
+    [Migration("20250930063852_Changes2")]
+    partial class Changes2
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,6 +24,33 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("QDomain.Models.AvailabilityScheduleEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("DayOfWeek")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("From")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("To")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.ToTable("AvailabilitySchedule", (string)null);
+                });
 
             modelBuilder.Entity("QDomain.Models.BlockedCustomerEntity", b =>
                 {
@@ -264,6 +291,17 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                     b.ToTable("Services", (string)null);
                 });
 
+            modelBuilder.Entity("QDomain.Models.AvailabilityScheduleEntity", b =>
+                {
+                    b.HasOne("QDomain.Models.EmployeeEntity", "Employee")
+                        .WithMany("AvailabilitySchedules")
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+                });
+
             modelBuilder.Entity("QDomain.Models.BlockedCustomerEntity", b =>
                 {
                     b.HasOne("QDomain.Models.CompanyEntity", "Company")
@@ -373,6 +411,8 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
 
             modelBuilder.Entity("QDomain.Models.EmployeeEntity", b =>
                 {
+                    b.Navigation("AvailabilitySchedules");
+
                     b.Navigation("Queues");
                 });
 

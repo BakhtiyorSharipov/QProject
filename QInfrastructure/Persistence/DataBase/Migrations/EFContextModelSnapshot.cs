@@ -10,7 +10,7 @@ using QInfrastructure.Persistence.DataBase;
 
 namespace QInfrastructure.Persistence.DataBase.Migrations
 {
-    [DbContext(typeof(EFContext))]
+    [DbContext(typeof(QueueDbContext))]
     partial class EFContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
@@ -21,6 +21,34 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("QDomain.Models.AvailabilityScheduleEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AvailableSlots")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<int>("DayOfWeek")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.ToTable("AvailabilitySchedules", (string)null);
+                });
 
             modelBuilder.Entity("QDomain.Models.BlockedCustomerEntity", b =>
                 {
@@ -209,9 +237,6 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                     b.Property<int>("CustomerId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("EmployeeId")
-                        .HasColumnType("integer");
-
                     b.Property<int>("Grade")
                         .HasColumnType("integer");
 
@@ -224,8 +249,6 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CustomerId");
-
-                    b.HasIndex("EmployeeId");
 
                     b.HasIndex("QueueId");
 
@@ -259,6 +282,17 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                     b.HasIndex("CompanyId");
 
                     b.ToTable("Services", (string)null);
+                });
+
+            modelBuilder.Entity("QDomain.Models.AvailabilityScheduleEntity", b =>
+                {
+                    b.HasOne("QDomain.Models.EmployeeEntity", "Employee")
+                        .WithMany("AvailabilitySchedules")
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
                 });
 
             modelBuilder.Entity("QDomain.Models.BlockedCustomerEntity", b =>
@@ -326,12 +360,6 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("QDomain.Models.EmployeeEntity", "Employee")
-                        .WithMany()
-                        .HasForeignKey("EmployeeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("QDomain.Models.QueueEntity", "Queue")
                         .WithMany()
                         .HasForeignKey("QueueId")
@@ -339,8 +367,6 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                         .IsRequired();
 
                     b.Navigation("Customer");
-
-                    b.Navigation("Employee");
 
                     b.Navigation("Queue");
                 });
@@ -370,6 +396,8 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
 
             modelBuilder.Entity("QDomain.Models.EmployeeEntity", b =>
                 {
+                    b.Navigation("AvailabilitySchedules");
+
                     b.Navigation("Queues");
                 });
 
