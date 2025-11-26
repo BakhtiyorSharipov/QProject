@@ -7,10 +7,9 @@ namespace QApplication.Interfaces;
 
 public interface IAuthService
 {
-    AuthResponse Login(LoginRequest request);
-    AuthResponse Refresh(RefreshTokenRequest request);
-    void Logout(string refreshToken);
-    User RegisterCustomer(RegisterCustomerRequestModel request);
-    User CreateEmployee(CreateEmployeeRequest request, int createdByUserId);
-    User CreateCompanyAdmin(CreateCompanyAdminRequest request, int createdByUserId);
+    Task<AuthResponse> LoginAsync(LoginRequestModel request);
+    Task LogoutAsync(string refreshToken);
+    Task<User> RegisterCustomerAsync(RegisterCustomerRequestModel request);
+    Task<User> CreateEmployeeAsync(CreateEmployeeRoleRequest roleRequest, int createdByUserId);
+    Task<User> CreateCompanyAdminAsync(CreateCompanyAdminRequest request, int createdByUserId);
 }

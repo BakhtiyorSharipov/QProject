@@ -4,10 +4,10 @@ namespace QApplication.Interfaces.Repository;
 
 public interface IRefreshTokenRepository
 {
-    RefreshTokenEntity? FindByToken(string token);
+   Task<RefreshTokenEntity?> FindByTokenAsync(string token);
     IQueryable<RefreshTokenEntity> GetByUser(int userId);
-    void Add(RefreshTokenEntity entity);
+    Task AddAsync(RefreshTokenEntity entity);
     void Update(RefreshTokenEntity entity);
     void Delete(RefreshTokenEntity entity);
-    int SaveChanges();
+    Task<int> SaveChangesAsync();
 }

@@ -30,13 +30,11 @@ public class EmployeeService : IEmployeeService
         var response = dbEmployee.Select(employee => new EmployeeResponseModel()
         {
             Id = employee.Id,
-            ServiceId = employee.ServiceId,
+            ServiceId = employee.ServiceId.Value,
             FirstName = employee.FirstName,
             LastName = employee.LastName,
             Position = employee.Position,
-            EmailAddress = employee.EmailAddress,
             PhoneNumber = employee.PhoneNumber,
-            Password = employee.Password
         }).ToList();
 
         _logger.LogInformation("Fetched {employeeCount} employees.", response.Count);
@@ -56,13 +54,11 @@ public class EmployeeService : IEmployeeService
         var response = dbEmployees.Select(dbEmployee => new EmployeeResponseModel
         {
             Id = dbEmployee.Id,
-            ServiceId = dbEmployee.ServiceId,
+            ServiceId = dbEmployee.ServiceId.Value,
             FirstName = dbEmployee.FirstName,
             LastName = dbEmployee.LastName,
             Position = dbEmployee.Position,
-            EmailAddress = dbEmployee.EmailAddress,
             PhoneNumber = dbEmployee.PhoneNumber,
-            Password = dbEmployee.Password
         }).ToList();
 
         _logger.LogInformation("{employeeCount} employees found for this company Id {companyId}", response.Count,
@@ -83,13 +79,11 @@ public class EmployeeService : IEmployeeService
         var response = new EmployeeResponseModel()
         {
             Id = dbEmployee.Id,
-            ServiceId = dbEmployee.ServiceId,
+            ServiceId = dbEmployee.ServiceId.Value,
             FirstName = dbEmployee.FirstName,
             LastName = dbEmployee.LastName,
             Position = dbEmployee.Position,
-            EmailAddress = dbEmployee.EmailAddress,
             PhoneNumber = dbEmployee.PhoneNumber,
-            Password = dbEmployee.Password
         };
 
         _logger.LogInformation("Employee with Id {employeeId} fetched successfully", id);
@@ -111,10 +105,9 @@ public class EmployeeService : IEmployeeService
             FirstName = requestToCreate.FirstName,
             LastName = requestToCreate.LastName,
             Position = requestToCreate.Position,
-            EmailAddress = request.EmailAddress,
             PhoneNumber = requestToCreate.PhoneNumber,
-            Password = requestToCreate.Password,
-            ServiceId = requestToCreate.ServiceId
+            ServiceId = requestToCreate.ServiceId,
+            CreatedAt = DateTime.UtcNow
         };
 
         await _repository.AddAsync(employee);
@@ -126,13 +119,11 @@ public class EmployeeService : IEmployeeService
         var response = new EmployeeResponseModel()
         {
             Id = employee.Id,
-            ServiceId = employee.ServiceId,
+            ServiceId = employee.ServiceId.Value,
             FirstName = employee.FirstName,
             LastName = employee.LastName,
             Position = employee.Position,
-            EmailAddress = employee.EmailAddress,
             PhoneNumber = employee.PhoneNumber,
-            Password = employee.Password
         };
 
         return response;
@@ -158,9 +149,7 @@ public class EmployeeService : IEmployeeService
         dbEmployee.FirstName = requestToUpdate.FirstName;
         dbEmployee.LastName = requestToUpdate.LastName;
         dbEmployee.Position = requestToUpdate.Position;
-        dbEmployee.EmailAddress = requestToUpdate.EmailAddress;
         dbEmployee.PhoneNumber = requestToUpdate.PhoneNumber;
-        dbEmployee.Password = requestToUpdate.Password;
 
         _repository.Update(dbEmployee);
         await _repository.SaveChangesAsync();
@@ -169,13 +158,11 @@ public class EmployeeService : IEmployeeService
         var response = new EmployeeResponseModel()
         {
             Id = dbEmployee.Id,
-            ServiceId = dbEmployee.ServiceId,
+            ServiceId = dbEmployee.ServiceId.Value,
             FirstName = dbEmployee.FirstName,
             LastName = dbEmployee.LastName,
             Position = dbEmployee.Position,
-            EmailAddress = dbEmployee.EmailAddress,
             PhoneNumber = dbEmployee.PhoneNumber,
-            Password = dbEmployee.Password
         };
 
         return response;

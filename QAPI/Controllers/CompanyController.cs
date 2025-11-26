@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QApplication.Interfaces;
 using QApplication.Requests.CompanyRequest;
 using QApplication.Responses;
+using QDomain.Enums;
 
 
 namespace QAPI.Controllers;
@@ -18,7 +20,8 @@ public class CompanyController : ControllerBase
         _companyService = companyService;
         _logger = logger;
     }
-
+    
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin))]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<CompanyResponseModel>>> GetAllAsync(int pageList, int pageNumber)
     {
@@ -29,7 +32,7 @@ public class CompanyController : ControllerBase
         return Ok(companies);
     }
 
-
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin))]
     [HttpGet("{id}")]
     public async Task<ActionResult<CompanyResponseModel>> GetByIdAsync([FromRoute] int id)
     {
@@ -40,6 +43,7 @@ public class CompanyController : ControllerBase
         return Ok(company);
     }
 
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin))]
     [HttpPost]
     public async Task<IActionResult> PostAsync([FromBody] CreateCompanyRequest request)
     {
@@ -50,7 +54,7 @@ public class CompanyController : ControllerBase
         return CreatedAtAction(nameof(GetByIdAsync), new { id = createCompany.Id }, createCompany);
     }
 
-
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin))]
     [HttpPut("{id}")]
     public async Task<IActionResult> PutAsync([FromRoute] int id, [FromBody] UpdateCompanyRequest request)
     {
@@ -60,7 +64,7 @@ public class CompanyController : ControllerBase
         return Ok(update);
     }
 
-
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin))]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteAsync([FromRoute] int id)
     {

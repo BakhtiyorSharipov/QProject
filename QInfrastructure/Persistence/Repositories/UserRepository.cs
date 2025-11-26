@@ -15,25 +15,20 @@ public class UserRepository: IUserRepository
         _dbContext = dbContext;
         _dbUser = dbContext.Set<User>();
     }
-
-    public IQueryable<User> Queryable()
+    
+    public async Task<User?> FindByIdAsync(int id)
     {
-        return _dbUser;
+        return await _dbUser.FindAsync(id);
     }
 
-    public User? FindById(int id)
+    public async Task<User?> FindByEmailAsync(string email)
     {
-        return _dbUser.Find(id);
+        return await _dbUser.FirstOrDefaultAsync(s => s.EmailAddress == email);
     }
 
-    public User? FindByEmail(string email)
+    public async Task AddAsync(User entity)
     {
-        return _dbUser.FirstOrDefault(s => s.EmailAddress == email);
-    }
-
-    public void Add(User entity)
-    {
-        _dbUser.Add(entity);
+        await _dbUser.AddAsync(entity);
     }
 
     public void Update(User entity)
@@ -46,8 +41,8 @@ public class UserRepository: IUserRepository
         _dbUser.Remove(entity);
     }
 
-    public int SaveChanges()
+    public async Task<int> SaveChangesAsync()
     {
-       return  _dbContext.SaveChanges();
+       return await _dbContext.SaveChangesAsync();
     }
 }

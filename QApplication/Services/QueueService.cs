@@ -173,7 +173,8 @@ public class QueueService : IQueueService
             EmployeeId = requestToCreate.EmployeeId,
             ServiceId = requestToCreate.ServiceId,
             StartTime = requestToCreate.StartTime,
-            Status = QueueStatus.Pending
+            Status = QueueStatus.Pending,
+            CreatedAt = DateTime.UtcNow
         };
 
 
@@ -360,7 +361,8 @@ public class QueueService : IQueueService
                     CompanyId = dbQueue.Service.CompanyId,
                     DoesBanForever = true,
                     Reason = "Did not come 3 times",
-                    BannedUntil = DateTime.MaxValue
+                    BannedUntil = DateTime.MaxValue,
+                    CreatedAt = DateTime.UtcNow
                 };
 
                 await _blockedCustomerRepository.AddAsync(blockedCustomer);

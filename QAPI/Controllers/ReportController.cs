@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QApplication.Interfaces;
 using QApplication.Requests.ReportRequest;
 using QApplication.Responses.ReportResponse;
+using QDomain.Enums;
 
 namespace QAPI.Controllers;
 
@@ -17,6 +19,7 @@ public class ReportController : ControllerBase
         _logger = logger;
     }
 
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin)+","+ nameof(UserRoles.SystemAdmin))]
     [HttpGet("company/report")]
     public async Task<ActionResult<CompanyReportItemResponseModel>> GetCompanyReportAsync([FromQuery] CompanyReportRequest request)
     {
@@ -26,6 +29,7 @@ public class ReportController : ControllerBase
         return Ok(companyReport);
     }
     
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin)+","+ nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.Employee))]
     [HttpGet("employee/report ")]
     public async Task<ActionResult< EmployeeReportResponseModel>> GetEmployeeReportAsync([FromQuery] EmployeeReportRequest request)
     {
@@ -35,7 +39,7 @@ public class ReportController : ControllerBase
         return Ok(employeeReport);
     }
     
-    
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin)+","+ nameof(UserRoles.SystemAdmin))]
     [HttpGet("queue/report")]
     public async Task<ActionResult<QueueReportResponseModel>> GetQueueReportAsync([FromQuery]QueueReportRequest request)
     {
@@ -46,6 +50,7 @@ public class ReportController : ControllerBase
         
     }
 
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin)+","+ nameof(UserRoles.SystemAdmin))]
     [HttpGet("complaint/report")]
     public async Task<ActionResult< ComplaintReportResponseModel>> GetComplaintReportAsync([FromQuery]ComplaintReportRequest request)
     {
@@ -55,6 +60,7 @@ public class ReportController : ControllerBase
         return Ok(complaintReport);
     }
 
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin)+","+ nameof(UserRoles.SystemAdmin))]
     [HttpGet("review/report")]
     public async Task<ActionResult< ReviewReportResponseModel>> GetReviewReportAsync([FromQuery] ReviewReportRequest request)
     {
@@ -64,6 +70,7 @@ public class ReportController : ControllerBase
         return Ok(reviewReport);
     }
 
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin)+","+ nameof(UserRoles.SystemAdmin))]
     [HttpGet("service/report")]
     public async Task<ActionResult< ServiceReportResponseModel>> GetServiceReportAsync([FromQuery] ServiceReportRequest request)
     {

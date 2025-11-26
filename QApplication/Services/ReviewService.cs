@@ -162,7 +162,8 @@ public class ReviewService : IReviewService
             CustomerId = requestToCreate.CustomerId,
             QueueId = requestToCreate.QueueId,
             Grade = requestToCreate.Grade,
-            ReviewText = requestToCreate.ReviewText
+            ReviewText = requestToCreate.ReviewText,
+            CreatedAt = DateTime.UtcNow
         };
 
         if (review.Grade < 1 || review.Grade > 5)

@@ -10,7 +10,7 @@ public class QueueEntity: BaseEntity
     public string? CancelReason { get; set; }
 
     public QueueStatus Status { get; set; } = QueueStatus.Pending;
-    
+    public DateTime CreatedAt { get; set; }= DateTime.UtcNow;
     public int EmployeeId { get; set; }
     public EmployeeEntity Employee { get; set; }
     

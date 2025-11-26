@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using QInfrastructure.Persistence.DataBase;
@@ -11,9 +12,11 @@ using QInfrastructure.Persistence.DataBase;
 namespace QInfrastructure.Persistence.DataBase.Migrations
 {
     [DbContext(typeof(QueueDbContext))]
-    partial class EFContextModelSnapshot : ModelSnapshot
+    [Migration("20251123185632_AddAuthEntities")]
+    partial class AddAuthEntities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -33,9 +36,6 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                     b.Property<string>("AvailableSlots")
                         .IsRequired()
                         .HasColumnType("jsonb");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
@@ -73,9 +73,6 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                     b.Property<int>("CompanyId")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<int>("CustomerId")
                         .HasColumnType("integer");
 
@@ -110,9 +107,6 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("EmailAddress")
                         .IsRequired()
                         .HasColumnType("text");
@@ -141,9 +135,6 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("CreatdAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<int>("CustomerId")
                         .HasColumnType("integer");
 
@@ -170,14 +161,19 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<string>("EmailAddress")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Password")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -198,14 +194,22 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<string>("EmailAddress")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Password")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -217,7 +221,7 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int?>("ServiceId")
+                    b.Property<int>("ServiceId")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
@@ -237,9 +241,6 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
 
                     b.Property<string>("CancelReason")
                         .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("CustomerId")
                         .HasColumnType("integer");
@@ -281,11 +282,14 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime>("Expires")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ReplacedByToken")
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("RevokedAt")
                         .HasColumnType("timestamp with time zone");
@@ -299,6 +303,8 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Token");
+
                     b.HasIndex("UserId");
 
                     b.ToTable("RefreshTokens", (string)null);
@@ -311,9 +317,6 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("CustomerId")
                         .HasColumnType("integer");
@@ -336,6 +339,27 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                     b.ToTable("Reviews", (string)null);
                 });
 
+            modelBuilder.Entity("QDomain.Models.RoleEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Roles", (string)null);
+                });
+
             modelBuilder.Entity("QDomain.Models.ServiceEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -347,8 +371,8 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                     b.Property<int>("CompanyId")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("ServiceDescription")
                         .IsRequired()
@@ -365,7 +389,7 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                     b.ToTable("Services", (string)null);
                 });
 
-            modelBuilder.Entity("QDomain.Models.User", b =>
+            modelBuilder.Entity("QDomain.Models.UserEntity", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -376,36 +400,48 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int?>("CustomerId")
-                        .HasColumnType("integer");
-
                     b.Property<string>("EmailAddress")
                         .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
-                    b.Property<int?>("EmployeeId")
-                        .HasColumnType("integer");
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("Roles")
-                        .HasColumnType("integer");
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CustomerId")
-                        .IsUnique();
 
                     b.HasIndex("EmailAddress")
                         .IsUnique();
 
-                    b.HasIndex("EmployeeId")
-                        .IsUnique();
-
                     b.ToTable("Users", (string)null);
+                });
+
+            modelBuilder.Entity("QDomain.Models.UserRoleEntity", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("RoleId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("UserId", "RoleId");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("UserRoles", (string)null);
                 });
 
             modelBuilder.Entity("QDomain.Models.AvailabilityScheduleEntity", b =>
@@ -461,7 +497,9 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                 {
                     b.HasOne("QDomain.Models.ServiceEntity", "Service")
                         .WithMany("Employees")
-                        .HasForeignKey("ServiceId");
+                        .HasForeignKey("ServiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Service");
                 });
@@ -495,7 +533,7 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
 
             modelBuilder.Entity("QDomain.Models.RefreshTokenEntity", b =>
                 {
-                    b.HasOne("QDomain.Models.User", "User")
+                    b.HasOne("QDomain.Models.UserEntity", "User")
                         .WithMany("RefreshTokens")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -534,19 +572,23 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                     b.Navigation("Company");
                 });
 
-            modelBuilder.Entity("QDomain.Models.User", b =>
+            modelBuilder.Entity("QDomain.Models.UserRoleEntity", b =>
                 {
-                    b.HasOne("QDomain.Models.CustomerEntity", "Customer")
-                        .WithOne()
-                        .HasForeignKey("QDomain.Models.User", "CustomerId");
+                    b.HasOne("QDomain.Models.RoleEntity", "Role")
+                        .WithMany("UserRoles")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.HasOne("QDomain.Models.EmployeeEntity", "Employee")
-                        .WithOne()
-                        .HasForeignKey("QDomain.Models.User", "EmployeeId");
+                    b.HasOne("QDomain.Models.UserEntity", "User")
+                        .WithMany("UserRoles")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Navigation("Customer");
+                    b.Navigation("Role");
 
-                    b.Navigation("Employee");
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("QDomain.Models.CompanyEntity", b =>
@@ -570,14 +612,21 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                     b.Navigation("Queues");
                 });
 
+            modelBuilder.Entity("QDomain.Models.RoleEntity", b =>
+                {
+                    b.Navigation("UserRoles");
+                });
+
             modelBuilder.Entity("QDomain.Models.ServiceEntity", b =>
                 {
                     b.Navigation("Employees");
                 });
 
-            modelBuilder.Entity("QDomain.Models.User", b =>
+            modelBuilder.Entity("QDomain.Models.UserEntity", b =>
                 {
                     b.Navigation("RefreshTokens");
+
+                    b.Navigation("UserRoles");
                 });
 #pragma warning restore 612, 618
         }

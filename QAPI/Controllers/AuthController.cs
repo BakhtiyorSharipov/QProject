@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using QApplication.Interfaces;
 using QApplication.Requests;
-using QDomain.Models;
 
 namespace QAPI.Controllers;
 
@@ -18,29 +17,23 @@ public class AuthController: ControllerBase
     }
 
     [HttpPost("login")]
-    public IActionResult Login([FromBody] LoginRequest request)
+    public async Task<IActionResult> LoginAsync([FromBody] LoginRequestModel request)
     {
-        var result = _authService.Login(request);
+        var result = await _authService.LoginAsync(request);
         return Ok(result);
     }
-
-    [HttpPost("refresh")]
-    public IActionResult Refresh([FromBody] RefreshTokenRequest request)
-    {
-        var result = _authService.Refresh(request);
-        return Ok(result);
-    }
-
+    
     [HttpPost("logout")]
-    public IActionResult Logout([FromBody] RefreshTokenRequest request)
+    public async Task<IActionResult> LogoutAsync([FromBody] RefreshTokenRequest request)
     {
-        _authService.Logout(request.RefreshToken);
+       await _authService.LogoutAsync(request.RefreshToken);
         return NoContent();
     }
 
-    public IActionResult Register([FromBody] RegisterCustomerRequestModel request)
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterCustomerRequestModel request)
     {
-        var user = _authService.RegisterCustomer(request);
+        var user =await _authService.RegisterCustomerAsync(request);
         return CreatedAtAction(null, new { id = user.Id }, new { user.Id, user.EmailAddress, Role = user.Roles.ToString() });
     }
     

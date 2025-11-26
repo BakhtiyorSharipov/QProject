@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices.ComTypes;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QApplication.Interfaces;
 using QApplication.Requests.QueueRequest;
@@ -20,6 +21,7 @@ public class QueueController : ControllerBase
         _logger = logger;
     }
 
+    [Authorize(Roles =nameof(UserRoles.CompanyAdmin)+","+nameof(UserRoles.SystemAdmin))]
     [HttpGet]
     public async Task<ActionResult< IEnumerable<QueueResponseModel>>> GetAllAsync(int pageList, int pageNumber)
     {
@@ -29,6 +31,7 @@ public class QueueController : ControllerBase
         return Ok(queues);
     }
 
+    [Authorize(Roles = nameof(UserRoles.Employee)+","+nameof(UserRoles.CompanyAdmin)+","+nameof(UserRoles.SystemAdmin))]
     [HttpGet("{id}")]
     public async Task<ActionResult< QueueResponseModel>> GetByIdAsync([FromRoute] int id)
     {
@@ -38,6 +41,7 @@ public class QueueController : ControllerBase
         return Ok(queue);
     }
 
+    [Authorize(Roles = nameof(UserRoles.Customer))]
     [HttpPost("book")]
     public async Task<IActionResult> PostAsync([FromBody] CreateQueueRequest request)
     {
@@ -47,15 +51,7 @@ public class QueueController : ControllerBase
         return Created(nameof(GetByIdAsync), queue);
     }
     
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteAsync([FromRoute] int id)
-    {
-        _logger.LogInformation("Received request to delete queue with Id: {queueId}", id);
-        var delete =await _service.DeleteAsync(id);
-        _logger.LogInformation("Successfully deleted queue with Id: {queueId}", id);
-        return NoContent();
-    }
-
+    [Authorize(Roles = nameof(UserRoles.Customer))]
     [HttpPut("cancel/customer")]
     public async Task<IActionResult> CancelQueueByCustomerAsync([FromBody] QueueCancelRequest request)
     {
@@ -65,6 +61,7 @@ public class QueueController : ControllerBase
         return Ok(cancel);
     }
 
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin)+","+ nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.Employee))]
     [HttpPut("cancel/employee")]
     public async Task<IActionResult> CancelQueueByEmployeeAsync([FromBody] QueueCancelRequest request)
     {
@@ -74,6 +71,7 @@ public class QueueController : ControllerBase
         return Ok(cancel);
     }
 
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin)+","+ nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.Employee))]
     [HttpPut("status/update")]
     public async Task<ActionResult<QueueResponseModel>> UpdateStatusAsync([FromBody] UpdateQueueRequest request)
     {
@@ -83,6 +81,7 @@ public class QueueController : ControllerBase
         return Ok(result);
     }
 
+    [Authorize(Roles = nameof(UserRoles.Customer))]
     [HttpGet("history/customer/{customerId}")]
     public async Task<IEnumerable<QueueResponseModel>> GetQueuesByCustomerAsync([FromRoute] int customerId)
     {
@@ -92,6 +91,7 @@ public class QueueController : ControllerBase
         return queue;
     }
 
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin)+","+ nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.Employee))]
     [HttpGet("history/employee/{employeeId}")]
     public async Task<IEnumerable<QueueResponseModel>> GetQueuesByEmployeeAsync([FromRoute] int employeeId)
     {

@@ -255,7 +255,8 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
                 Description = requestToCreate.Description,
                 AvailableSlots = new List<Interval<DateTimeOffset>> { interval },
                 RepeatSlot = requestToCreate.RepeatSlot,
-                RepeatDuration = requestToCreate.RepeatDuration
+                RepeatDuration = requestToCreate.RepeatDuration,
+                CreatedAt = DateTime.UtcNow
             });
         }
 
@@ -497,7 +498,8 @@ public class AvailabilityScheduleService : IAvailabilityScheduleService
                         Description = requestToUpdate.Description,
                         AvailableSlots = newSlot,
                         RepeatSlot = requestToUpdate.RepeatSlot,
-                        RepeatDuration = requestToUpdate.RepeatDuration
+                        RepeatDuration = requestToUpdate.RepeatDuration,
+                        CreatedAt = DateTime.UtcNow
                     });
 
                     _logger.LogDebug("Added new repeated schedule for EmployeeId: {employeeId}",

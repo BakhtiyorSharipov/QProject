@@ -1,8 +1,10 @@
 using System.Runtime.InteropServices.ComTypes;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QApplication.Interfaces;
 using QApplication.Requests.EmployeeRequest;
 using QApplication.Responses;
+using QDomain.Enums;
 using QDomain.Models;
 
 namespace QAPI.Controllers;
@@ -20,6 +22,7 @@ public class EmployeeController: ControllerBase
         _logger = logger;
     }
 
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin))]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<EmployeeResponseModel>>> GetAllAsync(int pageList, int pageNumber)
     {
@@ -29,6 +32,7 @@ public class EmployeeController: ControllerBase
         return Ok(employees);
     }
 
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin))]
     [HttpGet("{id}")]
     public async Task<ActionResult<EmployeeResponseModel>> GetByIdAsync([FromRoute] int id)
     {
@@ -38,6 +42,7 @@ public class EmployeeController: ControllerBase
         return Ok(employee);
     }
 
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin))]
     [HttpPost]
     public async Task<IActionResult> PostAsync([FromBody] CreateEmployeeRequest request)
     {
@@ -47,6 +52,7 @@ public class EmployeeController: ControllerBase
         return CreatedAtAction(nameof(GetByIdAsync), new { id = employee.Id }, employee);
     }
 
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin))]
     [HttpPut("{id}")]
     public async Task<IActionResult> PutAsync([FromRoute] int id, [FromBody] UpdateEmployeeRequest request)
     {
@@ -56,6 +62,7 @@ public class EmployeeController: ControllerBase
         return Ok(update);
     }
 
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin))]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete([FromRoute] int id)
     {

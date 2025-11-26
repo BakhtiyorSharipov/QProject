@@ -1,8 +1,10 @@
 using System.Collections.Immutable;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QApplication.Interfaces;
 using QApplication.Requests.AvailabilityScheduleRequest;
 using QApplication.Responses;
+using QDomain.Enums;
 
 namespace QAPI.Controllers;
 
@@ -18,7 +20,8 @@ public class AvailabilityScheduleController: ControllerBase
         _service = service;
         _logger = logger;
     }
-
+    
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin) + "," + nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.Employee))]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<AvailabilityScheduleResponseModel>>> GetAllAsync(int pageList, int pageNumber)
     {
@@ -28,6 +31,7 @@ public class AvailabilityScheduleController: ControllerBase
         return Ok(schedules);
     }
 
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin) + "," + nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.Employee))]
     [HttpGet("{id}")]
     public async Task<ActionResult< AvailabilityScheduleResponseModel>> GetByIdAsync([FromRoute]int id)
     {
@@ -37,6 +41,7 @@ public class AvailabilityScheduleController: ControllerBase
         return Ok(schedule);
     }
 
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin) + "," + nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.Employee))]
     [HttpPost]
     public async Task<ActionResult> PostAsync([FromBody] CreateAvailabilityScheduleRequest request)
     {
@@ -46,6 +51,7 @@ public class AvailabilityScheduleController: ControllerBase
         return Created(nameof(GetByIdAsync), schedule);
     }
 
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin) + "," + nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.Employee))]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateAsync([FromRoute] int id, [FromBody] UpdateAvailabilityScheduleRequest request,[FromQuery] bool updateAllSlots)
     {
@@ -55,6 +61,7 @@ public class AvailabilityScheduleController: ControllerBase
         return Ok(update);
     }
 
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin) + "," + nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.Employee))]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteAsync([FromRoute] int id, [FromQuery] bool deleteAllSlots)
     {

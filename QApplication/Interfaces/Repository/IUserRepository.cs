@@ -4,11 +4,10 @@ namespace QApplication.Interfaces.Repository;
 
 public interface IUserRepository
 {
-    IQueryable<User> Queryable();
-    User? FindById(int id);
-    User? FindByEmail(string email);
-    void Add(User entity);
+    Task<User?> FindByIdAsync(int id);
+    Task<User?> FindByEmailAsync(string email);
+    Task AddAsync(User entity);
     void Update(User entity);
     void Delete(User entity);
-    int SaveChanges();
+    Task<int> SaveChangesAsync();
 }

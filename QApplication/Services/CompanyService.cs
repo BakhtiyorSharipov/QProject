@@ -107,7 +107,8 @@ public class CompanyService : ICompanyService
             CompanyName = parsedToCreate.CompanyName,
             Address = parsedToCreate.Address,
             EmailAddress = parsedToCreate.EmailAddress,
-            PhoneNumber = parsedToCreate.PhoneNumber
+            PhoneNumber = parsedToCreate.PhoneNumber,
+            CreatedAt = DateTime.UtcNow
         };
 
         await _repository.AddAsync(company);

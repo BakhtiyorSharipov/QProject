@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QApplication.Interfaces;
 using QApplication.Requests.CustomerRequest;
 using QApplication.Responses;
+using QDomain.Enums;
 
 namespace QAPI.Controllers;
 
@@ -17,7 +19,8 @@ public class CustomerController: ControllerBase
         _service = service;
         _logger = logger;
     }
-
+    
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin))]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<CustomerResponseModel>>> GetAllAsync(int pageList, int pageNumber)
     {
@@ -27,6 +30,7 @@ public class CustomerController: ControllerBase
         return Ok(customers);
     }
 
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin))]
     [HttpGet("{id}")]
     public async Task<ActionResult< CustomerResponseModel>> GetByIdAsync([FromRoute] int id)
     {
@@ -36,6 +40,7 @@ public class CustomerController: ControllerBase
         return Ok(customer);
     }
 
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin))]
     [HttpPost]
     public async Task<IActionResult> PostAsync([FromBody] CreateCustomerRequest request)
     {
@@ -45,6 +50,7 @@ public class CustomerController: ControllerBase
         return CreatedAtAction(nameof(GetByIdAsync), new { id = customer.Id }, customer);
     }
 
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin))]
     [HttpPut("{id}")]
     public async Task<IActionResult> PutAsync([FromRoute] int id, [FromBody] UpdateCustomerRequest request)
     {
@@ -54,6 +60,7 @@ public class CustomerController: ControllerBase
        return Ok(update);
     }
 
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin))]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteAsync([FromRoute] int id)
     {

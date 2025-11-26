@@ -33,9 +33,7 @@ public class CustomerService : ICustomerService
             Id = customer.Id,
             FirstName = customer.FirstName,
             LastName = customer.LastName,
-            EmailAddress = customer.EmailAddress,
             PhoneNumber = customer.PhoneNumber,
-            Password = customer.Password
         }).ToList();
 
         _logger.LogInformation("Fetched {response.Count} customers.", response.Count);
@@ -58,9 +56,7 @@ public class CustomerService : ICustomerService
             Id = customer.Id,
             FirstName = customer.FirstName,
             LastName = customer.LastName,
-            EmailAddress = customer.EmailAddress,
             PhoneNumber = customer.PhoneNumber,
-            Password = customer.Password
         }).ToList();
 
         _logger.LogInformation("{response.Count} customers found for this company Id {companyId}", response.Count,
@@ -83,9 +79,7 @@ public class CustomerService : ICustomerService
             Id = dbCustomer.Id,
             FirstName = dbCustomer.FirstName,
             LastName = dbCustomer.LastName,
-            EmailAddress = dbCustomer.EmailAddress,
             PhoneNumber = dbCustomer.PhoneNumber,
-            Password = dbCustomer.Password
         };
 
         _logger.LogInformation("Customer with Id {id} fetched successfully.", id);
@@ -106,9 +100,8 @@ public class CustomerService : ICustomerService
         {
             FirstName = requestToCreate.FirstName,
             LastName = requestToCreate.LastName,
-            EmailAddress = requestToCreate.EmailAddress,
             PhoneNumber = requestToCreate.PhoneNumber,
-            Password = requestToCreate.Password
+            CreatedAt = DateTime.UtcNow
         };
 
         await _repository.AddAsync(customer);
@@ -121,9 +114,7 @@ public class CustomerService : ICustomerService
             Id = customer.Id,
             FirstName = customer.FirstName,
             LastName = customer.LastName,
-            EmailAddress = customer.EmailAddress,
             PhoneNumber = customer.PhoneNumber,
-            Password = customer.PhoneNumber
         };
 
         return response;
@@ -149,9 +140,7 @@ public class CustomerService : ICustomerService
 
         dbCustomer.FirstName = requestToUpdate.FirstName;
         dbCustomer.LastName = requestToUpdate.LastName;
-        dbCustomer.EmailAddress = requestToUpdate.EmailAddress;
         dbCustomer.PhoneNumber = requestToUpdate.PhoneNumber;
-        dbCustomer.Password = requestToUpdate.Password;
 
         _repository.Update(dbCustomer);
         await _repository.SaveChangesAsync();
@@ -163,9 +152,7 @@ public class CustomerService : ICustomerService
             Id = dbCustomer.Id,
             FirstName = dbCustomer.FirstName,
             LastName = dbCustomer.LastName,
-            EmailAddress = dbCustomer.EmailAddress,
             PhoneNumber = dbCustomer.PhoneNumber,
-            Password = dbCustomer.Password
         };
 
         return response;

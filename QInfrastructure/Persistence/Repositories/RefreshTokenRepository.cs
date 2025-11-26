@@ -16,11 +16,11 @@ public class RefreshTokenRepository: IRefreshTokenRepository
         _dbToken = dbContext.Set<RefreshTokenEntity>();
     }
 
-    public RefreshTokenEntity? FindByToken(string token)
+    public async Task<RefreshTokenEntity?> FindByTokenAsync(string token)
     {
-        return _dbToken
+        return await _dbToken
             .Include(s => s.User)
-            .FirstOrDefault(s => s.Token == token);
+            .FirstOrDefaultAsync(s => s.Token == token);
     }
 
     public IQueryable<RefreshTokenEntity> GetByUser(int userId)
@@ -28,9 +28,9 @@ public class RefreshTokenRepository: IRefreshTokenRepository
         return _dbToken.Where(s => s.UserId == userId);
     }
 
-    public void Add(RefreshTokenEntity entity)
+    public async Task AddAsync(RefreshTokenEntity entity)
     {
-        _dbToken.Add(entity);
+         await  _dbToken.AddAsync(entity);
     }
 
     public void Update(RefreshTokenEntity entity)
@@ -43,8 +43,8 @@ public class RefreshTokenRepository: IRefreshTokenRepository
         _dbToken.Remove(entity);
     }
 
-    public int SaveChanges()
+    public async Task<int> SaveChangesAsync()
     {
-        return _dbContext.SaveChanges();
+        return await _dbContext.SaveChangesAsync();
     }
 }

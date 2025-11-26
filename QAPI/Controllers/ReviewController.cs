@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QApplication.Interfaces;
 using QApplication.Requests.ReviewRequest;
 using QApplication.Responses;
+using QDomain.Enums;
 
 namespace QAPI.Controllers;
 
@@ -18,6 +20,7 @@ public class ReviewController: ControllerBase
         _logger = logger;
     }
 
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin)+","+ nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.Employee))]
     [HttpGet]
     public async Task<ActionResult< IEnumerable<ReviewResponseModel>>> GetAllAsync(int pageList, int pageNumber)
     {
@@ -28,7 +31,8 @@ public class ReviewController: ControllerBase
         return Ok(reviews);
 
     }
-
+    
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin)+","+ nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.Employee))]
     [HttpGet("{id}")]
     public async Task<ActionResult< ReviewResponseModel>> GetByIdAsync([FromRoute] int id)
     {
@@ -38,6 +42,7 @@ public class ReviewController: ControllerBase
         return Ok(review);
     }
 
+    [Authorize(Roles = nameof(UserRoles.Customer))]
     [HttpPost]
     public async Task<IActionResult> PostAsync([FromBody] CreateReviewRequest request)
     {

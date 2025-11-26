@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QApplication.Interfaces;
 using QApplication.Requests.BlockedCustomerRequest;
 using QApplication.Responses;
+using QDomain.Enums;
 
 namespace QAPI.Controllers;
 
@@ -18,6 +20,7 @@ public class BlockedCustomerController : ControllerBase
         _logger = logger;
     }
 
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin) + ","+ nameof(UserRoles.Employee))]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<BlockedCustomerResponseModel>>> GetAllAsync(int pageList, int pageNumber)
     {
@@ -28,6 +31,7 @@ public class BlockedCustomerController : ControllerBase
         return Ok(blockedCustomers);
     }
 
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin) + ","+ nameof(UserRoles.Employee))]
     [HttpGet("{id}")]
     public async Task<ActionResult<BlockedCustomerResponseModel>> GetById([FromRoute] int id)
     {
@@ -37,6 +41,7 @@ public class BlockedCustomerController : ControllerBase
         return Ok(blocked);
     }
 
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin) + ","+ nameof(UserRoles.Employee))]
     [HttpPost("block")]
     public async Task<IActionResult> Block([FromBody] CreateBlockedCustomerRequest request)
     {
@@ -46,7 +51,7 @@ public class BlockedCustomerController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = blocked.Id }, blocked);
     }
 
-
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin) + ","+ nameof(UserRoles.Employee))]
     [HttpDelete("{id}/unblock")]
     public async Task<IActionResult> Unblock([FromRoute] int id)
     {

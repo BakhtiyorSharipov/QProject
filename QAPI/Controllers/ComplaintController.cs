@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QApplication.Interfaces;
 using QApplication.Requests.ComplaintRequest;
 using QApplication.Responses;
+using QDomain.Enums;
 
 namespace QAPI.Controllers;
 
@@ -18,7 +20,8 @@ public class ComplaintController: ControllerBase
         _complaintService = complaintService;
         _logger = logger;
     }
-
+    
+    [Authorize(Roles = nameof(UserRoles.Employee)+","+nameof(UserRoles.CompanyAdmin)+","+nameof(UserRoles.SystemAdmin))]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ComplaintResponseModel>>> GetAllComplaintsAsync(int pageList, int pageNumber)
     {
@@ -28,6 +31,7 @@ public class ComplaintController: ControllerBase
         return Ok(complaints);
     }
 
+    [Authorize(Roles = nameof(UserRoles.Employee)+","+nameof(UserRoles.CompanyAdmin)+","+nameof(UserRoles.SystemAdmin))]
     [HttpGet("{id}")]
     public async Task<ActionResult<ComplaintResponseModel>> GetComplaintByIdAsync([FromRoute]int id)
     {
@@ -37,6 +41,7 @@ public class ComplaintController: ControllerBase
         return Ok(complaint);
     }
 
+    [Authorize(Roles = nameof(UserRoles.Customer))]
     [HttpPost]
     public async Task<IActionResult> AddComplaintAsync([FromBody]CreateComplaintRequest request)
     {
@@ -46,6 +51,7 @@ public class ComplaintController: ControllerBase
         return Created(nameof(GetComplaintByIdAsync), complaint);
     }
 
+    [Authorize(Roles = nameof(UserRoles.Employee)+","+nameof(UserRoles.CompanyAdmin)+","+nameof(UserRoles.SystemAdmin))]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateComplaintStatusAsync([FromRoute] int id, [FromBody] UpdateComplaintStatusRequest request)
     {

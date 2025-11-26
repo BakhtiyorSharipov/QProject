@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Npgsql;
 using QApplication.Interfaces;
 using QInfrastructure.Persistence.Repositories;
@@ -53,24 +54,28 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
         Name = "Authorization",
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Description = "Enter 'Bearer {token}'"
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
     });
-    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement {
+    
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
         {
-            new Microsoft.OpenApi.Models.OpenApiSecurityScheme{
-                Reference = new Microsoft.OpenApi.Models.OpenApiReference {
-                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
                     Id = "Bearer"
                 }
             },
-            new string[] {}
+            new string[]{ }
         }
     });
 });
@@ -134,18 +139,18 @@ using (var scope = app.Services.CreateScope())
     var userRepo = scope.ServiceProvider.GetRequiredService<IUserRepository>();
     var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
 
-    var sys = userRepo.FindByEmail("systemAdmin@gmail.com");
+    var sys = await userRepo.FindByEmailAsync("systemAdmin@gmail.com");
     if (sys == null)
     {
         var sysUser = new User
         {
-            EmailAddress = "system@barbershop.example",
+            EmailAddress = "systemAdmin@gmail.com",
             Roles = QDomain.Enums.UserRoles.SystemAdmin,
             CreatedAt = DateTime.UtcNow
         };
         sysUser.PasswordHash = hasher.HashPassword(sysUser, "B.sh.3242"); 
-        userRepo.Add(sysUser);
-        userRepo.SaveChanges();
+        await userRepo.AddAsync(sysUser);
+        await userRepo.SaveChangesAsync();
     }
 }
 app.Run();

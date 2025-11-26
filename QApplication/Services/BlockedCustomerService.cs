@@ -126,7 +126,8 @@ public class BlockedCustomerService : IBlockedCustomerService
             CustomerId = requestToCreate.CustomerId,
             BannedUntil = requestToCreate.BannedUntil,
             DoesBanForever = requestToCreate.DoesBanForever,
-            Reason = requestToCreate.Reason
+            Reason = requestToCreate.Reason,
+            CreatedAt = DateTime.UtcNow
         };
 
 

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using QInfrastructure.Persistence.DataBase;
@@ -11,9 +12,11 @@ using QInfrastructure.Persistence.DataBase;
 namespace QInfrastructure.Persistence.DataBase.Migrations
 {
     [DbContext(typeof(QueueDbContext))]
-    partial class EFContextModelSnapshot : ModelSnapshot
+    [Migration("20251125124545_AddedChangesToModels")]
+    partial class AddedChangesToModels
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -217,7 +220,7 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int?>("ServiceId")
+                    b.Property<int>("ServiceId")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
@@ -461,7 +464,9 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                 {
                     b.HasOne("QDomain.Models.ServiceEntity", "Service")
                         .WithMany("Employees")
-                        .HasForeignKey("ServiceId");
+                        .HasForeignKey("ServiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Service");
                 });

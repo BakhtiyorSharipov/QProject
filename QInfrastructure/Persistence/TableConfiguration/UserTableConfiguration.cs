@@ -17,6 +17,14 @@ public class UserTableConfiguration:IEntityTypeConfiguration<User>
         builder.Property(u => u.Roles).IsRequired();
         builder.Property(u => u.CreatedAt).IsRequired();
 
+        builder.HasOne(u => u.Customer)
+            .WithOne()
+            .HasForeignKey<User>(u => u.CustomerId);
+
+        builder.HasOne(u => u.Employee)
+            .WithOne()
+            .HasForeignKey<User>(u => u.EmployeeId);
+        
         builder.HasMany(u => u.RefreshTokens)
             .WithOne(t => t.User)
             .HasForeignKey(t => t.UserId)

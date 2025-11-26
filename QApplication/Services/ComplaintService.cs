@@ -169,7 +169,8 @@ public class ComplaintService : IComplaintService
             CustomerId = requestToCreate.CustomerId,
             QueueId = requestToCreate.QueueId,
             ComplaintText = requestToCreate.ComplaintText,
-            ComplaintStatus = ComplaintStatus.Pending
+            ComplaintStatus = ComplaintStatus.Pending,
+            CreatdAt = DateTime.UtcNow
         };
 
         await _complaintRepository.AddComplaintAsync(complaint);

@@ -9,6 +9,8 @@ public class AvailabilityScheduleEntity : BaseEntity
     public string? Description { get; set; }
     public RepeatSlot RepeatSlot { get; set; } = RepeatSlot.None;
     public int? RepeatDuration { get; set; }
+
+    public DateTime CreatedAt { get; set; }= DateTime.UtcNow;
     public List<Interval<DateTimeOffset>> AvailableSlots { get; set; } = [];
     
     public int EmployeeId { get; set; }

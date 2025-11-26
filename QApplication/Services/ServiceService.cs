@@ -97,7 +97,8 @@ public class ServiceService : IServiceService
         {
             CompanyId = requestToCreate.CompanyId,
             ServiceName = requestToCreate.ServiceName,
-            ServiceDescription = requestToCreate.ServiceDescription
+            ServiceDescription = requestToCreate.ServiceDescription,
+            CreatedAt = DateTime.UtcNow
         };
 
         await _repository.AddAsync(service);

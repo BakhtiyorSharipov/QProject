@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QApplication.Interfaces;
 using QApplication.Requests.ServiceRequest;
 using QApplication.Responses;
+using QDomain.Enums;
 
 namespace QAPI.Controllers;
 
@@ -18,6 +20,7 @@ public class ServiceController: ControllerBase
         _logger = logger;
     }
 
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin))]
     [HttpGet]
     public async Task<ActionResult< IEnumerable<ServiceResponseModel>>> GetAllAsync(int pageList, int pageNumber)
     {
@@ -28,6 +31,7 @@ public class ServiceController: ControllerBase
 
     }
 
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin))]
     [HttpGet("{id}")]
     public async Task<ActionResult<ServiceResponseModel>> GetByIdAsync([FromRoute] int id)
     {
@@ -37,6 +41,7 @@ public class ServiceController: ControllerBase
         return Ok(service);
     }
 
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin))]
     [HttpPost]
     public async Task<IActionResult> PostAsync([FromBody] CreateServiceRequest request)
     {
@@ -46,6 +51,7 @@ public class ServiceController: ControllerBase
         return CreatedAtAction(nameof(GetByIdAsync), new { id = service.Id }, service);
     }
 
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin))]
     [HttpPut("{id}")]
     public async Task<IActionResult> Put([FromRoute] int id, [FromBody] UpdateServiceRequest request)
     {
@@ -55,6 +61,7 @@ public class ServiceController: ControllerBase
        return Ok(update);
     }
 
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin))]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete([FromRoute] int id)
     {
