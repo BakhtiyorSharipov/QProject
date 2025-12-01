@@ -1,6 +1,9 @@
 using System.Text;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -9,12 +12,26 @@ using QApplication.Interfaces;
 using QInfrastructure.Persistence.Repositories;
 using QApplication.Interfaces.Repository;
 using QApplication.Services;
+using QApplication.Validators;
+using QApplication.Validators.AuthValidators;
 using QDomain.Models;
 using QInfrastructure.Persistence.DataBase;
 using Serilog;
 
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddFluentValidationAutoValidation(config =>
+{
+    config.DisableDataAnnotationsValidation = true;
+});
+
+builder.Services.AddValidatorsFromAssembly(typeof(RegisterCustomerRequestValidator).Assembly);
+
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.SuppressModelStateInvalidFilter = true; 
+    options.SuppressInferBindingSourcesForParameters = true;
+});
 
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
