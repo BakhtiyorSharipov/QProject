@@ -1,73 +1,87 @@
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QApplication.Interfaces;
 using QApplication.Requests.CustomerRequest;
 using QApplication.Responses;
+using QApplication.UseCases.Customers.Commands.CreateCustomer;
+using QApplication.UseCases.Customers.Commands.DeleteCustomer;
+using QApplication.UseCases.Customers.Commands.UpdateCustomer;
+using QApplication.UseCases.Customers.Queries.GetAllCustomers;
+using QApplication.UseCases.Customers.Queries.GetCustomerById;
 using QDomain.Enums;
 
 namespace QAPI.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class CustomerController: ControllerBase
+public class CustomerController : ControllerBase
 {
-    private readonly ICustomerService _service;
     private readonly ILogger<CustomerController> _logger;
+    private readonly IMediator _mediator;
 
-    public CustomerController(ICustomerService service, ILogger<CustomerController> logger)
+    public CustomerController(ILogger<CustomerController> logger, IMediator mediator)
     {
-        _service = service;
         _logger = logger;
+        _mediator = mediator;
     }
-    
-    [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin))]
+
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin) + "," + nameof(UserRoles.CompanyAdmin))]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<CustomerResponseModel>>> GetAllAsync(int pageList, int pageNumber)
+    public async Task<ActionResult<IEnumerable<CustomerResponseModel>>> GetAllAsync([FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10)
     {
-        _logger.LogInformation("Received request to get all customers. PageList: {PageList}, PageNumber: {PageNumber}", pageList, pageNumber);
-        var customers=await _service.GetAllAsync(pageList, pageNumber);
-        _logger.LogInformation("Successfully returned {customerCount} customers.", customers.Count());
+        _logger.LogInformation("Received request to get all customers. PageNumber: {PageNumber}, PageSize: {PageSize}",
+            pageNumber, pageSize);
+
+        var query = new GetAllCustomersQuery(pageNumber, pageSize);
+        var customers = await _mediator.Send(query);
+
         return Ok(customers);
     }
 
-    [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin))]
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin) + "," + nameof(UserRoles.CompanyAdmin))]
     [HttpGet("{id}")]
-    public async Task<ActionResult< CustomerResponseModel>> GetByIdAsync([FromRoute] int id)
+    public async Task<ActionResult<CustomerResponseModel>> GetByIdAsync([FromRoute] int id)
     {
         _logger.LogInformation("Received request to get customer with Id: {customerId}", id);
-        var customer=await _service.GetByIdAsync(id);
+        var query = new GetCustomerByIdQuery(id);
+        var customer = await _mediator.Send(query);
         _logger.LogInformation("Successfully returned customer with Id: {customerId}", id);
         return Ok(customer);
     }
 
-    [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin))]
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin) + "," + nameof(UserRoles.CompanyAdmin))]
     [HttpPost]
-    public async Task<IActionResult> PostAsync([FromBody] CreateCustomerRequest request)
+    public async Task<IActionResult> PostAsync([FromBody] CreateCustomerCommand request)
     {
-        _logger.LogInformation("Received request to create customer with CustomerName: {name}", request.FirstName );
-        var customer = await _service.AddAsync(request);
+        _logger.LogInformation("Received request to create customer with CustomerName: {name}", request.Firstname);
+        var customer = await _mediator.Send(request);
         _logger.LogInformation("Successfully created customer with Id: {customerId}", customer.Id);
-        return CreatedAtAction(nameof(GetByIdAsync), new { id = customer.Id }, customer);
+        return Ok(customer);
     }
 
-    [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin))]
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin) + "," + nameof(UserRoles.CompanyAdmin) + "," +
+                       nameof(UserRoles.Customer) + "," + nameof(UserRoles.Employee))]
     [HttpPut("{id}")]
     public async Task<IActionResult> PutAsync([FromRoute] int id, [FromBody] UpdateCustomerRequest request)
     {
         _logger.LogInformation("Received request to update customer with Id: {customerId}", id);
-       var update= await _service.UpdateAsync(id,request);
-       _logger.LogInformation("Successfully updated customer with Id: {customerId}", id);
-       return Ok(update);
+
+        var command = new UpdateCustomerCommand(id, request.FirstName, request.LastName, request.PhoneNumber);
+        var update = await _mediator.Send(command);
+        _logger.LogInformation("Successfully updated customer with Id: {customerId}", id);
+        return Ok(update);
     }
 
-    [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin))]
+    [Authorize(Roles = nameof(UserRoles.SystemAdmin) + "," + nameof(UserRoles.CompanyAdmin))]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteAsync([FromRoute] int id)
     {
         _logger.LogInformation("Received request to delete with Id: {customerId}", id);
-       var delete= await _service.DeleteAsync(id);
-       _logger.LogInformation("Successfully deleted customer with Id: {customerId}", id);
-       return NoContent();
+        var command = new DeleteCustomerCommand(id);
+        await _mediator.Send(command);
+        _logger.LogInformation("Successfully deleted customer with Id: {customerId}", id);
+        return NoContent();
     }
-
 }
