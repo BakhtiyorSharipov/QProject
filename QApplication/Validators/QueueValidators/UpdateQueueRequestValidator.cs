@@ -1,10 +1,10 @@
 using FluentValidation;
-using QApplication.Requests.QueueRequest;
+using QApplication.UseCases.Queues.Commands.UpdateQueueStatus;
 using QDomain.Enums;
 
 namespace QApplication.Validators.QueueValidators;
 
-public class UpdateQueueRequestValidator: AbstractValidator<UpdateQueueRequest>
+public class UpdateQueueRequestValidator: AbstractValidator<UpdateQueueStatusCommand>
 {
     public UpdateQueueRequestValidator()
     {

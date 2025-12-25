@@ -1,18 +1,15 @@
 using System.Text;
-using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Npgsql;
+using QApplication;
 using QApplication.Interfaces;
-using QInfrastructure.Persistence.Repositories;
-using QApplication.Interfaces.Repository;
+using QApplication.Interfaces.Data;
 using QApplication.Services;
-using QApplication.Validators;
 using QApplication.Validators.AuthValidators;
 using QDomain.Models;
 using QInfrastructure.Persistence.DataBase;
@@ -20,45 +17,16 @@ using Serilog;
 
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddFluentValidationAutoValidation(config =>
+
+builder.Services.AddApplicationService();
+builder.Services.AddFluentValidation(fv =>
 {
-    config.DisableDataAnnotationsValidation = true;
+    fv.RegisterValidatorsFromAssemblyContaining<RegisterCustomerRequestValidator>();
 });
 
-builder.Services.AddValidatorsFromAssembly(typeof(RegisterCustomerRequestValidator).Assembly);
-
-builder.Services.Configure<ApiBehaviorOptions>(options =>
-{
-    options.SuppressModelStateInvalidFilter = true; 
-    options.SuppressInferBindingSourcesForParameters = true;
-});
-
-builder.Services.AddScoped<ICompanyService, CompanyService>();
-builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
-builder.Services.AddScoped<IBlockedCustomerService, BlockedCustomerService>();
-builder.Services.AddScoped<IBlockedCustomerRepository, BlockedCustomerRepository>();
-builder.Services.AddScoped<ICustomerService, CustomerService>();
-builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
-builder.Services.AddScoped<IEmployeeService, EmployeeService>();
-builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
-builder.Services.AddScoped<IQueueService, QueueService>();
-builder.Services.AddScoped<IQueueRepository, QueueRepository>();
-builder.Services.AddScoped<IReviewService, ReviewService>();
-builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
-builder.Services.AddScoped<IServiceService, ServiceService>();
-builder.Services.AddScoped<IServiceRepository, ServiceRepository>();
-builder.Services.AddScoped<IAvailabilityScheduleService, AvailabilityScheduleService>();
-builder.Services.AddScoped<IAvailabilityScheduleRepository, AvailabilityScheduleRepository>();
-builder.Services.AddScoped<IComplaintService, ComplaintService>();
-builder.Services.AddScoped<IComplaintRepository, ComplaintRepository>();
-builder.Services.AddScoped<IReportService, ReportService>();
-builder.Services.AddScoped<IReportRepository, ReportRepository>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-
+builder.Services.AddScoped<IQueueApplicationDbContext, QueueDbContext>();
 
 builder.Host.UseSerilog((context, services, configuration) =>
 {
@@ -66,8 +34,8 @@ builder.Host.UseSerilog((context, services, configuration) =>
         .ReadFrom.Services(services)
         .Enrich.FromLogContext();
 });
-
 builder.Services.AddControllers();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -134,6 +102,8 @@ builder.Services.AddDbContext<QueueDbContext>(
 
 var app = builder.Build();
 
+
+
 app.UseSerilogRequestLogging();
 if (app.Environment.IsDevelopment())
 {
@@ -151,17 +121,18 @@ app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<QueueDbContext>();
-    db.Database.Migrate();
+   await db.Database.MigrateAsync();
 
-    var userRepo = scope.ServiceProvider.GetRequiredService<IUserRepository>();
+    var userRepo = scope.ServiceProvider.GetRequiredService<QueueDbContext>();
     var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
 
-    var sys = await userRepo.FindByEmailAsync("systemAdmin@gmail.com");
+    var sys = await db.Users
+        .AnyAsync(u => u.EmailAddress == "systemAdmin@gmail.com");
     if (sys == null)
     {
         var sysUser = new User
         {
-            EmailAddress = "systemAdmin@gmail.com",
+                EmailAddress = "systemAdmin@gmail.com",
             Roles = QDomain.Enums.UserRoles.SystemAdmin,
             CreatedAt = DateTime.UtcNow
         };

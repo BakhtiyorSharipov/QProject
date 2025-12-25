@@ -47,5 +47,6 @@ public class CreateCompanyAdminRequestValidator: AbstractValidator<CreateCompany
             .Matches(@"[a-z]").WithMessage("Password must contain at least one lowercase letter.")
             .Matches(@"[0-9]").WithMessage("Password must contain at least one number.")
             .Matches(@"[\!\?\*\.\$#@%^&+=]").WithMessage("Password must contain at least one special character (!?*.$#@%^&+=).");
+        
     }
 }

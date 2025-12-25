@@ -1,9 +1,9 @@
 using FluentValidation;
-using QApplication.Requests.ReviewRequest;
+using QApplication.UseCases.Reviews.Commands.CreateReview;
 
 namespace QApplication.Validators.ReviewValidators;
 
-public class ReviewRequestValidator: AbstractValidator<ReviewRequestModel>
+public class ReviewRequestValidator: AbstractValidator<CreateReviewCommand>
 {
     public ReviewRequestValidator()
     {

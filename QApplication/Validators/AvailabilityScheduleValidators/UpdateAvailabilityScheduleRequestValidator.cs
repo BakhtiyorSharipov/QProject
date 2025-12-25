@@ -14,7 +14,7 @@ public class UpdateAvailabilityScheduleRequestValidator: AbstractValidator<Updat
             .IsInEnum().WithMessage("Invalid repeat slot value.");
         
         RuleFor(x => x.RepeatDuration)
-            .GreaterThan(0).When(x => x.RepeatDuration.HasValue)
+            .GreaterThanOrEqualTo(0).When(x => x.RepeatDuration.HasValue)
             .WithMessage("Repeat duration must be positive.");
         
         RuleFor(x => x.AvailableSlots)

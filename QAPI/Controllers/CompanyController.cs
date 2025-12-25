@@ -1,8 +1,14 @@
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QApplication.Interfaces;
 using QApplication.Requests.CompanyRequest;
 using QApplication.Responses;
+using QApplication.UseCase.Companies.Commands;
+using QApplication.UseCase.Companies.Commands.DeleteCompanyCommand;
+using QApplication.UseCase.Companies.Commands.UpdateCompanyCommand;
+using QApplication.UseCases.Companies.Queries.GetAllCompanies;
+using QApplication.UseCases.Companies.Queries.GetCompanyById;
 using QDomain.Enums;
 
 
@@ -12,23 +18,24 @@ namespace QAPI.Controllers;
 [Route("api/[controller]")]
 public class CompanyController : ControllerBase
 {
-    private readonly ICompanyService _companyService;
     private readonly ILogger<CompanyController> _logger;
+    private readonly IMediator _mediator;
 
-    public CompanyController(ICompanyService companyService, ILogger<CompanyController> logger)
+    public CompanyController( ILogger<CompanyController> logger, IMediator mediator)
     {
-        _companyService = companyService;
         _logger = logger;
+        _mediator = mediator;
     }
     
     [Authorize(Roles = nameof(UserRoles.SystemAdmin))]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<CompanyResponseModel>>> GetAllAsync(int pageList, int pageNumber)
+    public async Task<ActionResult<IEnumerable<CompanyResponseModel>>> GetAllAsync([FromQuery]int pageNumber=1, [FromQuery]int pageSize=10)
     {
-        _logger.LogInformation("Received request to get all companies. PageList: {PageList}, PageNumber: {PageNumber}",
-            pageList, pageNumber);
-        var companies = await _companyService.GetAllAsync(pageList, pageNumber);
-        _logger.LogInformation("Successfully returned {compnayCount} companies.", companies.Count());
+        _logger.LogInformation("Received request to get all companies. PageNumber: {PageNumber}, PageSize: {PageSize}",
+            pageNumber, pageSize);
+
+        var query = new GetAllCompaniesQuery(pageNumber, pageSize);
+        var companies = await _mediator.Send(query);
         return Ok(companies);
     }
 
@@ -37,7 +44,8 @@ public class CompanyController : ControllerBase
     public async Task<ActionResult<CompanyResponseModel>> GetByIdAsync([FromRoute] int id)
     {
         _logger.LogInformation("Received request to get company by Id: {companyId}", id);
-        var company = await _companyService.GetByIdAsync(id);
+        var query = new GetCompanyByIdQuery(id);
+        var company = await _mediator.Send(query);
         _logger.LogInformation("Successfully returned company with Id: {companyId}", id);
 
         return Ok(company);
@@ -45,13 +53,13 @@ public class CompanyController : ControllerBase
 
     [Authorize(Roles = nameof(UserRoles.SystemAdmin))]
     [HttpPost]
-    public async Task<IActionResult> PostAsync([FromBody] CreateCompanyRequest request)
+    public async Task<IActionResult> PostAsync([FromBody] CreateCompanyCommand request)
     {
         _logger.LogInformation("Received request to create new company. CompanyName: {companyName}",
             request.CompanyName);
-        var createCompany = await _companyService.AddAsync(request);
+        var createCompany = await _mediator.Send(request);
         _logger.LogInformation("Successfully created company with Id: {companyId}", createCompany.Id);
-        return CreatedAtAction(nameof(GetByIdAsync), new { id = createCompany.Id }, createCompany);
+        return Ok(createCompany);
     }
 
     [Authorize(Roles = nameof(UserRoles.SystemAdmin))]
@@ -59,7 +67,11 @@ public class CompanyController : ControllerBase
     public async Task<IActionResult> PutAsync([FromRoute] int id, [FromBody] UpdateCompanyRequest request)
     {
         _logger.LogInformation("Received request to update company with Id: {companyId}", id);
-        var update = await _companyService.UpdateAsync(id, request);
+
+        var command = new UpdateCompanyCommand(id, request.CompanyName, request.Address, request.EmailAddress,
+            request.PhoneNumber);
+        
+        var update = await _mediator.Send(command);
         _logger.LogInformation("Successfully updated company with Id: {companyId}", id);
         return Ok(update);
     }
@@ -69,7 +81,8 @@ public class CompanyController : ControllerBase
     public async Task<IActionResult> DeleteAsync([FromRoute] int id)
     {
         _logger.LogInformation("Received request to delete company with Id: {companyId}", id);
-        var delete = await _companyService.DeleteAsync(id);
+        var command = new DeleteCompanyCommand(id);
+        await _mediator.Send(command);
         _logger.LogInformation("Successfully deleted company with Id: {companyId}", id);
         return NoContent();
     }

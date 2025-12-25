@@ -1,9 +1,10 @@
 using FluentValidation;
 using QApplication.Requests.CompanyRequest;
+using QApplication.UseCase.Companies.Commands;
 
 namespace QApplication.Validators;
 
-public class CompanyRequestValidator: AbstractValidator<CompanyRequestModel>
+public class CompanyRequestValidator: AbstractValidator<CreateCompanyCommand>
 {
     public CompanyRequestValidator()
     {
