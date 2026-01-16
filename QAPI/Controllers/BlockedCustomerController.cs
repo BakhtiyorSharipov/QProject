@@ -1,8 +1,11 @@
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using QApplication.Interfaces;
-using QApplication.Requests.BlockedCustomerRequest;
 using QApplication.Responses;
+using QApplication.UseCases.BlockedCustomers.Commands.CreateBlockedCustomer;
+using QApplication.UseCases.BlockedCustomers.Commands.DeleteBlockedCustomer;
+using QApplication.UseCases.BlockedCustomers.Queries.GetAllBlockedCustomers;
+using QApplication.UseCases.BlockedCustomers.Queries.GetBlockedCustomerById;
 using QDomain.Enums;
 
 namespace QAPI.Controllers;
@@ -11,23 +14,23 @@ namespace QAPI.Controllers;
 [Route("api/[controller]")]
 public class BlockedCustomerController : ControllerBase
 {
-    private readonly IBlockedCustomerService _service;
     private readonly ILogger<BlockedCustomerController> _logger;
+    private readonly IMediator _mediator;
 
-    public BlockedCustomerController(IBlockedCustomerService service, ILogger<BlockedCustomerController> logger)
+    public BlockedCustomerController(ILogger<BlockedCustomerController> logger, IMediator mediator)
     {
-        _service = service;
         _logger = logger;
+        _mediator = mediator;
     }
 
     [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin) + ","+ nameof(UserRoles.Employee))]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<BlockedCustomerResponseModel>>> GetAllAsync(int pageList, int pageNumber)
+    public async Task<ActionResult<IEnumerable<BlockedCustomerResponseModel>>> GetAllAsync([FromQuery] int pageNumber=1, [FromQuery] int pageSize=10)
     {
-        _logger.LogInformation("Received request to get all schedules. PageList: {PageList}, PageNumber: {PageNumber}",
-            pageList, pageNumber);
-        var blockedCustomers = await _service.GetAllAsync(pageList, pageNumber);
-        _logger.LogInformation("Successfully returned {blockedCustomers} blocked customers.", blockedCustomers.Count());
+        _logger.LogInformation("Received request to get all schedules. PageNumber: {PageNumber}, PageSize: {PageSize}",
+            pageNumber, pageSize);
+        var query = new GetAllBlockedCustomersQuery(pageNumber, pageSize);
+        var blockedCustomers = await _mediator.Send(query);
         return Ok(blockedCustomers);
     }
 
@@ -36,17 +39,18 @@ public class BlockedCustomerController : ControllerBase
     public async Task<ActionResult<BlockedCustomerResponseModel>> GetById([FromRoute] int id)
     {
         _logger.LogInformation("Received request to get blocked customer by Id: {blockedCustomer}", id);
-        var blocked=await _service.GetByIdAsync(id);
+        var query = new GetBlockedCustomerByIdQuery(id);
+        var blocked = await _mediator.Send(query);
         _logger.LogInformation("Successfully returned blocked customers with Id: {blockedCustomer}", id);
         return Ok(blocked);
     }
 
     [Authorize(Roles = nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.CompanyAdmin) + ","+ nameof(UserRoles.Employee))]
     [HttpPost("block")]
-    public async Task<IActionResult> Block([FromBody] CreateBlockedCustomerRequest request)
+    public async Task<IActionResult> Block([FromBody] CreateBlockedCustomerCommand request)
     {
         _logger.LogInformation("Received request to block customer with Id: {customerId}", request.CustomerId);
-        var blocked =await _service.BlockAsync(request);
+        var blocked = await _mediator.Send(request);
         _logger.LogInformation("Successfully blocked customer with Id: {customerId}", request.CustomerId);
         return CreatedAtAction(nameof(GetById), new { id = blocked.Id }, blocked);
     }
@@ -56,8 +60,9 @@ public class BlockedCustomerController : ControllerBase
     public async Task<IActionResult> Unblock([FromRoute] int id)
     {
         _logger.LogInformation("Received request to unblock customer with Id: {customerId}", id);
-        var delete =await _service.UnblockAsync(id);
+        var command = new DeleteBlockedCustomerCommand(id);
+        await _mediator.Send(command);
         _logger.LogInformation("Successfully unblocked customer with Id: {customerId}", id);
-        return Ok(delete);
+        return NoContent();
     }
 }

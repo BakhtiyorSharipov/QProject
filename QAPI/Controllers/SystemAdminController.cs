@@ -1,9 +1,9 @@
-using System.Security.Claims;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using QApplication.Interfaces;
 using QApplication.Requests;
-using QApplication.Services;
+using QApplication.UseCases.Auth.Commands.CreateCompanyAdmin;
+using QApplication.UseCases.Auth.Commands.CreateEmployee;
 using QDomain.Enums;
 
 namespace QAPI.Controllers;
@@ -12,11 +12,11 @@ namespace QAPI.Controllers;
 [Route("api/[controller]")]
 public class SystemAdminController: ControllerBase
 {
-    private readonly IAuthService _authService;
+    private readonly IMediator _mediator;
 
-    public SystemAdminController(IAuthService authService)
+    public SystemAdminController(IMediator mediator)
     {
-        _authService = authService;
+        _mediator = mediator;
     }
 
     [Authorize(Roles = nameof(UserRoles.SystemAdmin))]
@@ -24,17 +24,22 @@ public class SystemAdminController: ControllerBase
     public async Task<IActionResult> CreateCompanyAdminAsync([FromBody] CreateCompanyAdminRequest request)
     {
         var creatorId = int.Parse(User.FindFirst("id")?.Value ?? "0");
-        var user = await _authService.CreateCompanyAdminAsync(request, creatorId);
+        var command = new CreateCompanyAdminCommand(request.ServiceId, request.EmailAddress, request.Password,
+            request.FirstName, request.LastName, request.Position, request.PhoneNumber, creatorId);
+        var user = await _mediator.Send(command);
         return CreatedAtAction(null, new { id = user.Id },
             new { user.Id, user.EmailAddress, Role = user.Roles.ToString() });
     }
     
     [Authorize(Roles = nameof(UserRoles.CompanyAdmin) + "," + nameof(UserRoles.SystemAdmin))]
     [HttpPost("create-employee")]
-    public async Task<IActionResult> CreateEmployeeAsync([FromBody] CreateEmployeeRoleRequest roleRequest)
+    public async Task<IActionResult> CreateEmployeeAsync([FromBody] CreateEmployeeRoleRequest request)
     {
         var creatorId = int.Parse(User.FindFirst("id")?.Value ?? "0");
-        var user =await _authService.CreateEmployeeAsync(roleRequest, creatorId);
-        return CreatedAtAction(null, new { id = user.Id }, new { user.Id, user.EmailAddress, Role = user.Roles.ToString() });
+        var command = new CreateEmployeeRoleCommand(request.ServiceId, request.EmailAddress, request.Password,
+            request.FirstName, request.LastName, request.Position, request.PhoneNumber, creatorId);
+        var user = await _mediator.Send(command);
+        return CreatedAtAction(null, new { id = user.Id },
+            new { user.Id, user.EmailAddress, Role = user.Roles.ToString() });
     }
 }
