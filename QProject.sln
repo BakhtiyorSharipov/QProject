@@ -20,6 +20,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "IntegrationTests", "Integra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QAPI.IntegrationTests", "QAPI.IntegrationTests\QAPI.IntegrationTests.csproj", "{E0A014B9-0C77-4E2A-9E0D-58D8A701C794}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{DD2B25EF-BA05-4AF4-B6C5-EE1C26C8E900}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
