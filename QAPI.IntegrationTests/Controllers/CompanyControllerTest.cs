@@ -1,5 +1,7 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using QApplication.Exceptions;
 using QApplication.Responses;
 using QApplication.UseCase.Companies.Commands;
 using QDomain.Enums;
@@ -57,4 +59,21 @@ public class CompanyControllerTest:IntegrationTestBase
         Assert.NotNull(result);
         Assert.Equal(companyId, result.Id);
     }
+    
+    [Fact]
+    public async Task GetCompany_NonExistentCompany_ReturnsNotFound()
+    {
+        
+        var token = await GetJwtToken(nameof(UserRoles.SystemAdmin));
+        Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+    
+        var nonExistentCompanyId = 999;
+        var url = $"/api/Company/{nonExistentCompanyId}";
+
+       
+        var exception = await Assert.ThrowsAsync<HttpStatusCodeException>(() => Client.GetAsync(url));
+        Assert.Equal(HttpStatusCode.NotFound, exception.StatusCode);
+    }
+    
+    
 }

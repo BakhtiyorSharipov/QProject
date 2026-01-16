@@ -24,10 +24,10 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
         {
             Dictionary<string, string?> settings = new()
             {
-                // Connection settings
+                
                 ["ConnectionStrings:DefaultConnection"] = _connectionString,
 
-                // Jwt settings
+              
                 ["AuthSettings:SecretKey"] =  JwtTokenTestSettings.SecretKey,
                 ["AuthSettings:Audience"] = JwtTokenTestSettings.Audience,
                 ["AuthSettings:Issuer"] = JwtTokenTestSettings.Issuer,
