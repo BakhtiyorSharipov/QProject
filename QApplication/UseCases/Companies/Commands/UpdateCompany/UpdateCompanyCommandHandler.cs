@@ -2,6 +2,7 @@ using System.Net;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using QApplication.Caching;
 using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
@@ -13,11 +14,12 @@ public class UpdateCompanyCommandHandler: IRequestHandler<UpdateCompanyCommand, 
 {
     private readonly ILogger<UpdateCompanyCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
-
-    public UpdateCompanyCommandHandler(ILogger<UpdateCompanyCommandHandler> logger, IQueueApplicationDbContext dbContext)
+    private readonly ICacheService _cache;
+    public UpdateCompanyCommandHandler(ILogger<UpdateCompanyCommandHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache)
     {
         _logger = logger;
         _dbContext = dbContext;
+        _cache = cache;
     }
 
     public async Task<CompanyResponseModel> Handle(UpdateCompanyCommand request, CancellationToken cancellationToken)
@@ -37,8 +39,15 @@ public class UpdateCompanyCommandHandler: IRequestHandler<UpdateCompanyCommand, 
         dbCompany.PhoneNumber = request.PhoneNumber;
 
         
+        
+        
         await _dbContext.SaveChangesAsync(cancellationToken);
 
+        await _cache.RemoveAsync(CacheKeys.CompanyById(request.Id), cancellationToken);
+        await _cache.RemoveAsync(CacheKeys.AllCompanies(1, 10), cancellationToken);
+        
+                
+        
         _logger.LogInformation("Company with Id {companyId} updated successfully", request.Id);
 
         var response = new CompanyResponseModel()
