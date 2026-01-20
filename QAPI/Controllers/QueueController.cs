@@ -29,7 +29,7 @@ public class QueueController : ControllerBase
 
     [Authorize(Roles = nameof(UserRoles.CompanyAdmin) + "," + nameof(UserRoles.SystemAdmin))]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<QueueResponseModel>>> GetAllAsync([FromQuery]int pageNumber=1,[FromQuery] int pageSize=10)
+    public async Task<ActionResult<PagedResponse<QueueResponseModel>>> GetAllAsync([FromQuery]int pageNumber=1,[FromQuery] int pageSize=10)
     {
         _logger.LogInformation("Received request to get all queues. PageNumber: {PageNumber}, PageSize: {PageSize}",
             pageNumber, pageSize);
@@ -95,14 +95,14 @@ public class QueueController : ControllerBase
     }
 
     [Authorize(Roles = nameof(UserRoles.Customer))]
-    [HttpGet("history/customer/{customerId}")]
-    public async Task<IEnumerable<QueueResponseModel>> GetQueuesByCustomerAsync([FromRoute] int customerId)
+    [HttpGet("history/customer/")]
+    public async Task<ActionResult<PagedResponse<QueueResponseModel>>> GetQueuesByCustomerAsync([FromQuery] int pageNumber=1, [FromQuery] int pageSize=10)
     {
-        _logger.LogInformation("Received request to get customer queue history with Id: {customerId}", customerId);
-        var query = new GetQueuesByCustomerQuery(customerId);
+        _logger.LogInformation("Received request to get  customer queue history with PageNumber: {pageNumber}, PageSize: {pageSize}", pageNumber, pageSize);
+        var query = new GetQueuesByCustomerQuery(pageNumber, pageSize);
         var queue = await _mediator.Send(query);
-        _logger.LogInformation("Successfully returned {queueCount} queues.");
-        return queue;
+        _logger.LogInformation("Successfully returned queues.");
+        return Ok(queue);
     }
 
     [Authorize(Roles =

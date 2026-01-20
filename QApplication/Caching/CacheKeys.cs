@@ -16,4 +16,13 @@ public static class CacheKeys
 
     public static string CustomerById(int id)
         => $"customer:{id}";
+
+    public static string QueueId(int id)
+        => $"queue:{id}";
+
+    public static string CustomerQueues(int customerId, int pageNumber, int pageSize)
+        => $"customer:{customerId}:page:{pageNumber}:size:{pageSize}";
+    
+    public static string AllQueues(int pageNumber, int pageSize)
+        => $"queues:page:{pageNumber}:size:{pageSize}";
 }

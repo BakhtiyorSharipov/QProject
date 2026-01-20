@@ -53,7 +53,7 @@ public class GetCompanyByIdQueryHandler: IRequestHandler<GetCompanyByIdQuery, Co
             _logger.LogInformation("Company with Id {CompanyId} fetched successfully", request.Id);
 
             return response;
-        }, absoluteExpiration: TimeSpan.FromMinutes(10), cancellationToken: cancellationToken);
+        }, absoluteExpiration: TimeSpan.FromMinutes(10),  slidingExpiration: TimeSpan.FromMinutes(5) ,cancellationToken: cancellationToken);
 
 
         if (company == null)

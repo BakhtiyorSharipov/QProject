@@ -2,6 +2,7 @@ using System.Net;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using QApplication.Caching;
 using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
@@ -14,11 +15,12 @@ public class CreateQueueCommandHandler: IRequestHandler<CreateQueueCommand, AddQ
 {
     private readonly ILogger<CreateQueueCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
-
-    public CreateQueueCommandHandler(ILogger<CreateQueueCommandHandler> logger, IQueueApplicationDbContext dbContext)
+    private readonly ICacheService _cache;
+    public CreateQueueCommandHandler(ILogger<CreateQueueCommandHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache)
     {
         _logger = logger;
         _dbContext = dbContext;
+        _cache = cache;
     }
     
     public async Task<AddQueueResponseModel> Handle(CreateQueueCommand request, CancellationToken cancellationToken)
@@ -121,6 +123,7 @@ public class CreateQueueCommandHandler: IRequestHandler<CreateQueueCommand, AddQ
         _logger.LogDebug("Saving new queue to repository");
         await _dbContext.SaveChangesAsync(cancellationToken);
 
+        await _cache.RemoveAsync(CacheKeys.AllQueues(1, 10), cancellationToken);
 
         var response = new AddQueueResponseModel()
         {

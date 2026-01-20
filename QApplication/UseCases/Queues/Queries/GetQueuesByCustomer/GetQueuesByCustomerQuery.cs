@@ -3,4 +3,4 @@ using QApplication.Responses;
 
 namespace QApplication.UseCases.Queues.Queries.GetQueuesByCustomer;
 
-public record GetQueuesByCustomerQuery(int CustomerId): IRequest<List<QueueResponseModel>>;
+public record GetQueuesByCustomerQuery(int pageNumber, int pageSize): IRequest<PagedResponse<QueueResponseModel>>;
