@@ -11,10 +11,10 @@ public class QueueDbContext: DbContext, IQueueApplicationDbContext
         
     }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        optionsBuilder.UseNpgsql("Host=localhost; Port=5432; Database=QProject; Username=postgres; Password=b.sh.3242");
-    }
+    // protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    // {
+    //     optionsBuilder.UseNpgsql("Host=localhost; Port=5432; Database=QProject; Username=postgres; Password=b.sh.3242");
+    // }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

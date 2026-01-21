@@ -7,11 +7,13 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Npgsql;
 using QApplication;
+using QApplication.Caching;
 using QApplication.Interfaces;
 using QApplication.Interfaces.Data;
 using QApplication.Services;
 using QApplication.Validators.AuthValidators;
 using QDomain.Models;
+using QInfrastructure.Persistence.Caching;
 using QInfrastructure.Persistence.DataBase;
 using Serilog;
 
@@ -24,9 +26,22 @@ builder.Services.AddFluentValidation(fv =>
     fv.RegisterValidatorsFromAssemblyContaining<RegisterCustomerRequestValidator>();
 });
 
+builder.Services.AddApplicationService();
+builder.Services.AddFluentValidation(fv =>
+{
+    fv.RegisterValidatorsFromAssemblyContaining<RegisterCustomerRequestValidator>();
+});
+
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IQueueApplicationDbContext, QueueDbContext>();
+builder.Services.AddSingleton<ICacheService, RedisCacheService>();
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration["Redis:ConnectionString"];
+    options.InstanceName = builder.Configuration["Redis:InstanceName"];
+});
 
 builder.Host.UseSerilog((context, services, configuration) =>
 {
@@ -37,6 +52,7 @@ builder.Host.UseSerilog((context, services, configuration) =>
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSwaggerGen(options =>
 {
     
@@ -100,6 +116,8 @@ builder.Services.AddDbContext<QueueDbContext>(
     });
 
 
+
+
 var app = builder.Build();
 
 
@@ -142,3 +160,7 @@ using (var scope = app.Services.CreateScope())
     }
 }
 app.Run();
+
+public partial class Program
+{
+}

@@ -65,6 +65,7 @@ public class LoginQueryHandler: IRequestHandler<LoginQuery, AuthResponse>
         await _dbContext.RefreshTokens.AddAsync(refreshEntity, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Refresh token saved successfully");
+        
         return new AuthResponse
         {
             AccessToken = accessToken,
@@ -75,5 +76,6 @@ public class LoginQueryHandler: IRequestHandler<LoginQuery, AuthResponse>
             EmailAddress = user.EmailAddress,
             Role = user.Roles.ToString()
         };
+        
     }
 }
