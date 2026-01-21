@@ -18,8 +18,6 @@ public class CreateQueueRequestValidator: AbstractValidator<CreateQueueCommand>
 
         RuleFor(x => x.StartTime)
             .NotEmpty().WithMessage("Start time is required")
-            .GreaterThanOrEqualTo(DateTimeOffset.UtcNow)
-            .WithMessage("Start time must be in the present or future.")
             .LessThanOrEqualTo(DateTimeOffset.UtcNow.AddDays(30))
             .WithMessage("Start time cannot be more than 30 days in advance.");
     }

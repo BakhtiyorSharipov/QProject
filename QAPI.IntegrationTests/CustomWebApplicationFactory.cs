@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using QAPI.IntegrationTests;
 using QInfrastructure.Persistence.DataBase;
 using Testcontainers.PostgreSql;
+using Testcontainers.Redis;
 
 public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
@@ -14,9 +15,15 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
         .WithUsername("postgres")
         .WithPassword("postgres")
         .Build();
+    
+    private readonly RedisContainer _redisContainer = new RedisBuilder()
+            .WithImage("redis:7-alpine")
+            .Build();
 
-    private string? _connectionString;
+    
 
+    private string? _postgresConnectionString;
+    private string? _redisConnectionString;
     protected override IHost CreateHost(IHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -25,8 +32,9 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
             Dictionary<string, string?> settings = new()
             {
                 
-                ["ConnectionStrings:DefaultConnection"] = _connectionString,
-
+                ["ConnectionStrings:DefaultConnection"] = _postgresConnectionString,
+                
+                ["Redis:ConnectionString"]=_redisConnectionString,
               
                 ["AuthSettings:SecretKey"] =  JwtTokenTestSettings.SecretKey,
                 ["AuthSettings:Audience"] = JwtTokenTestSettings.Audience,
@@ -44,8 +52,11 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
     public async Task InitializeAsync()
     {
         await _postgresContainer.StartAsync();
-        _connectionString = _postgresContainer.GetConnectionString();
-
+        await _redisContainer.StartAsync();
+        
+        _postgresConnectionString = _postgresContainer.GetConnectionString();
+        _redisConnectionString = _redisContainer.GetConnectionString();
+        
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<QueueDbContext>();
         await db.Database.MigrateAsync();
@@ -54,5 +65,6 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
     public async Task DisposeAsync()
     {
         await _postgresContainer.DisposeAsync();
+        await _redisContainer.DisposeAsync();
     }
 }

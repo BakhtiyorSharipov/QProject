@@ -2,6 +2,7 @@ using System.Net;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using QApplication.Caching;
 using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
@@ -14,11 +15,13 @@ public class CancelQueueByCustomerCommandHandler: IRequestHandler<CancelQueueByC
 {
     private readonly ILogger<CancelQueueByCustomerCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
+    private readonly ICacheService _cache;
 
-    public CancelQueueByCustomerCommandHandler(ILogger<CancelQueueByCustomerCommandHandler> logger, IQueueApplicationDbContext dbContext)
+    public CancelQueueByCustomerCommandHandler(ILogger<CancelQueueByCustomerCommandHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache)
     {
         _logger = logger;
         _dbContext = dbContext;
+        _cache = cache;
     }
 
     public async Task<QueueResponseModel> Handle(CancelQueueByCustomerCommand request, CancellationToken cancellationToken)
@@ -51,6 +54,9 @@ public class CancelQueueByCustomerCommandHandler: IRequestHandler<CancelQueueByC
 
         _logger.LogDebug("Saving cancellation changes to repository");
         await _dbContext.SaveChangesAsync(cancellationToken);
+        await _cache.RemoveAsync(CacheKeys.AllQueues(1, 10), cancellationToken);
+        await _cache.RemoveAsync(CacheKeys.QueueId(request.QueueId), cancellationToken);
+        await _cache.RemoveAsync(CacheKeys.CustomerQueues(dbQueue.CustomerId, 1, 10), cancellationToken);
 
         var response = new QueueResponseModel
         {
