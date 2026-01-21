@@ -1,0 +1,70 @@
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using QAPI.IntegrationTests;
+using QInfrastructure.Persistence.DataBase;
+using Testcontainers.PostgreSql;
+using Testcontainers.Redis;
+
+public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
+{
+    private readonly PostgreSqlContainer _postgresContainer = new PostgreSqlBuilder("postgres:16-alpine")
+        .WithDatabase("test")
+        .WithUsername("postgres")
+        .WithPassword("postgres")
+        .Build();
+    
+    private readonly RedisContainer _redisContainer = new RedisBuilder()
+            .WithImage("redis:7-alpine")
+            .Build();
+
+    
+
+    private string? _postgresConnectionString;
+    private string? _redisConnectionString;
+    protected override IHost CreateHost(IHostBuilder builder)
+    {
+        builder.UseEnvironment("Testing");
+        builder.ConfigureHostConfiguration(config =>
+        {
+            Dictionary<string, string?> settings = new()
+            {
+                
+                ["ConnectionStrings:DefaultConnection"] = _postgresConnectionString,
+                
+                ["Redis:ConnectionString"]=_redisConnectionString,
+              
+                ["AuthSettings:SecretKey"] =  JwtTokenTestSettings.SecretKey,
+                ["AuthSettings:Audience"] = JwtTokenTestSettings.Audience,
+                ["AuthSettings:Issuer"] = JwtTokenTestSettings.Issuer,
+                ["Jwt:AccessTokenMinutes"] = (JwtTokenTestSettings.ExpireTimeInSeconds / 60).ToString(),
+                ["Jwt:RefreshDays"] = "30"
+            };
+
+            config.AddInMemoryCollection(settings);
+        });
+
+        return base.CreateHost(builder);
+    }
+
+    public async Task InitializeAsync()
+    {
+        await _postgresContainer.StartAsync();
+        await _redisContainer.StartAsync();
+        
+        _postgresConnectionString = _postgresContainer.GetConnectionString();
+        _redisConnectionString = _redisContainer.GetConnectionString();
+        
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<QueueDbContext>();
+        await db.Database.MigrateAsync();
+    }
+
+    public async Task DisposeAsync()
+    {
+        await _postgresContainer.DisposeAsync();
+        await _redisContainer.DisposeAsync();
+    }
+}

@@ -1,9 +1,10 @@
 using FluentValidation;
 using QApplication.Requests;
+using QApplication.UseCases.Auth.Commands.RegisterCustomer;
 
 namespace QApplication.Validators.AuthValidators;
 
-public class RegisterCustomerRequestValidator: AbstractValidator<RegisterCustomerRequestModel>
+public class RegisterCustomerRequestValidator: AbstractValidator<RegisterCustomerCommand>
 {
     public RegisterCustomerRequestValidator()
     {
