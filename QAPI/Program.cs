@@ -2,6 +2,7 @@ using System.Text;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -19,6 +20,18 @@ using Serilog;
 
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddFluentValidationAutoValidation(config =>
+{
+    config.DisableDataAnnotationsValidation = true;
+});
+
+builder.Services.AddValidatorsFromAssembly(typeof(RegisterCustomerRequestValidator).Assembly);
+
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.SuppressModelStateInvalidFilter = true; 
+    options.SuppressInferBindingSourcesForParameters = true;
+});
 
 builder.Services.AddApplicationService();
 builder.Services.AddFluentValidation(fv =>
