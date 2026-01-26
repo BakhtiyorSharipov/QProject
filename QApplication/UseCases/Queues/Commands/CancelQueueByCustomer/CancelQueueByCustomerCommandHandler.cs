@@ -16,12 +16,14 @@ public class CancelQueueByCustomerCommandHandler: IRequestHandler<CancelQueueByC
     private readonly ILogger<CancelQueueByCustomerCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly ICacheService _cache;
+    private readonly IMediator _mediator;
 
-    public CancelQueueByCustomerCommandHandler(ILogger<CancelQueueByCustomerCommandHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache)
+    public CancelQueueByCustomerCommandHandler(ILogger<CancelQueueByCustomerCommandHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache, IMediator mediator)
     {
         _logger = logger;
         _dbContext = dbContext;
         _cache = cache;
+        _mediator = mediator;
     }
 
     public async Task<QueueResponseModel> Handle(CancelQueueByCustomerCommand request, CancellationToken cancellationToken)
@@ -51,13 +53,21 @@ public class CancelQueueByCustomerCommandHandler: IRequestHandler<CancelQueueByC
 
         dbQueue.Status = QueueStatus.CancelledByCustomer;
         dbQueue.CancelReason = request.CancelReason;
-
+        dbQueue.CancelByCustomer();
         _logger.LogDebug("Saving cancellation changes to repository");
         await _dbContext.SaveChangesAsync(cancellationToken);
         await _cache.RemoveAsync(CacheKeys.AllQueues(1, 10), cancellationToken);
         await _cache.RemoveAsync(CacheKeys.QueueId(request.QueueId), cancellationToken);
         await _cache.RemoveAsync(CacheKeys.CustomerQueues(dbQueue.CustomerId, 1, 10), cancellationToken);
 
+        var events = dbQueue.DomainEvents.ToList();
+        dbQueue.ClearDomainEvents();
+
+        foreach (var domainEvent in events)
+        {
+            await _mediator.Publish(domainEvent, cancellationToken);
+        }
+        
         var response = new QueueResponseModel
         {
             Id = dbQueue.Id,

@@ -16,11 +16,13 @@ public class CreateQueueCommandHandler: IRequestHandler<CreateQueueCommand, AddQ
     private readonly ILogger<CreateQueueCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly ICacheService _cache;
-    public CreateQueueCommandHandler(ILogger<CreateQueueCommandHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache)
+    private readonly IMediator _mediator;
+    public CreateQueueCommandHandler(ILogger<CreateQueueCommandHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache, IMediator mediator)
     {
         _logger = logger;
         _dbContext = dbContext;
         _cache = cache;
+        _mediator = mediator;
     }
     
     public async Task<AddQueueResponseModel> Handle(CreateQueueCommand request, CancellationToken cancellationToken)
@@ -117,7 +119,8 @@ public class CreateQueueCommandHandler: IRequestHandler<CreateQueueCommand, AddQ
             Status = QueueStatus.Pending,
             CreatedAt = DateTime.UtcNow
         };
-
+        
+        queue.Book();
 
         await _dbContext.Queues.AddAsync(queue, cancellationToken);
         _logger.LogDebug("Saving new queue to repository");
@@ -125,6 +128,14 @@ public class CreateQueueCommandHandler: IRequestHandler<CreateQueueCommand, AddQ
 
         await _cache.RemoveAsync(CacheKeys.AllQueues(1, 10), cancellationToken);
 
+        var events = queue.DomainEvents.ToList();
+        queue.ClearDomainEvents();
+
+        foreach (var domainEvent in events)
+        {
+            await _mediator.Publish(domainEvent, cancellationToken);
+        }
+        
         var response = new AddQueueResponseModel()
         {
             Id = queue.Id,

@@ -1,5 +1,7 @@
 using System.Text;
 using FluentValidation.AspNetCore;
+using MassTransit;
+using MassTransit.MultiBus;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +13,9 @@ using QApplication.Caching;
 using QApplication.Interfaces;
 using QApplication.Interfaces.Data;
 using QApplication.Services;
+using QApplication.Services.BackgroundJob;
+using QApplication.UseCases.Events.Queue;
+using QApplication.UseCases.Events.QueueConsumers;
 using QApplication.Validators.AuthValidators;
 using QDomain.Models;
 using QInfrastructure.Persistence.Caching;
@@ -26,16 +31,44 @@ builder.Services.AddFluentValidation(fv =>
     fv.RegisterValidatorsFromAssemblyContaining<RegisterCustomerRequestValidator>();
 });
 
+
+
+
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IQueueApplicationDbContext, QueueDbContext>();
 builder.Services.AddSingleton<ICacheService, RedisCacheService>();
+builder.Services.AddScoped<ISmsService, SmsService>();
+builder.Services.AddHostedService<QueueStartingSoonScheduler>();
+
 
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration = builder.Configuration["Redis:ConnectionString"];
     options.InstanceName = builder.Configuration["Redis:InstanceName"];
 });
+
+builder.Services.AddMediatR(cfg => 
+    cfg.RegisterServicesFromAssemblyContaining<QueueBookedEventHandler>());
+
+
+builder.Services.AddMassTransit(x =>
+{
+    x.AddConsumer<QueueStartingSoonConsumer>();
+
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host(builder.Configuration["RabbitMQ:Host"], h =>
+        {
+            h.Username(builder.Configuration["RabbitMQ:Username"]);
+            h.Password(builder.Configuration["RabbitMQ:Password"]);
+        });
+
+        cfg.ConfigureEndpoints(context);
+    });
+});
+
+
 
 builder.Host.UseSerilog((context, services, configuration) =>
 {
@@ -140,7 +173,7 @@ using (var scope = app.Services.CreateScope())
 
     var sys = await db.Users
         .AnyAsync(u => u.EmailAddress == "systemAdmin@gmail.com");
-    if (sys == null)
+    if (!sys)
     {
         var sysUser = new User
         {
