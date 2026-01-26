@@ -16,14 +16,13 @@ public class UpdateQueueStatusCommandHandler: IRequestHandler<UpdateQueueStatusC
     private readonly ILogger<UpdateQueueStatusCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly ICacheService _cache;
-    private readonly IMediator _mediator;
+    
 
-    public UpdateQueueStatusCommandHandler(ILogger<UpdateQueueStatusCommandHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache, IMediator mediator)
+    public UpdateQueueStatusCommandHandler(ILogger<UpdateQueueStatusCommandHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache)
     {
         _logger = logger;
         _dbContext = dbContext;
         _cache = cache;
-        _mediator = mediator;
     }
 
     public async Task<UpdateQueueStatusResponseModel> Handle(UpdateQueueStatusCommand request, CancellationToken cancellationToken)
@@ -198,15 +197,7 @@ public class UpdateQueueStatusCommandHandler: IRequestHandler<UpdateQueueStatusC
         await _cache.RemoveAsync(CacheKeys.AllQueues(1, 10), cancellationToken);
         await _cache.RemoveAsync(CacheKeys.QueueId(request.QueueId), cancellationToken);
         await _cache.RemoveAsync(CacheKeys.CustomerQueues(dbQueue.CustomerId, 1, 10), cancellationToken);
-
-
-        var events = dbQueue.DomainEvents.ToList();
-        dbQueue.ClearDomainEvents();
-
-        foreach (var domainEvent in events)
-        {
-            await _mediator.Publish(domainEvent, cancellationToken);
-        }
+        
         
         
         var response = new UpdateQueueStatusResponseModel
