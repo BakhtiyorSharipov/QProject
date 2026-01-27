@@ -15,14 +15,12 @@ public class CancelQueueByEmployeeCommandHandler: IRequestHandler<CancelQueueByE
     private readonly ILogger<CancelQueueByEmployeeCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly ICacheService _cache;
-    private readonly IMediator _mediator;
 
-    public CancelQueueByEmployeeCommandHandler(ILogger<CancelQueueByEmployeeCommandHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache, IMediator mediator)  
+    public CancelQueueByEmployeeCommandHandler(ILogger<CancelQueueByEmployeeCommandHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache)
     {
         _logger = logger;
         _dbContext = dbContext;
         _cache = cache;
-        _mediator = mediator;
     }
 
     public async Task<QueueResponseModel> Handle(CancelQueueByEmployeeCommand request, CancellationToken cancellationToken)
@@ -46,9 +44,6 @@ public class CancelQueueByEmployeeCommandHandler: IRequestHandler<CancelQueueByE
         await _cache.RemoveAsync(CacheKeys.AllQueues(1, 10), cancellationToken);
         await _cache.RemoveAsync(CacheKeys.QueueId(request.QueueId), cancellationToken);
         await _cache.RemoveAsync(CacheKeys.CustomerQueues(dbQueue.CustomerId, 1, 10), cancellationToken);
-
-        var events = dbQueue.DomainEvents.ToList();
-        dbQueue.ClearDomainEvents();
 
         foreach (var domainEvent in events)
         {
