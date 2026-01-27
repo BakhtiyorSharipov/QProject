@@ -31,10 +31,6 @@ builder.Services.AddFluentValidation(fv =>
 });
 
 builder.Services.AddApplicationService();
-builder.Services.AddFluentValidation(fv =>
-{
-    fv.RegisterValidatorsFromAssemblyContaining<RegisterCustomerRequestValidator>();
-});
 
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<ITokenService, TokenService>();

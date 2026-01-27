@@ -13,7 +13,6 @@ public class QueueStartingSoonScheduler: BackgroundService
 {
     private readonly ILogger<QueueStartingSoonScheduler> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
-
     public QueueStartingSoonScheduler(ILogger<QueueStartingSoonScheduler> logger, IServiceScopeFactory scopeFactory)
     {
         _logger = logger;
@@ -38,6 +37,7 @@ public class QueueStartingSoonScheduler: BackgroundService
             var queuesStartingSoon = await dbContext.Queues
                 .Where(q => q.Status == QueueStatus.Confirmed)
                 .Where(q => q.StartTime >= now && q.StartTime <= fiveMinuteLater)
+                .Where(q=>!q.IsStartingSoonNotified)
                 .ToListAsync(stoppingToken);
 
             foreach (var queue in queuesStartingSoon)
@@ -52,8 +52,12 @@ public class QueueStartingSoonScheduler: BackgroundService
 
                 await publishEndpoint.Publish(eventMessage, stoppingToken);
                 _logger.LogInformation("Published QueueStartingSoonEvent for QueueId {QueueId}", queue.Id);
-            }
 
+                queue.IsStartingSoonNotified = true;
+            }
+            
+
+            await dbContext.SaveChangesAsync(stoppingToken);
             await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
         }
         
