@@ -8,7 +8,6 @@ using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QDomain.Enums;
 using QDomain.Models;
-using IMediator = MassTransit.Mediator.IMediator;
 
 namespace QApplication.UseCases.Queues.Commands.CancelQueueByCustomer;
 

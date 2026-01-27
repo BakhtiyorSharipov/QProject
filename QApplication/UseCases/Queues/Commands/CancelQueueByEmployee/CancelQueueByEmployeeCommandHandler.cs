@@ -7,7 +7,6 @@ using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QDomain.Enums;
-using IMediator = MassTransit.Mediator.IMediator;
 
 namespace QApplication.UseCases.Queues.Commands.CancelQueueByEmployee;
 

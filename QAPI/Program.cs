@@ -1,7 +1,6 @@
 using System.Text;
 using FluentValidation.AspNetCore;
 using MassTransit;
-using MassTransit.MultiBus;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -41,6 +40,29 @@ builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IQueueApplicationDbContext, QueueDbContext>();
 builder.Services.AddSingleton<ICacheService, RedisCacheService>();
+builder.Services.AddScoped<ISmsService, SmsService>();
+builder.Services.AddHostedService<QueueStartingSoonScheduler>();
+
+
+builder.Services.AddMediatR(cfg => 
+    cfg.RegisterServicesFromAssemblyContaining<QueueBookedEventHandler>());
+
+
+builder.Services.AddMassTransit(x =>
+{
+    x.AddConsumer<QueueStartingSoonConsumer>();
+
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host(builder.Configuration["RabbitMQ:Host"], h =>
+        {
+            h.Username(builder.Configuration["RabbitMQ:Username"]);
+            h.Password(builder.Configuration["RabbitMQ:Password"]);
+        });
+
+        cfg.ConfigureEndpoints(context);
+    });
+});
 
 builder.Services.AddStackExchangeRedisCache(options =>
 {

@@ -7,6 +7,7 @@ using Microsoft.Extensions.Hosting;
 using QAPI.IntegrationTests;
 using QInfrastructure.Persistence.DataBase;
 using Testcontainers.PostgreSql;
+using Testcontainers.RabbitMq;
 using Testcontainers.Redis;
 
 public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
@@ -20,11 +21,17 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
     private readonly RedisContainer _redisContainer = new RedisBuilder()
             .WithImage("redis:7-alpine")
             .Build();
-
+    
+    private readonly RabbitMqContainer _rabbitMqContainer = new RabbitMqBuilder()
+        .WithImage("rabbitmq:3-management")
+        .Build();
+    
+    
     
 
     private string? _postgresConnectionString;
     private string? _redisConnectionString;
+    private string? _rabbitMqConnectionString;
     protected override IHost CreateHost(IHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -36,6 +43,8 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
                 ["ConnectionStrings:DefaultConnection"] = _postgresConnectionString,
                 
                 ["Redis:ConnectionString"]=_redisConnectionString,
+                
+                ["RabbitMQ:Host"]= _rabbitMqConnectionString,
               
                 ["AuthSettings:SecretKey"] =  JwtTokenTestSettings.SecretKey,
                 ["AuthSettings:Audience"] = JwtTokenTestSettings.Audience,
@@ -54,9 +63,13 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
     {
         await _postgresContainer.StartAsync();
         await _redisContainer.StartAsync();
+        await _rabbitMqContainer.StartAsync();
+        
         
         _postgresConnectionString = _postgresContainer.GetConnectionString();
         _redisConnectionString = _redisContainer.GetConnectionString();
+        _rabbitMqConnectionString = _rabbitMqContainer.GetConnectionString();
+        
         
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<QueueDbContext>();
@@ -67,5 +80,6 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
     {
         await _postgresContainer.DisposeAsync();
         await _redisContainer.DisposeAsync();
+        await _rabbitMqContainer.DisposeAsync();
     }
 }
