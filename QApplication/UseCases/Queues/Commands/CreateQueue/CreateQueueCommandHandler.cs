@@ -8,6 +8,7 @@ using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QDomain.Enums;
 using QDomain.Models;
+using StackExchange.Redis;
 
 namespace QApplication.UseCases.Queues.Commands.CreateQueue;
 
@@ -126,7 +127,10 @@ public class CreateQueueCommandHandler: IRequestHandler<CreateQueueCommand, AddQ
         _logger.LogDebug("Saving new queue to repository");
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        await _cache.RemoveAsync(CacheKeys.AllQueues(1, 10), cancellationToken);
+
+        await _cache.HashRemoveAsync(CacheKeys.AllQueuesHashKey, cancellationToken);
+        
+        
         var events = queue.DomainEvents.ToList();
         queue.ClearDomainEvents();
         foreach (var domainEvent in events)

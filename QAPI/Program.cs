@@ -20,6 +20,7 @@ using QDomain.Models;
 using QInfrastructure.Persistence.Caching;
 using QInfrastructure.Persistence.DataBase;
 using Serilog;
+using StackExchange.Redis;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,14 +31,25 @@ builder.Services.AddFluentValidation(fv =>
     fv.RegisterValidatorsFromAssemblyContaining<RegisterCustomerRequestValidator>();
 });
 
-builder.Services.AddApplicationService();
 
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+
 builder.Services.AddScoped<IQueueApplicationDbContext, QueueDbContext>();
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>()
+        .GetValue<string>("Redis:ConnectionString");
+
+    return ConnectionMultiplexer.Connect(configuration);
+});
 builder.Services.AddSingleton<ICacheService, RedisCacheService>();
+
 builder.Services.AddScoped<ISmsService, SmsService>();
 builder.Services.AddHostedService<QueueStartingSoonScheduler>();
+
+
 
 
 builder.Services.AddMediatR(cfg => 
@@ -60,11 +72,6 @@ builder.Services.AddMassTransit(x =>
     });
 });
 
-builder.Services.AddStackExchangeRedisCache(options =>
-{
-    options.Configuration = builder.Configuration["Redis:ConnectionString"];
-    options.InstanceName = builder.Configuration["Redis:InstanceName"];
-});
 
 builder.Host.UseSerilog((context, services, configuration) =>
 {
@@ -75,7 +82,6 @@ builder.Host.UseSerilog((context, services, configuration) =>
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSwaggerGen(options =>
 {
     

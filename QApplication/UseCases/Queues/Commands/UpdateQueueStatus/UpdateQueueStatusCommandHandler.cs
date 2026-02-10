@@ -8,6 +8,7 @@ using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QDomain.Enums;
 using QDomain.Models;
+using StackExchange.Redis;
 
 namespace QApplication.UseCases.Queues.Commands.UpdateQueueStatus;
 
@@ -195,9 +196,10 @@ public class UpdateQueueStatusCommandHandler: IRequestHandler<UpdateQueueStatusC
         _logger.LogDebug("Saving status update to repository");
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        await _cache.RemoveAsync(CacheKeys.AllQueues(1, 10), cancellationToken);
+        await _cache.HashRemoveAsync(CacheKeys.AllQueuesHashKey, cancellationToken);
         await _cache.RemoveAsync(CacheKeys.QueueId(request.QueueId), cancellationToken);
-        await _cache.RemoveAsync(CacheKeys.CustomerQueues(dbQueue.CustomerId, 1, 10), cancellationToken);
+        await _cache.RemoveAsync(CacheKeys.CustomerQueuesHashKey(dbQueue.CustomerId), cancellationToken);
+        
         
         var events = dbQueue.DomainEvents.ToList();
         dbQueue.ClearDomainEvents();

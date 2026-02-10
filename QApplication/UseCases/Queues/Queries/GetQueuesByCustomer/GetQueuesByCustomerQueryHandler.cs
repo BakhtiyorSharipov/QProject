@@ -1,5 +1,4 @@
 using System.Net;
-using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +8,7 @@ using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QDomain.Models;
+using StackExchange.Redis;
 
 namespace QApplication.UseCases.Queues.Queries.GetQueuesByCustomer;
 
@@ -19,6 +19,7 @@ public class
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly ICacheService _cache;
     private readonly IHttpContextAccessor _contextAccessor;
+   
 
     public GetQueuesByCustomerQueryHandler(ILogger<GetQueuesByCustomerQueryHandler> logger,
         IQueueApplicationDbContext dbContext, ICacheService cache, IHttpContextAccessor contextAccessor)
@@ -63,54 +64,59 @@ public class
             request.pageNumber,
             request.pageSize);
 
-        var keyCache = CacheKeys.CustomerQueues(userId, request.pageNumber, request.pageSize);
+       
 
-        var queues = await _cache.GetOrCreateAsync(keyCache, async () =>
-            {
+        var hashKey = CacheKeys.CustomerQueuesHashKey(userId);
+        var filed = CacheKeys.CustomerQueuesField(request.pageNumber, request.pageSize);
 
-                var query = _dbContext.Queues
-                    .Where(s => s.CustomerId == customerId);
+        var cached = await _cache.HashGetAsync<PagedResponse<QueueResponseModel>>(hashKey, filed, cancellationToken);
 
-                var totalCount = await query.CountAsync(cancellationToken);
-
-                var queues = await query
-                    .AsNoTracking()
-                    .OrderBy(c => c.Id)
-                    .Skip((request.pageNumber - 1) * request.pageSize)
-                    .Take(request.pageSize).ToListAsync(cancellationToken);
-
-
-                var response = queues.Select(queue => new QueueResponseModel()
-                {
-                    Id = queue.Id,
-                    CustomerId = queue.CustomerId,
-                    EmployeeId = queue.EmployeeId,
-                    ServiceId = queue.ServiceId,
-                    StartTime = queue.StartTime,
-                    EndTime = queue.EndTime ?? queue.StartTime.AddMinutes(30),
-                    Status = queue.Status
-                }).ToList();
-
-                _logger.LogInformation("Successfully fetched {QueueCount} queues for EmployeeId: {EmployeeId}",
-                    response.Count,
-                    customerId);
-                _logger.LogInformation("Fetched {companyCount} companies.", response.Count);
-                return new PagedResponse<QueueResponseModel>
-                {
-                    Items = response,
-                    PageNumber = request.pageNumber,
-                    PageSize = request.pageSize,
-                    TotalCount = totalCount
-                };
-            }, absoluteExpiration: TimeSpan.FromMinutes(5), slidingExpiration: TimeSpan.FromMinutes(5),
-            cancellationToken: cancellationToken);
-
-        if (queues == null)
+        if (cached is not null)
         {
-            _logger.LogInformation("Data is null. Can not return!");
-            throw new Exception("Retrieved data is null");
+            return cached;
         }
+        
+        var query = _dbContext.Queues
+            .Where(s => s.CustomerId == customerId);
 
-        return queues;
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var queues = await query
+            .AsNoTracking()
+            .OrderBy(c => c.Id)
+            .Skip((request.pageNumber - 1) * request.pageSize)
+            .Take(request.pageSize).ToListAsync(cancellationToken);
+
+
+        var response = queues.Select(queue => new QueueResponseModel()
+        {
+            Id = queue.Id,
+            CustomerId = queue.CustomerId,
+            EmployeeId = queue.EmployeeId,
+            ServiceId = queue.ServiceId,
+            StartTime = queue.StartTime,
+            EndTime = queue.EndTime ?? queue.StartTime.AddMinutes(30),
+            Status = queue.Status
+        }).ToList();
+        
+                
+        _logger.LogInformation("Successfully fetched {QueueCount} queues for CustomerId: {CustomerId}",
+            response.Count,
+            customerId);
+        
+        
+        _logger.LogInformation("Fetched {companyCount} companies.", response.Count);
+        var pagedResponse=new PagedResponse<QueueResponseModel>
+        {
+            Items = response,
+            PageNumber = request.pageNumber,
+            PageSize = request.pageSize,
+            TotalCount = totalCount
+        };
+
+        await _cache.HashSetAsync(hashKey, filed, pagedResponse, TimeSpan.FromMinutes(10), cancellationToken);
+
+        return pagedResponse;
+        
     }
 }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -47,6 +48,7 @@ public class GetQueueByIdQueryHandler: IRequestHandler<GetQueueByIdQuery, QueueR
                 StartTime = dbQueue.StartTime,
                 Status = dbQueue.Status
             };
+            
 
             _logger.LogInformation("Queue with Id {id} fetched successfully", request.Id);
             return response;

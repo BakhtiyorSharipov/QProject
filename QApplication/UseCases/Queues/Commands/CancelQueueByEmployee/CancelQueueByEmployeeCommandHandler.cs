@@ -7,6 +7,7 @@ using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QDomain.Enums;
+using StackExchange.Redis;
 
 namespace QApplication.UseCases.Queues.Commands.CancelQueueByEmployee;
 
@@ -16,6 +17,7 @@ public class CancelQueueByEmployeeCommandHandler: IRequestHandler<CancelQueueByE
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly ICacheService _cache;
     private readonly IMediator _mediator;
+  
 
     public CancelQueueByEmployeeCommandHandler(ILogger<CancelQueueByEmployeeCommandHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache, IMediator mediator)
     {
@@ -43,10 +45,12 @@ public class CancelQueueByEmployeeCommandHandler: IRequestHandler<CancelQueueByE
         
         _logger.LogDebug("Saving employee cancellation changes to repository");
         await _dbContext.SaveChangesAsync(cancellationToken);
-        await _cache.RemoveAsync(CacheKeys.AllQueues(1, 10), cancellationToken);
+        await _cache.HashRemoveAsync(CacheKeys.AllQueuesHashKey, cancellationToken);
         await _cache.RemoveAsync(CacheKeys.QueueId(request.QueueId), cancellationToken);
-        await _cache.RemoveAsync(CacheKeys.CustomerQueues(dbQueue.CustomerId, 1, 10), cancellationToken);
+        await _cache.RemoveAsync(CacheKeys.CustomerQueuesHashKey(dbQueue.CustomerId), cancellationToken);
 
+        
+        
         var events = dbQueue.DomainEvents.ToList();
         dbQueue.ClearDomainEvents();
         

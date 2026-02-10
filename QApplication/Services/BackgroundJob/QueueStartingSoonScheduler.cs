@@ -25,7 +25,7 @@ public class QueueStartingSoonScheduler: BackgroundService
         while (!stoppingToken.IsCancellationRequested)
         {
             var now = DateTimeOffset.UtcNow;
-            var fiveMinuteLater = now.AddMinutes(2);
+            var fiveMinuteLater = now.AddMinutes(5);
             
             using var scope = _scopeFactory.CreateScope();
             var dbContext = scope.ServiceProvider
@@ -35,7 +35,7 @@ public class QueueStartingSoonScheduler: BackgroundService
                 .GetRequiredService<IPublishEndpoint>();
 
             var queuesStartingSoon = await dbContext.Queues
-                .Where(q => q.Status == QueueStatus.Confirmed)
+                .Where(q => q.Status == QueueStatus.Confirmed )
                 .Where(q => q.StartTime >= now && q.StartTime <= fiveMinuteLater)
                 .Where(q=>!q.IsStartingSoonNotified)
                 .ToListAsync(stoppingToken);
