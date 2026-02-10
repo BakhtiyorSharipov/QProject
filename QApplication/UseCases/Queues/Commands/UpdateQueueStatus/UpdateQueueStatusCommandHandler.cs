@@ -1,4 +1,5 @@
 using System.Net;
+using MassTransit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -6,6 +7,7 @@ using QApplication.Caching;
 using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
+using QContracts.Events;
 using QDomain.Enums;
 using QDomain.Models;
 using StackExchange.Redis;
@@ -17,14 +19,14 @@ public class UpdateQueueStatusCommandHandler: IRequestHandler<UpdateQueueStatusC
     private readonly ILogger<UpdateQueueStatusCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly ICacheService _cache;
-    private readonly IMediator _mediator;
+    private readonly IPublishEndpoint _publishEndpoint;
 
-    public UpdateQueueStatusCommandHandler(ILogger<UpdateQueueStatusCommandHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache, IMediator mediator)
+    public UpdateQueueStatusCommandHandler(ILogger<UpdateQueueStatusCommandHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache, IPublishEndpoint publishEndpoint)
     {
         _logger = logger;
         _dbContext = dbContext;
         _cache = cache;
-        _mediator = mediator;
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task<UpdateQueueStatusResponseModel> Handle(UpdateQueueStatusCommand request, CancellationToken cancellationToken)
@@ -183,31 +185,40 @@ public class UpdateQueueStatusCommandHandler: IRequestHandler<UpdateQueueStatusC
                 _logger.LogDebug("Set default end time (30 minutes): {EndTime} (UTC)", dbQueue.EndTime);
             }
             
-            dbQueue.Confirm();
+            
         }
-
-
-        if (request.newStatus== QueueStatus.Completed)
-        {
-            dbQueue.Complete();
-        }
-
+        
         dbQueue.Status = request.newStatus;
         _logger.LogDebug("Saving status update to repository");
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         await _cache.HashRemoveAsync(CacheKeys.AllQueuesHashKey, cancellationToken);
         await _cache.RemoveAsync(CacheKeys.QueueId(request.QueueId), cancellationToken);
-        await _cache.RemoveAsync(CacheKeys.CustomerQueuesHashKey(dbQueue.CustomerId), cancellationToken);
-        
-        
-        var events = dbQueue.DomainEvents.ToList();
-        dbQueue.ClearDomainEvents();
+        await _cache.HashRemoveAsync(CacheKeys.CustomerQueuesHashKey(dbQueue.CustomerId), cancellationToken);
 
-        foreach (var domainEvent in events)
+        if (dbQueue.Status == QueueStatus.Confirmed)
         {
-            await _mediator.Publish(domainEvent, cancellationToken);
+            await _publishEndpoint.Publish(new QueueConfirmedEvent
+            {
+                QueueId = dbQueue.Id,
+                EmployeeId = dbQueue.EmployeeId,
+                CustomerId = dbQueue.CustomerId,
+                StartTime = dbQueue.StartTime,
+                OccuredAt = DateTimeOffset.Now
+            }, cancellationToken);
         }
+        else if (dbQueue.Status== QueueStatus.Completed)
+        {
+            await _publishEndpoint.Publish(new QueueCompletedEvent
+            {
+                QueueId = dbQueue.Id,
+                EmployeeId = dbQueue.EmployeeId,
+                CustomerId = dbQueue.CustomerId,
+                StartTime = dbQueue.StartTime,
+                OccuredAt = DateTimeOffset.Now
+            }, cancellationToken);
+        }
+        
         
         
         var response = new UpdateQueueStatusResponseModel

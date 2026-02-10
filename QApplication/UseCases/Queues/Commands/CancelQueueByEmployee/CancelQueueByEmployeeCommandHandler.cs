@@ -1,4 +1,5 @@
 using System.Net;
+using MassTransit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -6,8 +7,8 @@ using QApplication.Caching;
 using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
+using QContracts.Events;
 using QDomain.Enums;
-using StackExchange.Redis;
 
 namespace QApplication.UseCases.Queues.Commands.CancelQueueByEmployee;
 
@@ -16,15 +17,15 @@ public class CancelQueueByEmployeeCommandHandler: IRequestHandler<CancelQueueByE
     private readonly ILogger<CancelQueueByEmployeeCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly ICacheService _cache;
-    private readonly IMediator _mediator;
+    private readonly IPublishEndpoint _publishEndpoint;
   
 
-    public CancelQueueByEmployeeCommandHandler(ILogger<CancelQueueByEmployeeCommandHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache, IMediator mediator)
+    public CancelQueueByEmployeeCommandHandler(ILogger<CancelQueueByEmployeeCommandHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache, IPublishEndpoint publishEndpoint)
     {
         _logger = logger;
         _dbContext = dbContext;
         _cache = cache;
-        _mediator = mediator;
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task<QueueResponseModel> Handle(CancelQueueByEmployeeCommand request, CancellationToken cancellationToken)
@@ -41,23 +42,25 @@ public class CancelQueueByEmployeeCommandHandler: IRequestHandler<CancelQueueByE
         dbQueue.Status = QueueStatus.CancelledByEmployee;
         dbQueue.CancelReason = request.CancelReason;
         
-        dbQueue.CancelByEmployee();
+      
         
         _logger.LogDebug("Saving employee cancellation changes to repository");
         await _dbContext.SaveChangesAsync(cancellationToken);
         await _cache.HashRemoveAsync(CacheKeys.AllQueuesHashKey, cancellationToken);
         await _cache.RemoveAsync(CacheKeys.QueueId(request.QueueId), cancellationToken);
-        await _cache.RemoveAsync(CacheKeys.CustomerQueuesHashKey(dbQueue.CustomerId), cancellationToken);
+        await _cache.HashRemoveAsync(CacheKeys.CustomerQueuesHashKey(dbQueue.CustomerId), cancellationToken);
 
-        
-        
-        var events = dbQueue.DomainEvents.ToList();
-        dbQueue.ClearDomainEvents();
-        
-        foreach (var domainEvent in events)
+        await _publishEndpoint.Publish(new QueueCanceledByEmployeeEvent
         {
-            await _mediator.Publish(domainEvent, cancellationToken);
-        }
+            QueueId = dbQueue.Id,
+            EmployeeId = dbQueue.EmployeeId,
+            CustomerId = dbQueue.CustomerId,
+            Reason = dbQueue.CancelReason,
+            OccuredAt = DateTimeOffset.Now
+        }, cancellationToken);
+        
+        
+        
         
         
         var response = new QueueResponseModel

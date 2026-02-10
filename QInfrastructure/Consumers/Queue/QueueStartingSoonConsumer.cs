@@ -1,7 +1,7 @@
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using QApplication.Interfaces;
-using QDomain.Events;
+using QContracts.Events;
 
 namespace QApplication.UseCases.Events.QueueConsumers;
 

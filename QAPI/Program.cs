@@ -13,10 +13,10 @@ using QApplication.Interfaces;
 using QApplication.Interfaces.Data;
 using QApplication.Services;
 using QApplication.Services.BackgroundJob;
-using QApplication.UseCases.Events.Queue;
 using QApplication.UseCases.Events.QueueConsumers;
 using QApplication.Validators.AuthValidators;
 using QDomain.Models;
+using QInfrastructure.Consumers.Queue;
 using QInfrastructure.Persistence.Caching;
 using QInfrastructure.Persistence.DataBase;
 using Serilog;
@@ -50,14 +50,14 @@ builder.Services.AddScoped<ISmsService, SmsService>();
 builder.Services.AddHostedService<QueueStartingSoonScheduler>();
 
 
-
-
-builder.Services.AddMediatR(cfg => 
-    cfg.RegisterServicesFromAssemblyContaining<QueueBookedEventHandler>());
-
-
 builder.Services.AddMassTransit(x =>
 {
+    x.AddConsumer<QueueBookedConsumer>();
+    x.AddConsumer<QueueCanceledByCustomerConsumer>();
+    x.AddConsumer<QueueCanceledByAdminConsumer>();
+    x.AddConsumer<QueueCanceledByEmployeeConsumer>();
+    x.AddConsumer<QueueCompletedConsumer>();
+    x.AddConsumer<QueueConfirmedConsumer>();
     x.AddConsumer<QueueStartingSoonConsumer>();
 
     x.UsingRabbitMq((context, cfg) =>

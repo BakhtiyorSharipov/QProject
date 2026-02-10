@@ -1,10 +1,10 @@
 using MediatR;
 
-namespace QDomain.Events;
+namespace QContracts.Events;
 
-public abstract class BaseEvent: INotification
+public abstract class BaseEvent
 {
-    public DateTime OccuredAt { get; set; }
+    public DateTimeOffset OccuredAt { get; set; }
     public int QueueId { get; set; }
     public int CustomerId { get; set; }
     public int EmployeeId { get; set; }

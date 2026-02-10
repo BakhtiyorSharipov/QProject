@@ -1,4 +1,5 @@
 using System.Net;
+using MassTransit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -6,9 +7,9 @@ using QApplication.Caching;
 using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
+using QContracts.Events;
 using QDomain.Enums;
 using QDomain.Models;
-using StackExchange.Redis;
 
 namespace QApplication.UseCases.Queues.Commands.CreateQueue;
 
@@ -17,13 +18,13 @@ public class CreateQueueCommandHandler: IRequestHandler<CreateQueueCommand, AddQ
     private readonly ILogger<CreateQueueCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly ICacheService _cache;
-    private readonly IMediator _mediator;
-    public CreateQueueCommandHandler(ILogger<CreateQueueCommandHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache, IMediator mediator)
+    private readonly IPublishEndpoint _publishEndpoint;
+    public CreateQueueCommandHandler(ILogger<CreateQueueCommandHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache, IPublishEndpoint publishEndpoint)
     {
         _logger = logger;
         _dbContext = dbContext;
         _cache = cache;
-        _mediator = mediator;
+        _publishEndpoint = publishEndpoint;
     }
     
     public async Task<AddQueueResponseModel> Handle(CreateQueueCommand request, CancellationToken cancellationToken)
@@ -121,22 +122,22 @@ public class CreateQueueCommandHandler: IRequestHandler<CreateQueueCommand, AddQ
             CreatedAt = DateTime.UtcNow
         };
         
-        queue.Book();
 
         await _dbContext.Queues.AddAsync(queue, cancellationToken);
         _logger.LogDebug("Saving new queue to repository");
         await _dbContext.SaveChangesAsync(cancellationToken);
-
-
+        
         await _cache.HashRemoveAsync(CacheKeys.AllQueuesHashKey, cancellationToken);
-        
-        
-        var events = queue.DomainEvents.ToList();
-        queue.ClearDomainEvents();
-        foreach (var domainEvent in events)
+
+
+        await _publishEndpoint.Publish(new QueueBookedEvent
         {
-            await _mediator.Publish(domainEvent, cancellationToken);
-        }
+            QueueId = queue.Id,
+            EmployeeId = queue.EmployeeId,
+            CustomerId = queue.CustomerId,
+            StartTime = queue.StartTime,
+            OccuredAt = DateTimeOffset.Now
+        }, cancellationToken);
         
         var response = new AddQueueResponseModel()
         {
