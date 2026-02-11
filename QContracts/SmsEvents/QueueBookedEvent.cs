@@ -1,6 +1,6 @@
-using MediatR;
 
-namespace QContracts.Events;
+
+namespace QContracts.SmsEvents;
 
 public class QueueBookedEvent: BaseEvent
 {

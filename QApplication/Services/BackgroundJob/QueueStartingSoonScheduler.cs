@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using QApplication.Interfaces.Data;
-using QContracts.Events;
+using QContracts.SmsEvents;
 using QDomain.Enums;
 
 namespace QApplication.Services.BackgroundJob;

@@ -1,6 +1,4 @@
-using MediatR;
-
-namespace QContracts.Events;
+namespace QContracts.SmsEvents;
 
 public class QueueCanceledByCustomerEvent: BaseEvent
 {

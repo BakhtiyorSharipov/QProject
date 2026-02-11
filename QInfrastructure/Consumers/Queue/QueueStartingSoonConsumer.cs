@@ -1,9 +1,9 @@
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using QApplication.Interfaces;
-using QContracts.Events;
+using QContracts.SmsEvents;
 
-namespace QApplication.UseCases.Events.QueueConsumers;
+namespace QInfrastructure.Consumers.Queue;
 
 public class QueueStartingSoonConsumer:IConsumer<QueueStartingSoonEvent>
 {

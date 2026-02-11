@@ -10,10 +10,13 @@ public static class CacheKeys
     
 
     public static string CustomerById(int id)
-        => $"customer:{id}";
-
-    public static string QueueId(int id)
         => $"queue:{id}";
+
+    public static string QueueId(int id) 
+        => $"queue:{id}";
+    
+    public static string EmployeeId(int id)
+        => $"queue_Employee:{id}";
     
     public static string AllQueuesHashKey => "queues:pages";
     public static string AllQueuesField(int pageNumber, int pageSize)

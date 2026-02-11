@@ -13,9 +13,9 @@ using QApplication.Interfaces;
 using QApplication.Interfaces.Data;
 using QApplication.Services;
 using QApplication.Services.BackgroundJob;
-using QApplication.UseCases.Events.QueueConsumers;
 using QApplication.Validators.AuthValidators;
 using QDomain.Models;
+using QInfrastructure.Consumers.Cache;
 using QInfrastructure.Consumers.Queue;
 using QInfrastructure.Persistence.Caching;
 using QInfrastructure.Persistence.DataBase;
@@ -59,6 +59,7 @@ builder.Services.AddMassTransit(x =>
     x.AddConsumer<QueueCompletedConsumer>();
     x.AddConsumer<QueueConfirmedConsumer>();
     x.AddConsumer<QueueStartingSoonConsumer>();
+    x.AddConsumer<CacheResetConsumer>();
 
     x.UsingRabbitMq((context, cfg) =>
     {

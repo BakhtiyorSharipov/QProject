@@ -1,4 +1,3 @@
-using MassTransit.Logging;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -61,9 +60,12 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
 
     public async Task InitializeAsync()
     {
-        await _postgresContainer.StartAsync();
-        await _redisContainer.StartAsync();
-        await _rabbitMqContainer.StartAsync();
+
+        await Task.WhenAll(
+            _postgresContainer.StartAsync(),
+            _redisContainer.StartAsync(),
+            _rabbitMqContainer.StartAsync()
+        );
         
         
         _postgresConnectionString = _postgresContainer.GetConnectionString();
@@ -78,8 +80,10 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
 
     public async Task DisposeAsync()
     {
-        await _postgresContainer.DisposeAsync();
-        await _redisContainer.DisposeAsync();
-        await _rabbitMqContainer.DisposeAsync();
+        await Task.WhenAll(
+            _postgresContainer.DisposeAsync().AsTask(),
+            _redisContainer.DisposeAsync().AsTask(),
+            _rabbitMqContainer.DisposeAsync().AsTask()
+        );
     }
 }
