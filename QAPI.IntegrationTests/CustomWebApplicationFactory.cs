@@ -23,14 +23,13 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
     
     private readonly RabbitMqContainer _rabbitMqContainer = new RabbitMqBuilder()
         .WithImage("rabbitmq:3-management")
+        .WithUsername("guest")
+        .WithPassword("guest")
         .Build();
-    
-    
-    
-
     private string? _postgresConnectionString;
     private string? _redisConnectionString;
-    private string? _rabbitMqConnectionString;
+    private string? _rabbitMqHost;
+    private int _rabbitMqPort;
     protected override IHost CreateHost(IHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -43,7 +42,10 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
                 
                 ["Redis:ConnectionString"]=_redisConnectionString,
                 
-                ["RabbitMQ:Host"]= _rabbitMqConnectionString,
+                ["RabbitMQ:Host"] = _rabbitMqHost,
+                ["RabbitMQ:Port"] = _rabbitMqPort.ToString(),
+                ["RabbitMQ:Username"] = "guest",
+                ["RabbitMQ:Password"] = "guest",
               
                 ["AuthSettings:SecretKey"] =  JwtTokenTestSettings.SecretKey,
                 ["AuthSettings:Audience"] = JwtTokenTestSettings.Audience,
@@ -55,7 +57,16 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
             config.AddInMemoryCollection(settings);
         });
 
-        return base.CreateHost(builder);
+        var host = base.CreateHost(builder);
+        
+   
+        using (var scope = host.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<QueueDbContext>();
+            db.Database.Migrate();
+        }
+        
+        return host;
     }
 
     public async Task InitializeAsync()
@@ -70,7 +81,9 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
         
         _postgresConnectionString = _postgresContainer.GetConnectionString();
         _redisConnectionString = _redisContainer.GetConnectionString();
-        _rabbitMqConnectionString = _rabbitMqContainer.GetConnectionString();
+       
+        _rabbitMqHost = _rabbitMqContainer.Hostname;
+        _rabbitMqPort = _rabbitMqContainer.GetMappedPublicPort(5672);
         
         
         using var scope = Services.CreateScope();
@@ -85,5 +98,6 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
             _redisContainer.DisposeAsync().AsTask(),
             _rabbitMqContainer.DisposeAsync().AsTask()
         );
+        
     }
 }
