@@ -28,13 +28,12 @@ public class CustomerController : ControllerBase
 
     [Authorize(Roles = nameof(UserRoles.SystemAdmin) + "," + nameof(UserRoles.CompanyAdmin))]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<CustomerResponseModel>>> GetAllAsync([FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 10)
+    public async Task<ActionResult<IEnumerable<CustomerResponseModel>>> GetAllAsync([FromQuery] int pageNumber = 1)
     {
-        _logger.LogInformation("Received request to get all customers. PageNumber: {PageNumber}, PageSize: {PageSize}",
-            pageNumber, pageSize);
+        _logger.LogInformation("Received request to get all customers. PageNumber: {PageNumber}, PageSize: 15",
+            pageNumber);
 
-        var query = new GetAllCustomersQuery(pageNumber, pageSize);
+        var query = new GetAllCustomersQuery(pageNumber);
         var customers = await _mediator.Send(query);
 
         return Ok(customers);

@@ -30,12 +30,11 @@ public class AvailabilityScheduleController : ControllerBase
     [Authorize(Roles =
         nameof(UserRoles.CompanyAdmin) + "," + nameof(UserRoles.SystemAdmin) + "," + nameof(UserRoles.Employee))]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<AvailabilityScheduleResponseModel>>> GetAllAsync([FromQuery]int pageNumber=1,
-       [FromQuery] int pageSize=10)
+    public async Task<ActionResult<IEnumerable<AvailabilityScheduleResponseModel>>> GetAllAsync([FromQuery]int pageNumber=1)
     {
-        _logger.LogInformation("Received request to get all schedules. PageNumber: {PageNumber}, PageSize: {PageSize}",
-            pageNumber, pageSize);
-        var query = new GetAllAvailabilitySchedulesQuery(pageNumber, pageSize);
+        _logger.LogInformation("Received request to get all schedules. PageNumber: {PageNumber}, PageSize: 15",
+            pageNumber);
+        var query = new GetAllAvailabilitySchedulesQuery(pageNumber);
         var schedules = await _mediator.Send(query);
         return Ok(schedules);
     }

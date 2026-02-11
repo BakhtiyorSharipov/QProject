@@ -11,6 +11,7 @@ namespace QApplication.UseCases.Queues.Queries;
 
 public class GetAllQueuesQueryHandler: IRequestHandler<GetAllQueuesQuery, PagedResponse<QueueResponseModel>>
 {
+    private const int PageSize = 15;
     private readonly ILogger<GetAllQueuesQueryHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly ICacheService _cache;
@@ -23,11 +24,10 @@ public class GetAllQueuesQueryHandler: IRequestHandler<GetAllQueuesQuery, PagedR
 
     public async Task<PagedResponse<QueueResponseModel>> Handle(GetAllQueuesQuery request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Getting all queues. PageNumber: {pageNumber}, PageSize: {pageSize}", request.PageNumber,
-            request.PageSize);
+        _logger.LogInformation("Getting all queues. PageNumber: {pageNumber}, PageSize: {pageSize}", request.PageNumber, PageSize);
 
         var hashKey = CacheKeys.AllQueuesHashKey;
-        var filed = CacheKeys.AllQueuesField(request.PageNumber, request.PageSize);
+        var filed = CacheKeys.AllQueuesField(request.PageNumber );
 
         var cached = await _cache.HashGetAsync<PagedResponse<QueueResponseModel>>(hashKey, filed, cancellationToken);
 
@@ -40,8 +40,8 @@ public class GetAllQueuesQueryHandler: IRequestHandler<GetAllQueuesQuery, PagedR
 
         var dbQueues =await  _dbContext.Queues
             .OrderBy(s => s.Id)
-            .Skip((request.PageNumber - 1) * request.PageSize)
-            .Take(request.PageSize)
+            .Skip((request.PageNumber - 1) * PageSize)
+            .Take(PageSize)
             .ToListAsync(cancellationToken);
                 
                 
@@ -63,7 +63,7 @@ public class GetAllQueuesQueryHandler: IRequestHandler<GetAllQueuesQuery, PagedR
         {
             Items = response,
             PageNumber = request.PageNumber,
-            PageSize = request.PageSize,
+            PageSize = PageSize,
             TotalCount = totalCount
         };
         

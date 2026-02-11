@@ -8,6 +8,7 @@ namespace QApplication.UseCases.BlockedCustomers.Queries.GetAllBlockedCustomers;
 
 public class GetAllBlockedCustomersQueryHandler: IRequestHandler<GetAllBlockedCustomersQuery, PagedResponse<BlockedCustomerResponseModel>>
 {
+    private const int PageSize = 15;
     private readonly ILogger<GetAllBlockedCustomersQueryHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
 
@@ -20,14 +21,14 @@ public class GetAllBlockedCustomersQueryHandler: IRequestHandler<GetAllBlockedCu
     public async Task<PagedResponse<BlockedCustomerResponseModel>> Handle(GetAllBlockedCustomersQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Getting all blocked customers. PageNumber: {pageNumber}, PageSize: {ageSize}", request.PageNumber,
-            request.PageSize);
+            PageSize);
 
         var totalCount = await _dbContext.BlockedCustomers.CountAsync(cancellationToken);
 
         var dbBlockedCustomers = await _dbContext.BlockedCustomers
             .OrderBy(c => c.Id)
-            .Skip((request.PageNumber-1) * request.PageSize)
-            .Take(request.PageSize).ToListAsync(cancellationToken);
+            .Skip((request.PageNumber-1) * PageSize)
+            .Take(PageSize).ToListAsync(cancellationToken);
         
         
 
@@ -48,7 +49,7 @@ public class GetAllBlockedCustomersQueryHandler: IRequestHandler<GetAllBlockedCu
         {
             Items = response,
             PageNumber = request.PageNumber,
-            PageSize = request.PageSize,
+            PageSize = PageSize,
             TotalCount = totalCount
         };
     }

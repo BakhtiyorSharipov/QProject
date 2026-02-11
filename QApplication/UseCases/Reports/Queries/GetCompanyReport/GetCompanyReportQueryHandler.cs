@@ -9,7 +9,7 @@ using QApplication.UseCases.Reports.ReportQueryExtensions;
 using QDomain.Enums;
 using QDomain.Models;
 
-namespace QApplication.UseCases.Reports.Queries;
+namespace QApplication.UseCases.Reports.Queries.GetCompanyReport;
 
 public class GetCompanyReportQueryHandler: IRequestHandler<GetCompanyReportQuery, CompanyReportItemResponseModel>
 {

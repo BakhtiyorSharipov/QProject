@@ -60,6 +60,7 @@ builder.Services.AddMassTransit(x =>
     x.AddConsumer<QueueConfirmedConsumer>();
     x.AddConsumer<QueueStartingSoonConsumer>();
     x.AddConsumer<CacheResetConsumer>();
+    x.AddConsumer<CompanyCacheResetConsumer>();
 
     x.UsingRabbitMq((context, cfg) =>
     {

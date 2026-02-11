@@ -8,6 +8,7 @@ namespace QApplication.UseCases.AvailabilitySchedule.Queries.GetAllAvailabilityS
 
 public class GetAllAvailabilitySchedulesQueryHandler: IRequestHandler<GetAllAvailabilitySchedulesQuery, PagedResponse<AvailabilityScheduleResponseModel>>
 {
+    private const int PageSize = 15;
     private readonly ILogger<GetAllAvailabilitySchedulesQueryHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
 
@@ -20,14 +21,14 @@ public class GetAllAvailabilitySchedulesQueryHandler: IRequestHandler<GetAllAvai
     public async Task<PagedResponse<AvailabilityScheduleResponseModel>> Handle(GetAllAvailabilitySchedulesQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Getting all companies. PageNumber: {pageNumber}, PageSize: {pageSize}", request.PageNumber,
-            request.PageSize);
+            PageSize);
 
         var totalCount = await _dbContext.AvailabilitySchedules.CountAsync(cancellationToken);
 
         var dbAvailabilitySchedule = await _dbContext.AvailabilitySchedules
             .OrderBy(c => c.Id)
-            .Skip((request.PageNumber-1) * request.PageSize)
-            .Take(request.PageSize).ToListAsync(cancellationToken);
+            .Skip((request.PageNumber-1) * PageSize)
+            .Take(PageSize).ToListAsync(cancellationToken);
         
         
 
@@ -49,7 +50,7 @@ public class GetAllAvailabilitySchedulesQueryHandler: IRequestHandler<GetAllAvai
         {
             Items = response,
             PageNumber = request.PageNumber,
-            PageSize = request.PageSize,
+            PageSize = PageSize,
             TotalCount = totalCount
         };
     }
