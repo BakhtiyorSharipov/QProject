@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using QAPI.IntegrationTests;
 using QInfrastructure.Persistence.DataBase;
 using Testcontainers.PostgreSql;
+using Testcontainers.RabbitMq;
 using Testcontainers.Redis;
 
 public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
@@ -19,11 +20,16 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
     private readonly RedisContainer _redisContainer = new RedisBuilder()
             .WithImage("redis:7-alpine")
             .Build();
-
     
-
+    private readonly RabbitMqContainer _rabbitMqContainer = new RabbitMqBuilder()
+        .WithImage("rabbitmq:3-management")
+        .WithUsername("guest")
+        .WithPassword("guest")
+        .Build();
     private string? _postgresConnectionString;
     private string? _redisConnectionString;
+    private string? _rabbitMqConnectionString;
+    
     protected override IHost CreateHost(IHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -35,6 +41,11 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
                 ["ConnectionStrings:DefaultConnection"] = _postgresConnectionString,
                 
                 ["Redis:ConnectionString"]=_redisConnectionString,
+                
+                ["RabbitMQ:Host"] = _rabbitMqContainer.Hostname,
+                ["RabbitMQ:Port"] = _rabbitMqContainer.GetMappedPublicPort(5672).ToString(),
+                ["RabbitMQ:Username"] = "guest",
+                ["RabbitMQ:Password"] = "guest",
               
                 ["AuthSettings:SecretKey"] =  JwtTokenTestSettings.SecretKey,
                 ["AuthSettings:Audience"] = JwtTokenTestSettings.Audience,
@@ -46,25 +57,39 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
             config.AddInMemoryCollection(settings);
         });
 
-        return base.CreateHost(builder);
+        var host = base.CreateHost(builder);
+        
+   
+        using (var scope = host.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<QueueDbContext>();
+            db.Database.Migrate();
+        }
+        
+        return host;
     }
 
     public async Task InitializeAsync()
     {
-        await _postgresContainer.StartAsync();
-        await _redisContainer.StartAsync();
+
+        await Task.WhenAll(
+            _postgresContainer.StartAsync(),
+            _redisContainer.StartAsync(),
+            _rabbitMqContainer.StartAsync()
+        );
         
         _postgresConnectionString = _postgresContainer.GetConnectionString();
         _redisConnectionString = _redisContainer.GetConnectionString();
-        
-        using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<QueueDbContext>();
-        await db.Database.MigrateAsync();
+        _rabbitMqConnectionString = _redisContainer.GetConnectionString();
     }
 
     public async Task DisposeAsync()
     {
-        await _postgresContainer.DisposeAsync();
-        await _redisContainer.DisposeAsync();
+        await Task.WhenAll(
+            _postgresContainer.DisposeAsync().AsTask(),
+            _redisContainer.DisposeAsync().AsTask(),
+            _rabbitMqContainer.DisposeAsync().AsTask()
+        );
+        
     }
 }

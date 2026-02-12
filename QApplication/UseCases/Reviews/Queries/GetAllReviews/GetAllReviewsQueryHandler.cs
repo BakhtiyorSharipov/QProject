@@ -8,6 +8,7 @@ namespace QApplication.UseCases.Reviews.Queries.GetAllReviews;
 
 public class GetAllReviewsQueryHandler: IRequestHandler<GetAllReviewsQuery, PagedResponse<ReviewResponseModel>>
 {
+    private const int PageSize = 15;
     private readonly ILogger<GetAllReviewsQueryHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
 
@@ -20,14 +21,14 @@ public class GetAllReviewsQueryHandler: IRequestHandler<GetAllReviewsQuery, Page
     public async Task<PagedResponse<ReviewResponseModel>> Handle(GetAllReviewsQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Getting all reviews. PageNumber: {pageNumber}, PageSize: {pageSize}", request.PageNumber,
-            request.PageSize);
+            PageSize);
 
         var totalCount = await _dbContext.Reviews.CountAsync(cancellationToken);
 
         var dbReviews =await  _dbContext.Reviews
             .OrderBy(s => s.Id)
-            .Skip((request.PageNumber - 1) * request.PageSize)
-            .Take(request.PageSize)
+            .Skip((request.PageNumber - 1) * PageSize)
+            .Take(PageSize)
             .ToListAsync(cancellationToken);
 
         var response = dbReviews.Select(reviews => new ReviewResponseModel()
@@ -45,7 +46,7 @@ public class GetAllReviewsQueryHandler: IRequestHandler<GetAllReviewsQuery, Page
         {
             Items = response,
             PageNumber = request.PageNumber,
-            PageSize = request.PageSize,
+            PageSize = PageSize,
             TotalCount = totalCount
         };
     }

@@ -1,29 +1,34 @@
 using System.Net;
+using MassTransit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using QApplication.Caching;
 using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
+using QContracts.CashingEvents;
+using QContracts.SmsEvents;
 using QDomain.Enums;
 
 namespace QApplication.UseCases.Queues.Commands.CancelQueueByEmployee;
 
-public class CancelQueueByEmployeeCommandHandler: IRequestHandler<CancelQueueByEmployeeCommand, QueueResponseModel>
+public class CancelQueueByEmployeeCommandHandler : IRequestHandler<CancelQueueByEmployeeCommand, QueueResponseModel>
 {
     private readonly ILogger<CancelQueueByEmployeeCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
-    private readonly ICacheService _cache;
+    private readonly IPublishEndpoint _publishEndpoint;
 
-    public CancelQueueByEmployeeCommandHandler(ILogger<CancelQueueByEmployeeCommandHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache)
+
+    public CancelQueueByEmployeeCommandHandler(ILogger<CancelQueueByEmployeeCommandHandler> logger,
+        IQueueApplicationDbContext dbContext, IPublishEndpoint publishEndpoint)
     {
         _logger = logger;
         _dbContext = dbContext;
-        _cache = cache;
+        _publishEndpoint = publishEndpoint;
     }
 
-    public async Task<QueueResponseModel> Handle(CancelQueueByEmployeeCommand request, CancellationToken cancellationToken)
+    public async Task<QueueResponseModel> Handle(CancelQueueByEmployeeCommand request,
+        CancellationToken cancellationToken)
     {
         _logger.LogInformation("Cancelling queue Id {id} by employee", request.QueueId);
 
@@ -37,11 +42,28 @@ public class CancelQueueByEmployeeCommandHandler: IRequestHandler<CancelQueueByE
         dbQueue.Status = QueueStatus.CancelledByEmployee;
         dbQueue.CancelReason = request.CancelReason;
 
+
         _logger.LogDebug("Saving employee cancellation changes to repository");
         await _dbContext.SaveChangesAsync(cancellationToken);
-        await _cache.RemoveAsync(CacheKeys.AllQueues(1, 10), cancellationToken);
-        await _cache.RemoveAsync(CacheKeys.QueueId(request.QueueId), cancellationToken);
-        await _cache.RemoveAsync(CacheKeys.CustomerQueues(dbQueue.CustomerId, 1, 10), cancellationToken);
+
+
+        await _publishEndpoint.Publish(new CacheResetEvent
+        {
+            QueueId = dbQueue.Id,
+            CustomerId = dbQueue.CustomerId,
+            EmployeeId = dbQueue.EmployeeId,
+            OccuredAt = DateTimeOffset.Now
+        }, cancellationToken);
+
+        await _publishEndpoint.Publish(new QueueCanceledByEmployeeEvent
+        {
+            QueueId = dbQueue.Id,
+            EmployeeId = dbQueue.EmployeeId,
+            CustomerId = dbQueue.CustomerId,
+            Reason = dbQueue.CancelReason,
+            OccuredAt = DateTimeOffset.Now
+        }, cancellationToken);
+
 
         var response = new QueueResponseModel
         {

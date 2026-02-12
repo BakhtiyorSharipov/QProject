@@ -3,7 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using QApplication.Exceptions;
 using QApplication.Responses;
-using QApplication.UseCase.Companies.Commands;
+using QApplication.UseCases.Companies.Commands.CreateCompany;
 using QDomain.Enums;
 using Shouldly;
 

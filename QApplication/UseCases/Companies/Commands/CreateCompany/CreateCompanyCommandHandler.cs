@@ -1,26 +1,24 @@
-using System.Net;
+using MassTransit;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using QApplication.Caching;
-using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
-using QApplication.Requests.CompanyRequest;
 using QApplication.Responses;
+using QContracts.CashingEvents;
 using QDomain.Models;
 
-namespace QApplication.UseCase.Companies.Commands;
+namespace QApplication.UseCases.Companies.Commands.CreateCompany;
 
 public class CreateCompanyCommandHandler: IRequestHandler<CreateCompanyCommand, CompanyResponseModel>
 {
     private readonly ILogger<CreateCompanyCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
-    private readonly ICacheService _cache;
+    private readonly IPublishEndpoint _publishEndpoint;
 
-    public CreateCompanyCommandHandler(ILogger<CreateCompanyCommandHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache)
+    public CreateCompanyCommandHandler(ILogger<CreateCompanyCommandHandler> logger, IQueueApplicationDbContext dbContext, IPublishEndpoint publishEndpoint)
     {
         _logger = logger;
         _dbContext = dbContext;
-        _cache = cache;
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task<CompanyResponseModel> Handle(CreateCompanyCommand request, CancellationToken cancellationToken)
@@ -39,7 +37,13 @@ public class CreateCompanyCommandHandler: IRequestHandler<CreateCompanyCommand, 
         await _dbContext.Companies.AddAsync(company, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        await _cache.RemoveAsync(CacheKeys.AllCompanies(1, 10), cancellationToken);
+
+        await _publishEndpoint.Publish(new CompanyCacheResetEvent
+        {
+            OccuredAt = DateTimeOffset.Now,
+            CompanyId = company.Id,
+        }, cancellationToken);
+        
         _logger.LogInformation("Company {companyName} added successfully with Id {companyId}", company.CompanyName,
             company.Id);
         

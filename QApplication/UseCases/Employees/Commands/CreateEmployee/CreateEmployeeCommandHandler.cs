@@ -4,7 +4,7 @@ using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QDomain.Models;
 
-namespace QApplication.UseCases.Employees.CreateEmployee;
+namespace QApplication.UseCases.Employees.Commands.CreateEmployee;
 
 public class CreateEmployeeCommandHandler: IRequestHandler<CreateEmployeeCommand, EmployeeResponseModel>
 {

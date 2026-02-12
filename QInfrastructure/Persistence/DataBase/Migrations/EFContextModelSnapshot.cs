@@ -250,6 +250,9 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                     b.Property<DateTimeOffset?>("EndTime")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<bool>("IsStartingSoonNotified")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("ServiceId")
                         .HasColumnType("integer");
 

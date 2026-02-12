@@ -24,10 +24,10 @@ public class ReviewController: ControllerBase
 
     [Authorize(Roles = nameof(UserRoles.CompanyAdmin)+","+ nameof(UserRoles.SystemAdmin)+","+ nameof(UserRoles.Employee))]
     [HttpGet]
-    public async Task<ActionResult< IEnumerable<ReviewResponseModel>>> GetAllAsync([FromQuery] int pageNumber=1, [FromQuery]int pageSize=10)
+    public async Task<ActionResult< IEnumerable<ReviewResponseModel>>> GetAllAsync([FromQuery] int pageNumber=1)
     {
-        _logger.LogInformation("Received request to get all reviews. PageNumber: {PageNumber}, PageSize: {PageSize}", pageNumber, pageSize);
-        var query = new GetAllReviewsQuery(pageNumber, pageSize);
+        _logger.LogInformation("Received request to get all reviews. PageNumber: {PageNumber}, PageSize: 15", pageNumber);
+        var query = new GetAllReviewsQuery(pageNumber);
         var reviews = await _mediator.Send(query);
         return Ok(reviews);
 

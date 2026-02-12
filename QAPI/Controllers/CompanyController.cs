@@ -1,12 +1,11 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using QApplication.Interfaces;
 using QApplication.Requests.CompanyRequest;
 using QApplication.Responses;
-using QApplication.UseCase.Companies.Commands;
-using QApplication.UseCase.Companies.Commands.DeleteCompanyCommand;
-using QApplication.UseCase.Companies.Commands.UpdateCompanyCommand;
+using QApplication.UseCases.Companies.Commands.CreateCompany;
+using QApplication.UseCases.Companies.Commands.DeleteCompany;
+using QApplication.UseCases.Companies.Commands.UpdateCompany;
 using QApplication.UseCases.Companies.Queries.GetAllCompanies;
 using QApplication.UseCases.Companies.Queries.GetCompanyById;
 using QDomain.Enums;
@@ -29,12 +28,12 @@ public class CompanyController : ControllerBase
     
     [Authorize(Roles = nameof(UserRoles.SystemAdmin))]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<CompanyResponseModel>>> GetAllAsync([FromQuery]int pageNumber=1, [FromQuery]int pageSize=10)
+    public async Task<ActionResult<IEnumerable<CompanyResponseModel>>> GetAllAsync([FromQuery]int pageNumber=1)
     {
-        _logger.LogInformation("Received request to get all companies. PageNumber: {PageNumber}, PageSize: {PageSize}",
-            pageNumber, pageSize);
+        _logger.LogInformation("Received request to get all companies. PageNumber: {PageNumber}, PageSize: 15",
+            pageNumber);
 
-        var query = new GetAllCompaniesQuery(pageNumber, pageSize);
+        var query = new GetAllCompaniesQuery(pageNumber);
         var companies = await _mediator.Send(query);
         return Ok(companies);
     }

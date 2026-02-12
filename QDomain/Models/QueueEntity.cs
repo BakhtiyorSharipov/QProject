@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using QDomain.Enums;
 
 namespace QDomain.Models;
@@ -11,6 +12,9 @@ public class QueueEntity: BaseEntity
 
     public QueueStatus Status { get; set; } = QueueStatus.Pending;
     public DateTime CreatedAt { get; set; }= DateTime.UtcNow;
+    
+    public bool IsStartingSoonNotified { get; set; } = false;
+
     public int EmployeeId { get; set; }
     public EmployeeEntity Employee { get; set; }
     
@@ -19,5 +23,6 @@ public class QueueEntity: BaseEntity
     
     public int ServiceId { get; set; }
     public ServiceEntity Service { get; set; }
+    
     
 }
