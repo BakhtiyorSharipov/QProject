@@ -68,13 +68,7 @@ public class CancelQueueByEmployeeCommandHandler : IRequestHandler<CancelQueueBy
 
         
         
-        var events = dbQueue.DomainEvents.ToList();
-        dbQueue.ClearDomainEvents();
         
-        foreach (var domainEvent in events)
-        {
-            await _mediator.Publish(domainEvent, cancellationToken);
-        }
         
         
         var response = new QueueResponseModel

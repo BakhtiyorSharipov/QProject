@@ -123,7 +123,6 @@ public class CreateQueueCommandHandler : IRequestHandler<CreateQueueCommand, Add
             CreatedAt = DateTime.UtcNow
         };
         
-        queue.Book();
 
         await _dbContext.Queues.AddAsync(queue, cancellationToken);
         _logger.LogDebug("Saving new queue to repository");
@@ -147,15 +146,7 @@ public class CreateQueueCommandHandler : IRequestHandler<CreateQueueCommand, Add
             OccuredAt = DateTimeOffset.Now
         }, cancellationToken);
 
-        await _cache.HashRemoveAsync(CacheKeys.AllQueuesHashKey, cancellationToken);
         
-        
-        var events = queue.DomainEvents.ToList();
-        queue.ClearDomainEvents();
-        foreach (var domainEvent in events)
-        {
-            await _mediator.Publish(domainEvent, cancellationToken);
-        }
         
         var response = new AddQueueResponseModel()
         {

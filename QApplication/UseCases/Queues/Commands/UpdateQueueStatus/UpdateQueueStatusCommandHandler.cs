@@ -185,7 +185,6 @@ public class UpdateQueueStatusCommandHandler : IRequestHandler<UpdateQueueStatus
                 _logger.LogDebug("Set default end time (30 minutes): {EndTime} (UTC)", dbQueue.EndTime);
             }
             
-            dbQueue.Confirm();
         }
 
         dbQueue.Status = request.newStatus;
