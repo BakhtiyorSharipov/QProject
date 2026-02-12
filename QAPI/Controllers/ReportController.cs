@@ -2,7 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QApplication.Responses.ReportResponse;
-using QApplication.UseCases.Reports.Queries;
+using QApplication.UseCases.Reports.Queries.GetCompanyReport;
 using QApplication.UseCases.Reports.Queries.GetEmployeeReport;
 using QApplication.UseCases.Reports.Queries.GetQueueReport;
 using QApplication.UseCases.Reports.Queries.GetReviewReport;

@@ -1,6 +1,5 @@
 using FluentValidation;
-using QApplication.Requests.CompanyRequest;
-using QApplication.UseCase.Companies.Commands;
+using QApplication.UseCases.Companies.Commands.CreateCompany;
 
 namespace QApplication.Validators;
 

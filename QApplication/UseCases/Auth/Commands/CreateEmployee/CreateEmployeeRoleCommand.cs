@@ -1,5 +1,4 @@
 using MediatR;
-using QApplication.Responses;
 using QDomain.Models;
 
 namespace QApplication.UseCases.Auth.Commands.CreateEmployee;

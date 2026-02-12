@@ -1,35 +1,37 @@
 using System.Net;
+using MassTransit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using QApplication.Caching;
 using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
+using QContracts.CashingEvents;
+using QContracts.SmsEvents;
 using QDomain.Enums;
 using QDomain.Models;
 using StackExchange.Redis;
 
 namespace QApplication.UseCases.Queues.Commands.CreateQueue;
 
-public class CreateQueueCommandHandler: IRequestHandler<CreateQueueCommand, AddQueueResponseModel>
+public class CreateQueueCommandHandler : IRequestHandler<CreateQueueCommand, AddQueueResponseModel>
 {
     private readonly ILogger<CreateQueueCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
-    private readonly ICacheService _cache;
-    private readonly IMediator _mediator;
-    public CreateQueueCommandHandler(ILogger<CreateQueueCommandHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache, IMediator mediator)
+    private readonly IPublishEndpoint _publishEndpoint;
+
+    public CreateQueueCommandHandler(ILogger<CreateQueueCommandHandler> logger, IQueueApplicationDbContext dbContext,
+        IPublishEndpoint publishEndpoint)
     {
         _logger = logger;
         _dbContext = dbContext;
-        _cache = cache;
-        _mediator = mediator;
+        _publishEndpoint = publishEndpoint;
     }
-    
+
     public async Task<AddQueueResponseModel> Handle(CreateQueueCommand request, CancellationToken cancellationToken)
     {
-         _logger.LogInformation("Adding new queue for EmployeeId {id}", request.EmployeeId);
-        
+        _logger.LogInformation("Adding new queue for EmployeeId {id}", request.EmployeeId);
+
 
         var schedule = await _dbContext.AvailabilitySchedules.Where(s => s.EmployeeId == request.EmployeeId)
             .ToListAsync(cancellationToken);
@@ -71,10 +73,10 @@ public class CreateQueueCommandHandler: IRequestHandler<CreateQueueCommand, AddQ
 
 
         _logger.LogDebug("Checking for overlapping queues for EmployeeId: {employeeId}", request.EmployeeId);
-        
+
         var allQueuesByEmployee = await _dbContext.Queues.Where(s => s.EmployeeId == request.EmployeeId)
             .ToListAsync(cancellationToken);
-        
+
         var allQueuesByEmployeeAfterFilter =
             allQueuesByEmployee.Where(q => q.Status == QueueStatus.Pending || q.Status == QueueStatus.Confirmed);
 
@@ -127,6 +129,23 @@ public class CreateQueueCommandHandler: IRequestHandler<CreateQueueCommand, AddQ
         _logger.LogDebug("Saving new queue to repository");
         await _dbContext.SaveChangesAsync(cancellationToken);
 
+
+        await _publishEndpoint.Publish(new CacheResetEvent
+        {
+            QueueId = queue.Id,
+            CustomerId = queue.CustomerId,
+            EmployeeId = queue.EmployeeId,
+            OccuredAt = DateTimeOffset.Now
+        }, cancellationToken);
+
+        await _publishEndpoint.Publish(new QueueBookedEvent
+        {
+            QueueId = queue.Id,
+            EmployeeId = queue.EmployeeId,
+            CustomerId = queue.CustomerId,
+            StartTime = queue.StartTime,
+            OccuredAt = DateTimeOffset.Now
+        }, cancellationToken);
 
         await _cache.HashRemoveAsync(CacheKeys.AllQueuesHashKey, cancellationToken);
         

@@ -9,7 +9,7 @@ namespace QApplication.UseCases.Customers.Queries.GetAllCustomers;
 
 public class GetAllCustomersQueryHandler: IRequestHandler<GetAllCustomersQuery, PagedResponse<CustomerResponseModel>>
 {
-
+    private const int PageSize = 15;
     private readonly ILogger<GetAllCustomersQueryHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
 
@@ -22,15 +22,15 @@ public class GetAllCustomersQueryHandler: IRequestHandler<GetAllCustomersQuery, 
     
     public async Task<PagedResponse<CustomerResponseModel>> Handle(GetAllCustomersQuery request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Getting all customers. PageNumber: {pageNumber}, PageSize: {ageSize}", request.pageNumber,
-            request.pageSize);
+        _logger.LogInformation("Getting all customers. PageNumber: {pageNumber}, PageSize: {ageSize}", request.PageNumber,
+            PageSize);
 
         var totalCount = await _dbContext.Customers.CountAsync(cancellationToken);
 
         var dbCustomers = await _dbContext.Customers
             .OrderBy(c => c.Id)
-            .Skip((request.pageNumber-1) * request.pageSize)
-            .Take(request.pageSize).ToListAsync(cancellationToken);
+            .Skip((request.PageNumber-1) * PageSize)
+            .Take(PageSize).ToListAsync(cancellationToken);
         
         
 
@@ -47,8 +47,8 @@ public class GetAllCustomersQueryHandler: IRequestHandler<GetAllCustomersQuery, 
         return new PagedResponse<CustomerResponseModel>
         {
             Items = response,
-            PageNumber = request.pageNumber,
-            PageSize = request.pageSize,
+            PageNumber = request.PageNumber,
+            PageSize = PageSize,
             TotalCount = totalCount
         };
     }

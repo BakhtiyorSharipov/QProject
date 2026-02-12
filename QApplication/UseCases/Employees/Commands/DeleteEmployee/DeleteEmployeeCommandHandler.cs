@@ -6,7 +6,7 @@ using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
 using QDomain.Models;
 
-namespace QApplication.UseCases.Employees.DeleteEmployee;
+namespace QApplication.UseCases.Employees.Commands.DeleteEmployee;
 
 public class DeleteEmployeeCommandHandler: IRequestHandler<DeleteEmployeeCommand, bool>
 {

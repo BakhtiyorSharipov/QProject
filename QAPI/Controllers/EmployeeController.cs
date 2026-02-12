@@ -5,11 +5,11 @@ using Microsoft.AspNetCore.Mvc;
 using QApplication.Interfaces;
 using QApplication.Requests.EmployeeRequest;
 using QApplication.Responses;
-using QApplication.UseCases.Employees.CreateEmployee;
-using QApplication.UseCases.Employees.DeleteEmployee;
+using QApplication.UseCases.Employees.Commands.CreateEmployee;
+using QApplication.UseCases.Employees.Commands.DeleteEmployee;
+using QApplication.UseCases.Employees.Commands.UpdateEmployee;
 using QApplication.UseCases.Employees.Queries.GetAllEmployees;
 using QApplication.UseCases.Employees.Queries.GetEmployeeById;
-using QApplication.UseCases.Employees.UpdateEmployee;
 using QDomain.Enums;
 using QDomain.Models;
 
@@ -30,11 +30,11 @@ public class EmployeeController : ControllerBase
 
     [Authorize(Roles = nameof(UserRoles.SystemAdmin) + "," + nameof(UserRoles.CompanyAdmin))]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<EmployeeResponseModel>>> GetAllAsync([FromQuery] int pageNumber=1, [FromQuery] int pageSize=10)
+    public async Task<ActionResult<IEnumerable<EmployeeResponseModel>>> GetAllAsync([FromQuery] int pageNumber=1)
     {
-        _logger.LogInformation("Received request to get all employees. PageNumber: {PageNUmber}, PageSize: {PageSize}",
-            pageNumber, pageSize);
-        var query = new GetAllEmployeesQuery(pageNumber, pageSize);
+        _logger.LogInformation("Received request to get all employees. PageNumber: {PageNUmber}, PageSize: 15",
+            pageNumber);
+        var query = new GetAllEmployeesQuery(pageNumber);
         var employees = await _mediator.Send(query);
 
         return Ok(employees);

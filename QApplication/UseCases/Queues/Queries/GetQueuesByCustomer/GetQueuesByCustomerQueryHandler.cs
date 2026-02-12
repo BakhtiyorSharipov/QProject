@@ -12,9 +12,9 @@ using StackExchange.Redis;
 
 namespace QApplication.UseCases.Queues.Queries.GetQueuesByCustomer;
 
-public class
-    GetQueuesByCustomerQueryHandler : IRequestHandler<GetQueuesByCustomerQuery, PagedResponse<QueueResponseModel>>
+public class GetQueuesByCustomerQueryHandler : IRequestHandler<GetQueuesByCustomerQuery, PagedResponse<QueueResponseModel>>
 {
+    private const int PageSize = 15;
     private readonly ILogger<GetQueuesByCustomerQueryHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly ICacheService _cache;
@@ -61,13 +61,12 @@ public class
         
 
         _logger.LogInformation("Getting all customer's queue. PageNumber: {pageNumber}, PageSize: {pageSize}",
-            request.pageNumber,
-            request.pageSize);
+            request.PageNumber, PageSize);
 
        
 
         var hashKey = CacheKeys.CustomerQueuesHashKey(userId);
-        var filed = CacheKeys.CustomerQueuesField(request.pageNumber, request.pageSize);
+        var filed = CacheKeys.CustomerQueuesField(request.PageNumber);
 
         var cached = await _cache.HashGetAsync<PagedResponse<QueueResponseModel>>(hashKey, filed, cancellationToken);
 
@@ -84,8 +83,8 @@ public class
         var queues = await query
             .AsNoTracking()
             .OrderBy(c => c.Id)
-            .Skip((request.pageNumber - 1) * request.pageSize)
-            .Take(request.pageSize).ToListAsync(cancellationToken);
+            .Skip((request.PageNumber - 1) * 15)
+            .Take(15).ToListAsync(cancellationToken);
 
 
         var response = queues.Select(queue => new QueueResponseModel()
@@ -109,8 +108,8 @@ public class
         var pagedResponse=new PagedResponse<QueueResponseModel>
         {
             Items = response,
-            PageNumber = request.pageNumber,
-            PageSize = request.pageSize,
+            PageNumber = request.PageNumber,
+            PageSize = PageSize,
             TotalCount = totalCount
         };
 

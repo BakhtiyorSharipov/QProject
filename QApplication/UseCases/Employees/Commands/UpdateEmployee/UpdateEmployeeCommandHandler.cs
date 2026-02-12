@@ -7,7 +7,7 @@ using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QDomain.Models;
 
-namespace QApplication.UseCases.Employees.UpdateEmployee;
+namespace QApplication.UseCases.Employees.Commands.UpdateEmployee;
 
 public class UpdateEmployeeCommandHandler : IRequestHandler<UpdateEmployeeCommand, EmployeeResponseModel>
 {

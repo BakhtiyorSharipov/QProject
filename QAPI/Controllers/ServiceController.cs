@@ -27,11 +27,11 @@ public class ServiceController : ControllerBase
 
     [Authorize(Roles = nameof(UserRoles.SystemAdmin) + "," + nameof(UserRoles.CompanyAdmin))]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ServiceResponseModel>>> GetAllAsync([FromQuery]int pageNumber=1, [FromQuery]int pageSize=10)
+    public async Task<ActionResult<IEnumerable<ServiceResponseModel>>> GetAllAsync([FromQuery]int pageNumber=1)
     {
-        _logger.LogInformation("Received request to get all services. PageNumber: {PageNumber}, PageSize: {PageSize}",
-            pageNumber, pageSize);
-        var query = new GetAllServicesQuery(pageNumber, pageSize);
+        _logger.LogInformation("Received request to get all services. PageNumber: {PageNumber}, PageSize: 15",
+            pageNumber);
+        var query = new GetAllServicesQuery(pageNumber);
         var services = await _mediator.Send(query);
         return Ok(services);
     }
