@@ -8,6 +8,7 @@ using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QDomain.Models;
+using StackExchange.Redis;
 
 namespace QApplication.UseCases.Queues.Queries.GetQueuesByCustomer;
 

@@ -10,6 +10,7 @@ using QContracts.CashingEvents;
 using QContracts.SmsEvents;
 using QDomain.Enums;
 using QDomain.Models;
+using StackExchange.Redis;
 
 namespace QApplication.UseCases.Queues.Commands.UpdateQueueStatus;
 
@@ -183,6 +184,7 @@ public class UpdateQueueStatusCommandHandler : IRequestHandler<UpdateQueueStatus
                 dbQueue.EndTime = dbQueue.StartTime.AddMinutes(30);
                 _logger.LogDebug("Set default end time (30 minutes): {EndTime} (UTC)", dbQueue.EndTime);
             }
+            
         }
 
         dbQueue.Status = request.newStatus;

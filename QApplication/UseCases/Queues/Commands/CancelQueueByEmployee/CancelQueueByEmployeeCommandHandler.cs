@@ -9,6 +9,7 @@ using QApplication.Responses;
 using QContracts.CashingEvents;
 using QContracts.SmsEvents;
 using QDomain.Enums;
+using StackExchange.Redis;
 
 namespace QApplication.UseCases.Queues.Commands.CancelQueueByEmployee;
 
@@ -65,6 +66,11 @@ public class CancelQueueByEmployeeCommandHandler : IRequestHandler<CancelQueueBy
         }, cancellationToken);
 
 
+        
+        
+        
+        
+        
         var response = new QueueResponseModel
         {
             Id = dbQueue.Id,

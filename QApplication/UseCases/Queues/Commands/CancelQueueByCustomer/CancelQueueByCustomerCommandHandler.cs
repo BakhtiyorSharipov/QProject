@@ -10,6 +10,7 @@ using QContracts.CashingEvents;
 using QContracts.SmsEvents;
 using QDomain.Enums;
 using QDomain.Models;
+using StackExchange.Redis;
 
 
 namespace QApplication.UseCases.Queues.Commands.CancelQueueByCustomer;

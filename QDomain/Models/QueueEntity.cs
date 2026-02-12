@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using QDomain.Enums;
+using QDomain.Events;
 
 namespace QDomain.Models;
 
