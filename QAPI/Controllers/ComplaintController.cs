@@ -1,7 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using QApplication.Interfaces;
 using QApplication.Requests.ComplaintRequest;
 using QApplication.Responses;
 using QApplication.UseCases.Complaints.Commands.CreateComplaint;
@@ -28,10 +27,10 @@ public class ComplaintController: ControllerBase
     
     [Authorize(Roles = nameof(UserRoles.Employee)+","+nameof(UserRoles.CompanyAdmin)+","+nameof(UserRoles.SystemAdmin))]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ComplaintResponseModel>>> GetAllComplaintsAsync([FromQuery]int pageNumber=1, [FromQuery] int pageSize=10)
+    public async Task<ActionResult<IEnumerable<ComplaintResponseModel>>> GetAllComplaintsAsync([FromQuery]int pageNumber=1)
     {
-        _logger.LogInformation("Received request to get all complaints. PageNumber: {PageNumber}, PageSize: {PageSize}", pageNumber, pageSize);
-        var query = new GetAllComplaintsQuery(pageNumber, pageSize);
+        _logger.LogInformation("Received request to get all complaints. PageNumber: {PageNumber}, PageSize: 15", pageNumber);
+        var query = new GetAllComplaintsQuery(pageNumber);
         var complaints = await _mediator.Send(query);
         return Ok(complaints);
     }

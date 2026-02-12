@@ -1,6 +1,6 @@
 using FluentValidation;
 using QApplication.Requests.EmployeeRequest;
-using QApplication.UseCases.Employees.CreateEmployee;
+using QApplication.UseCases.Employees.Commands.CreateEmployee;
 
 namespace QApplication.Validators;
 

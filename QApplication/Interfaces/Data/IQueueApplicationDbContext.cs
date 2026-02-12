@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using QApplication.Responses;
 using QDomain.Models;
 
 namespace QApplication.Interfaces.Data;

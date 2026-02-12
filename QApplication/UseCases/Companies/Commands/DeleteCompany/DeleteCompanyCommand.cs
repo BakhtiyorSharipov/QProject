@@ -1,5 +1,5 @@
 using MediatR;
 
-namespace QApplication.UseCase.Companies.Commands.DeleteCompanyCommand;
+namespace QApplication.UseCases.Companies.Commands.DeleteCompany;
 
 public record DeleteCompanyCommand(int Id) : IRequest<bool>;

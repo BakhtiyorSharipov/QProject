@@ -60,16 +60,25 @@ builder.Services.AddMassTransit(x =>
     x.AddConsumer<QueueConfirmedConsumer>();
     x.AddConsumer<QueueStartingSoonConsumer>();
     x.AddConsumer<CacheResetConsumer>();
+    x.AddConsumer<CompanyCacheResetConsumer>();
 
     x.UsingRabbitMq((context, cfg) =>
     {
-        cfg.Host(builder.Configuration["RabbitMQ:Host"], h =>
+        var configuration = context.GetService<IConfiguration>();
+        
+        var host = configuration?["RabbitMQ:Host"] ?? "localhost";
+        var port = configuration?.GetValue<ushort?>("RabbitMQ:Port") ?? 5672;
+        var username = configuration?["RabbitMQ:Username"] ?? "guest";
+        var password = configuration?["RabbitMQ:Password"] ?? "guest";
+        
+        cfg.Host(host, port, "/", h =>
         {
-            h.Username(builder.Configuration["RabbitMQ:Username"]);
-            h.Password(builder.Configuration["RabbitMQ:Password"]);
+            h.Username(username);
+            h.Password(password);
         });
-
+        
         cfg.ConfigureEndpoints(context);
+        
     });
 });
 
@@ -85,7 +94,6 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
@@ -94,7 +102,7 @@ builder.Services.AddSwaggerGen(options =>
         Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer"
     });
-    
+
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -106,7 +114,7 @@ builder.Services.AddSwaggerGen(options =>
                     Id = "Bearer"
                 }
             },
-            new string[]{ }
+            new string[] { }
         }
     });
 });
@@ -119,7 +127,7 @@ builder.Services.AddAuthentication(options =>
     options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
 }).AddJwtBearer(options =>
 {
-    options.RequireHttpsMetadata = false; 
+    options.RequireHttpsMetadata = false;
     options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
@@ -139,17 +147,15 @@ builder.Services.AddAuthorization();
 builder.Services.AddDbContext<QueueDbContext>(
     options =>
     {
-        var dataSourceBuilder = new NpgsqlDataSourceBuilder(builder.Configuration.GetConnectionString("DefaultConnection"));
+        var dataSourceBuilder =
+            new NpgsqlDataSourceBuilder(builder.Configuration.GetConnectionString("DefaultConnection"));
         dataSourceBuilder.EnableDynamicJson();
         var datasource = dataSourceBuilder.Build();
         options.UseNpgsql(datasource);
     });
 
 
-
-
 var app = builder.Build();
-
 
 
 app.UseSerilogRequestLogging();
@@ -169,9 +175,9 @@ app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<QueueDbContext>();
-   await db.Database.MigrateAsync();
+    await db.Database.MigrateAsync();
 
-    var userRepo = scope.ServiceProvider.GetRequiredService<QueueDbContext>();
+
     var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
 
     var sys = await db.Users
@@ -180,15 +186,16 @@ using (var scope = app.Services.CreateScope())
     {
         var sysUser = new User
         {
-                EmailAddress = "systemAdmin@gmail.com",
+            EmailAddress = "systemAdmin@gmail.com",
             Roles = QDomain.Enums.UserRoles.SystemAdmin,
             CreatedAt = DateTime.UtcNow
         };
-        sysUser.PasswordHash = hasher.HashPassword(sysUser, "B.sh.3242"); 
-        await userRepo.AddAsync(sysUser);
-        await userRepo.SaveChangesAsync();
+        sysUser.PasswordHash = hasher.HashPassword(sysUser, "B.sh.3242");
+        await db.AddAsync(sysUser);
+        await db.SaveChangesAsync();
     }
 }
+
 app.Run();
 
 public partial class Program

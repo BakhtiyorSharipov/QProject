@@ -1,25 +1,28 @@
 using System.Net;
+using MassTransit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using QApplication.Caching;
 using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
+using QContracts.CashingEvents;
 using QDomain.Models;
 
-namespace QApplication.UseCase.Companies.Commands.UpdateCompanyCommand;
+namespace QApplication.UseCases.Companies.Commands.UpdateCompany;
 
-public class UpdateCompanyCommandHandler: IRequestHandler<UpdateCompanyCommand, CompanyResponseModel>
+public class UpdateCompanyCommandHandler : IRequestHandler<UpdateCompanyCommand, CompanyResponseModel>
 {
     private readonly ILogger<UpdateCompanyCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
-    private readonly ICacheService _cache;
-    public UpdateCompanyCommandHandler(ILogger<UpdateCompanyCommandHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache)
+    private readonly IPublishEndpoint _publishEndpoint;
+
+    public UpdateCompanyCommandHandler(ILogger<UpdateCompanyCommandHandler> logger,
+        IQueueApplicationDbContext dbContext, IPublishEndpoint publishEndpoint)
     {
         _logger = logger;
         _dbContext = dbContext;
-        _cache = cache;
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task<CompanyResponseModel> Handle(UpdateCompanyCommand request, CancellationToken cancellationToken)
@@ -31,23 +34,21 @@ public class UpdateCompanyCommandHandler: IRequestHandler<UpdateCompanyCommand, 
             _logger.LogWarning("Company with Id {companyId} not found for updating.", request.Id);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(CompanyEntity));
         }
-        
+
 
         dbCompany.CompanyName = request.CompanyName;
         dbCompany.Address = request.Address;
         dbCompany.EmailAddress = request.EmailAddress;
         dbCompany.PhoneNumber = request.PhoneNumber;
 
-        
-        
-        
-        await _dbContext.SaveChangesAsync(cancellationToken);
 
-        await _cache.RemoveAsync(CacheKeys.CompanyById(request.Id), cancellationToken);
-        await _cache.RemoveAsync(CacheKeys.AllCompanies(1, 10), cancellationToken);
-        
-                
-        
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        await _publishEndpoint.Publish(new CompanyCacheResetEvent
+        {
+            OccuredAt = DateTimeOffset.Now,
+            CompanyId = dbCompany.Id
+        }, cancellationToken);
+
         _logger.LogInformation("Company with Id {companyId} updated successfully", request.Id);
 
         var response = new CompanyResponseModel()

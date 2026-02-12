@@ -1,24 +1,25 @@
 using System.Net;
+using MassTransit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using QApplication.Caching;
 using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
+using QContracts.CashingEvents;
 using QDomain.Models;
 
-namespace QApplication.UseCase.Companies.Commands.DeleteCompanyCommand;
+namespace QApplication.UseCases.Companies.Commands.DeleteCompany;
 
 public class DeleteCompanyCommandHandler: IRequestHandler<DeleteCompanyCommand, bool>
 {
     private readonly ILogger<DeleteCompanyCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
-    private readonly ICacheService _cache;
-    public DeleteCompanyCommandHandler(ILogger<DeleteCompanyCommandHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache)
+    private readonly IPublishEndpoint _publishEndpoint;
+    public DeleteCompanyCommandHandler(ILogger<DeleteCompanyCommandHandler> logger, IQueueApplicationDbContext dbContext, IPublishEndpoint publishEndpoint)
     {
         _logger = logger;
         _dbContext = dbContext;
-        _cache = cache;
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task<bool> Handle(DeleteCompanyCommand request, CancellationToken cancellationToken)
@@ -34,8 +35,11 @@ public class DeleteCompanyCommandHandler: IRequestHandler<DeleteCompanyCommand, 
 
         _dbContext.Companies.Remove(dbCompany);
         await _dbContext.SaveChangesAsync(cancellationToken);
-        await _cache.RemoveAsync(CacheKeys.CompanyById(request.Id), cancellationToken);
-        await _cache.RemoveAsync(CacheKeys.AllCompanies(1, 10), cancellationToken);
+        await _publishEndpoint.Publish(new CompanyCacheResetEvent
+        {
+            OccuredAt = DateTimeOffset.Now,
+            CompanyId = dbCompany.Id,
+        }, cancellationToken);
         _logger.LogInformation("Company with Id {companyId} deleted successfully", request.Id);
         return true;
     }

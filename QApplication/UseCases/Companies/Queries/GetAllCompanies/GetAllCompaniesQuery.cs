@@ -3,4 +3,4 @@ using QApplication.Responses;
 
 namespace QApplication.UseCases.Companies.Queries.GetAllCompanies;
 
-public record GetAllCompaniesQuery(int pageNumber, int pageSize): IRequest<PagedResponse<CompanyResponseModel>>;
+public record GetAllCompaniesQuery(int PageNumber): IRequest<PagedResponse<CompanyResponseModel>>;

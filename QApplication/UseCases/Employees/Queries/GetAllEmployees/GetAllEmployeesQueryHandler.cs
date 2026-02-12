@@ -8,6 +8,7 @@ namespace QApplication.UseCases.Employees.Queries.GetAllEmployees;
 
 public class GetAllEmployeesQueryHandler: IRequestHandler<GetAllEmployeesQuery, PagedResponse<EmployeeResponseModel>>
 {
+    private const int PageSize = 15;
     private readonly ILogger<GetAllEmployeesQueryHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
 
@@ -19,21 +20,21 @@ public class GetAllEmployeesQueryHandler: IRequestHandler<GetAllEmployeesQuery, 
 
     public async Task<PagedResponse<EmployeeResponseModel>> Handle(GetAllEmployeesQuery request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Getting all employees. PageNumber: {pageNumber}, PageSize: {pageSize}", request.pageNumber,
-            request.pageSize);
+        _logger.LogInformation("Getting all employees. PageNumber: {pageNumber}, PageSize: {pageSize}", request.PageNumber,
+            PageSize);
 
         var totalCount = await _dbContext.Employees.CountAsync(cancellationToken);
 
         var dbEmployees =await  _dbContext.Employees
             .OrderBy(s => s.Id)
-            .Skip((request.pageNumber - 1) * request.pageSize)
-            .Take(request.pageSize)
+            .Skip((request.PageNumber - 1) * PageSize)
+            .Take(PageSize)
             .ToListAsync(cancellationToken);
 
         var response = dbEmployees.Select(employee => new EmployeeResponseModel
         {
             Id = employee.Id,
-            ServiceId = employee.ServiceId.HasValue? employee.ServiceId.Value : 0,
+            ServiceId = employee.ServiceId ?? 0,
             FirstName = employee.FirstName,
             LastName = employee.LastName,
             Position = employee.Position,
@@ -45,8 +46,8 @@ public class GetAllEmployeesQueryHandler: IRequestHandler<GetAllEmployeesQuery, 
         return new PagedResponse<EmployeeResponseModel>
         {
             Items = response,
-            PageNumber = request.pageNumber,
-            PageSize = request.pageSize,
+            PageNumber = request.PageNumber,
+            PageSize = PageSize,
             TotalCount = totalCount
         };
     }
