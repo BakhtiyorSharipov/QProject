@@ -1,0 +1,6 @@
+@QNotificationService.API_HostAddress = http://localhost:5189
+
+GET {{QNotificationService.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

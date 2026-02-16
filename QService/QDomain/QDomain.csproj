@@ -16,7 +16,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\QContracts\QContracts.csproj" />
+      <ProjectReference Include="..\..\QContracts\QContracts.csproj" />
     </ItemGroup>
+
+
 
 </Project>
