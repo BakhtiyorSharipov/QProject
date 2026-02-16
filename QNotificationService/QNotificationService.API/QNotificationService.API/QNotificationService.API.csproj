@@ -10,4 +10,9 @@
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.2"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\..\QNotificationService.Application\QNotificationService.Application\QNotificationService.Application.csproj" />
+      <ProjectReference Include="..\..\QNotificationService.Infrastructure\QNotificationService.Infrastructure\QNotificationService.Infrastructure.csproj" />
+    </ItemGroup>
+
 </Project>

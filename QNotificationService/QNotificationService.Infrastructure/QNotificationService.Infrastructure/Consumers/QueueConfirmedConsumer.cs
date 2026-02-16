@@ -1,16 +1,16 @@
 using MassTransit;
 using Microsoft.Extensions.Logging;
-using QApplication.Interfaces;
-using QContracts.SmsEvents;
+using QContracts.NotificationEvents;
+using QNotificationService.Application.Interfaces;
 
-namespace QInfrastructure.Consumers.Queue;
+namespace QNotificationService.Infrastructure.Consumers;
 
 public class QueueConfirmedConsumer: IConsumer<QueueConfirmedEvent>
 {
-    private readonly ISmsService _smsService;
+    private readonly INotificationService _smsService;
     private readonly ILogger<QueueConfirmedConsumer> _logger;
 
-    public QueueConfirmedConsumer(ISmsService smsService, ILogger<QueueConfirmedConsumer> logger)
+    public QueueConfirmedConsumer(INotificationService smsService, ILogger<QueueConfirmedConsumer> logger)
     {
         _smsService = smsService;
         _logger = logger;
@@ -22,7 +22,7 @@ public class QueueConfirmedConsumer: IConsumer<QueueConfirmedEvent>
         var notification = context.Message;
         var message = $"Your queue with Employee {notification.EmployeeId} has been confirmed for {notification.StartTime}.";
 
-        await  _smsService.Send(notification.CustomerId, message, context.CancellationToken); 
+        await  _smsService.SendAsync(notification.CustomerId, message, context.CancellationToken); 
         _logger.LogInformation("QueueConfirmedEvent SMS sent to customer {CustomerId}", notification.CustomerId);
     }
 }

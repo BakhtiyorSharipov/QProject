@@ -1,16 +1,17 @@
 using MassTransit;
 using Microsoft.Extensions.Logging;
-using QApplication.Interfaces;
-using QContracts.SmsEvents;
+using QContracts.NotificationEvents;
+using QNotificationService.Application.Interfaces;
 
-namespace QInfrastructure.Consumers.Queue;
+
+namespace QNotificationService.Infrastructure.Consumers;
 
 public class QueueCompletedConsumer: IConsumer<QueueCompletedEvent>
 {
-    private readonly ISmsService _smsService;
+    private readonly INotificationService _smsService;
     private readonly ILogger<QueueCompletedConsumer> _logger;
 
-    public QueueCompletedConsumer(ISmsService smsService, ILogger<QueueCompletedConsumer> logger)
+    public QueueCompletedConsumer(INotificationService smsService, ILogger<QueueCompletedConsumer> logger)
     {
         _smsService = smsService;
         _logger = logger;
@@ -22,7 +23,7 @@ public class QueueCompletedConsumer: IConsumer<QueueCompletedEvent>
         var notification = context.Message;
         var message = $"Your queue with Employee {notification.EmployeeId} is now completed.";
 
-        await  _smsService.Send(notification.CustomerId, message, context.CancellationToken); 
+        await  _smsService.SendAsync(notification.CustomerId, message, context.CancellationToken); 
         _logger.LogInformation("QueueCompletedEvent SMS sent to customer {CustomerId}", notification.CustomerId);
     }
 }

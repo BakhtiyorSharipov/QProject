@@ -1,16 +1,16 @@
 using MassTransit;
 using Microsoft.Extensions.Logging;
-using QApplication.Interfaces;
-using QContracts.SmsEvents;
+using QContracts.NotificationEvents;
+using QNotificationService.Application.Interfaces;
 
-namespace QInfrastructure.Consumers.Queue;
+namespace QNotificationService.Infrastructure.Consumers;
 
 public class QueueCanceledByCustomerConsumer: IConsumer<QueueCanceledByCustomerEvent>
 {
-    private readonly ISmsService _smsService;
+    private readonly INotificationService _smsService;
     private readonly ILogger<QueueCanceledByCustomerConsumer> _logger;
 
-    public QueueCanceledByCustomerConsumer(ISmsService smsService, ILogger<QueueCanceledByCustomerConsumer> logger)
+    public QueueCanceledByCustomerConsumer(INotificationService smsService, ILogger<QueueCanceledByCustomerConsumer> logger)
     {
         _smsService = smsService;
         _logger = logger;
@@ -23,7 +23,7 @@ public class QueueCanceledByCustomerConsumer: IConsumer<QueueCanceledByCustomerE
         var message =
             $"Your queue with Employee {notification.EmployeeId} was canceled by you. Reason: {notification.Reason}.. ";
 
-        await _smsService.Send(notification.CustomerId, message, context.CancellationToken);
+        await _smsService.SendAsync(notification.CustomerId, message, context.CancellationToken);
         _logger.LogInformation("QueueCanceledByCustomerEvent SMS sent to customer {CustomerId}", notification.CustomerId);
     }
 }

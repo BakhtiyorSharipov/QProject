@@ -7,9 +7,8 @@ using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QContracts.CashingEvents;
-using QContracts.SmsEvents;
+using QContracts.NotificationEvents;
 using QDomain.Enums;
-using StackExchange.Redis;
 
 namespace QApplication.UseCases.Queues.Commands.CancelQueueByEmployee;
 

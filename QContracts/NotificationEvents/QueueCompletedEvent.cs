@@ -1,4 +1,4 @@
-namespace QContracts.SmsEvents;
+namespace QContracts.NotificationEvents;
 
 public class QueueCompletedEvent: BaseEvent
 {

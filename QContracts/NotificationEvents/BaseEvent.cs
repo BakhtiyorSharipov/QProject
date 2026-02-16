@@ -1,6 +1,6 @@
 
 
-namespace QContracts.SmsEvents;
+namespace QContracts.NotificationEvents;
 
 public abstract class BaseEvent
 {

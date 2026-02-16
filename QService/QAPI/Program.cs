@@ -16,7 +16,6 @@ using QApplication.Services.BackgroundJob;
 using QApplication.Validators.AuthValidators;
 using QDomain.Models;
 using QInfrastructure.Consumers.Cache;
-using QInfrastructure.Consumers.Queue;
 using QInfrastructure.Persistence.Caching;
 using QInfrastructure.Persistence.DataBase;
 using Serilog;
@@ -46,19 +45,11 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 });
 builder.Services.AddSingleton<ICacheService, RedisCacheService>();
 
-builder.Services.AddScoped<ISmsService, SmsService>();
 builder.Services.AddHostedService<QueueStartingSoonScheduler>();
 
 
 builder.Services.AddMassTransit(x =>
 {
-    x.AddConsumer<QueueBookedConsumer>();
-    x.AddConsumer<QueueCanceledByCustomerConsumer>();
-    x.AddConsumer<QueueCanceledByAdminConsumer>();
-    x.AddConsumer<QueueCanceledByEmployeeConsumer>();
-    x.AddConsumer<QueueCompletedConsumer>();
-    x.AddConsumer<QueueConfirmedConsumer>();
-    x.AddConsumer<QueueStartingSoonConsumer>();
     x.AddConsumer<CacheResetConsumer>();
     x.AddConsumer<CompanyCacheResetConsumer>();
 
