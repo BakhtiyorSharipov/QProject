@@ -6,8 +6,6 @@ using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
-using QContracts.CashingEvents;
-using QContracts.NotificationEvents;
 using QContracts.QueueEvents;
 using QDomain.Enums;
 using QDomain.Models;

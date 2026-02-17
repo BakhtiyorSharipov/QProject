@@ -1,7 +1,6 @@
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using QContracts.NotificationEvents;
-using QContracts.NotificationEvents.Enums;
 using QContracts.QueueEvents;
 
 namespace QInfrastructure.Consumers.QueueConsumers;
@@ -25,7 +24,6 @@ public class QueueStartingSoonConsumer:IConsumer<QueueStartingSoonEvent>
         await _publishEndpoint.Publish(new SendNotificationEvent
         {
             UserId = evt.CustomerId,
-            Title = NotificationTitle.StartingSoon,
             Message = $"Reminder: your queue with Employee {evt.EmployeeId} starts in 5 minutes."
         });
         
