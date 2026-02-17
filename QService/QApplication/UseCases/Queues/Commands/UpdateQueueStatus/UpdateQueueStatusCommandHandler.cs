@@ -8,6 +8,8 @@ using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QContracts.CashingEvents;
 using QContracts.NotificationEvents;
+using QContracts.QueueEvents;
+using QContracts.QueueEvents.Enums;
 using QDomain.Enums;
 using QDomain.Models;
 
@@ -183,7 +185,6 @@ public class UpdateQueueStatusCommandHandler : IRequestHandler<UpdateQueueStatus
                 dbQueue.EndTime = dbQueue.StartTime.AddMinutes(30);
                 _logger.LogDebug("Set default end time (30 minutes): {EndTime} (UTC)", dbQueue.EndTime);
             }
-            
         }
 
         dbQueue.Status = request.newStatus;
@@ -191,34 +192,28 @@ public class UpdateQueueStatusCommandHandler : IRequestHandler<UpdateQueueStatus
         await _dbContext.SaveChangesAsync(cancellationToken);
 
 
-        await _publishEndpoint.Publish(new CacheResetEvent
-        {
-            QueueId = dbQueue.Id,
-            CustomerId = dbQueue.CustomerId,
-            EmployeeId = dbQueue.EmployeeId,
-            OccuredAt = DateTimeOffset.Now
-        }, cancellationToken);
-
         if (dbQueue.Status == QueueStatus.Confirmed)
         {
-            await _publishEndpoint.Publish(new QueueConfirmedEvent
+            await _publishEndpoint.Publish(new QueueUpdatedEvent()
             {
                 QueueId = dbQueue.Id,
-                EmployeeId = dbQueue.EmployeeId,
                 CustomerId = dbQueue.CustomerId,
+                EmployeeId = dbQueue.EmployeeId,
                 StartTime = dbQueue.StartTime,
-                OccuredAt = DateTimeOffset.Now
+                Status = UpdatedQueueStatus.Confirmed,
+                CancelReason = dbQueue.CancelReason,
             }, cancellationToken);
         }
         else if (dbQueue.Status == QueueStatus.Completed)
         {
-            await _publishEndpoint.Publish(new QueueCompletedEvent
+            await _publishEndpoint.Publish(new QueueUpdatedEvent()
             {
                 QueueId = dbQueue.Id,
-                EmployeeId = dbQueue.EmployeeId,
                 CustomerId = dbQueue.CustomerId,
+                EmployeeId = dbQueue.EmployeeId,
                 StartTime = dbQueue.StartTime,
-                OccuredAt = DateTimeOffset.Now
+                Status = UpdatedQueueStatus.Completed,
+                CancelReason = dbQueue.CancelReason,
             }, cancellationToken);
         }
 

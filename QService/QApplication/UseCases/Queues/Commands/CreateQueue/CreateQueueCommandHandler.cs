@@ -8,6 +8,7 @@ using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QContracts.CashingEvents;
 using QContracts.NotificationEvents;
+using QContracts.QueueEvents;
 using QDomain.Enums;
 using QDomain.Models;
 
@@ -128,23 +129,16 @@ public class CreateQueueCommandHandler : IRequestHandler<CreateQueueCommand, Add
         await _dbContext.SaveChangesAsync(cancellationToken);
 
 
-        await _publishEndpoint.Publish(new CacheResetEvent
+        await _publishEndpoint.Publish(new QueueCreatedEvent
         {
+            OccurredAt = DateTimeOffset.Now,
             QueueId = queue.Id,
             CustomerId = queue.CustomerId,
             EmployeeId = queue.EmployeeId,
-            OccuredAt = DateTimeOffset.Now
+            StartTime = queue.StartTime
         }, cancellationToken);
 
-        await _publishEndpoint.Publish(new QueueBookedEvent
-        {
-            QueueId = queue.Id,
-            EmployeeId = queue.EmployeeId,
-            CustomerId = queue.CustomerId,
-            StartTime = queue.StartTime,
-            OccuredAt = DateTimeOffset.Now
-        }, cancellationToken);
-
+        
         
         
         var response = new AddQueueResponseModel()

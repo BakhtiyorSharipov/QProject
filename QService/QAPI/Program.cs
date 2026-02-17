@@ -16,6 +16,7 @@ using QApplication.Services.BackgroundJob;
 using QApplication.Validators.AuthValidators;
 using QDomain.Models;
 using QInfrastructure.Consumers.Cache;
+using QInfrastructure.Consumers.QueueConsumers;
 using QInfrastructure.Persistence.Caching;
 using QInfrastructure.Persistence.DataBase;
 using Serilog;
@@ -50,9 +51,10 @@ builder.Services.AddHostedService<QueueStartingSoonScheduler>();
 
 builder.Services.AddMassTransit(x =>
 {
-    x.AddConsumer<CacheResetConsumer>();
     x.AddConsumer<CompanyCacheResetConsumer>();
-
+    x.AddConsumer<QueueCreatedEventConsumer>();
+    x.AddConsumer<QueueStartingSoonConsumer>();
+    x.AddConsumer<QueueUpdatedEventConsumer>();
     x.UsingRabbitMq((context, cfg) =>
     {
         var configuration = context.GetService<IConfiguration>();

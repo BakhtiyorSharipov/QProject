@@ -8,6 +8,9 @@ using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QContracts.CashingEvents;
 using QContracts.NotificationEvents;
+using QContracts.NotificationEvents.Enums;
+using QContracts.QueueEvents;
+using QContracts.QueueEvents.Enums;
 using QDomain.Enums;
 using QDomain.Models;
 
@@ -60,23 +63,15 @@ public class CancelQueueByCustomerCommandHandler : IRequestHandler<CancelQueueBy
         await _dbContext.SaveChangesAsync(cancellationToken);
 
 
-        await _publishEndpoint.Publish(new CacheResetEvent
+        await _publishEndpoint.Publish(new QueueUpdatedEvent()
         {
             QueueId = dbQueue.Id,
             CustomerId = dbQueue.CustomerId,
             EmployeeId = dbQueue.EmployeeId,
-            OccuredAt = DateTimeOffset.Now
+            StartTime = dbQueue.StartTime,
+            Status = UpdatedQueueStatus.CanceledByCustomer,
+            CancelReason = dbQueue.CancelReason,
         }, cancellationToken);
-
-        await _publishEndpoint.Publish(new QueueCanceledByCustomerEvent
-        {
-            QueueId = dbQueue.Id,
-            CustomerId = dbQueue.CustomerId,
-            EmployeeId = dbQueue.EmployeeId,
-            Reason = dbQueue.CancelReason,
-            OccuredAt = DateTimeOffset.Now
-        }, cancellationToken);
-
 
         var response = new QueueResponseModel
         {

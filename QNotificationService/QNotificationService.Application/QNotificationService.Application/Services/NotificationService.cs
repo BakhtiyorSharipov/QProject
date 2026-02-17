@@ -17,6 +17,6 @@ public class NotificationService: INotificationService
         _logger.LogInformation("Sending SMS to customer {customerId} ", customerId);
         await Task.Delay(2000, cancellationToken);
         
-        _logger.LogInformation("Message {message} sent to Customer {customerId}", message, customerId);
+        _logger.LogInformation("Message: {message} sent to Customer {customerId}", message, customerId);
     }
 }

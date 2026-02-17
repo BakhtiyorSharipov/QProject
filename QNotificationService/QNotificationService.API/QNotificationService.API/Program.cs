@@ -9,13 +9,7 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 
 builder.Services.AddMassTransit(x =>
 {
-    x.AddConsumer<QueueBookedConsumer>();
-    x.AddConsumer<QueueCanceledByAdminConsumer>();
-    x.AddConsumer<QueueCanceledByCustomerConsumer>();
-    x.AddConsumer<QueueCanceledByEmployeeConsumer>();
-    x.AddConsumer<QueueCompletedConsumer>();
-    x.AddConsumer<QueueConfirmedConsumer>();
-    x.AddConsumer<QueueStartingSoonConsumer>();
+    x.AddConsumer<SendNotificationConsumer>();
     x.UsingRabbitMq((context, cfg) =>
     {
         var config = builder.Configuration.GetSection("RabbitMQ");
