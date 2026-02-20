@@ -68,7 +68,7 @@ public class GetQueuesByCustomerQueryHandler : IRequestHandler<GetQueuesByCustom
         var hashKey = CacheKeys.CustomerQueuesHashKey(userId);
         var filed = CacheKeys.CustomerQueuesField(request.PageNumber);
 
-        var cached = await _cache.HashGetAsync<PagedResponse<QueueResponseModel>>(hashKey, filed, cancellationToken);
+        var cached = await _cache.HashGetAsync<PagedResponse<QueueResponseModel>>(hashKey, filed);
 
         if (cached is not null)
         {
@@ -113,7 +113,7 @@ public class GetQueuesByCustomerQueryHandler : IRequestHandler<GetQueuesByCustom
             TotalCount = totalCount
         };
 
-        await _cache.HashSetAsync(hashKey, filed, pagedResponse, TimeSpan.FromMinutes(10), cancellationToken);
+        await _cache.HashSetAsync(hashKey, filed, pagedResponse, TimeSpan.FromMinutes(10));
 
         return pagedResponse;
         

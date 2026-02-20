@@ -6,11 +6,10 @@ using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
-using QContracts.CashingEvents;
-using QContracts.SmsEvents;
+using QContracts.QueueEvents;
+using QContracts.QueueEvents.Enums;
 using QDomain.Enums;
 using QDomain.Models;
-using StackExchange.Redis;
 
 namespace QApplication.UseCases.Queues.Commands.UpdateQueueStatus;
 
@@ -184,7 +183,6 @@ public class UpdateQueueStatusCommandHandler : IRequestHandler<UpdateQueueStatus
                 dbQueue.EndTime = dbQueue.StartTime.AddMinutes(30);
                 _logger.LogDebug("Set default end time (30 minutes): {EndTime} (UTC)", dbQueue.EndTime);
             }
-            
         }
 
         dbQueue.Status = request.newStatus;
@@ -192,35 +190,10 @@ public class UpdateQueueStatusCommandHandler : IRequestHandler<UpdateQueueStatus
         await _dbContext.SaveChangesAsync(cancellationToken);
 
 
-        await _publishEndpoint.Publish(new CacheResetEvent
+        if (dbQueue.Status == QueueStatus.Confirmed || dbQueue.Status == QueueStatus.Completed)
         {
-            QueueId = dbQueue.Id,
-            CustomerId = dbQueue.CustomerId,
-            EmployeeId = dbQueue.EmployeeId,
-            OccuredAt = DateTimeOffset.Now
-        }, cancellationToken);
-
-        if (dbQueue.Status == QueueStatus.Confirmed)
-        {
-            await _publishEndpoint.Publish(new QueueConfirmedEvent
-            {
-                QueueId = dbQueue.Id,
-                EmployeeId = dbQueue.EmployeeId,
-                CustomerId = dbQueue.CustomerId,
-                StartTime = dbQueue.StartTime,
-                OccuredAt = DateTimeOffset.Now
-            }, cancellationToken);
-        }
-        else if (dbQueue.Status == QueueStatus.Completed)
-        {
-            await _publishEndpoint.Publish(new QueueCompletedEvent
-            {
-                QueueId = dbQueue.Id,
-                EmployeeId = dbQueue.EmployeeId,
-                CustomerId = dbQueue.CustomerId,
-                StartTime = dbQueue.StartTime,
-                OccuredAt = DateTimeOffset.Now
-            }, cancellationToken);
+            var queueUpdatedEvent = CreateQueueUpdatedEvent(dbQueue, request.newStatus);
+            await _publishEndpoint.Publish(queueUpdatedEvent, cancellationToken);
         }
 
 
@@ -238,5 +211,22 @@ public class UpdateQueueStatusCommandHandler : IRequestHandler<UpdateQueueStatus
         _logger.LogInformation("Successfully updated queue {QueueId} status to {NewStatus}", request.QueueId,
             request.newStatus);
         return response;
+    }
+    
+
+    private QueueEvent CreateQueueUpdatedEvent(QueueEntity dbQueue, QueueStatus newStatus)
+    {
+        return new QueueEvent
+        {
+            QueueId = dbQueue.Id,
+            CustomerId = dbQueue.CustomerId,
+            EmployeeId = dbQueue.EmployeeId,
+            StartTime = dbQueue.StartTime,
+            EventType = QueueEventType.Updated,
+            CancelReason = dbQueue.CancelReason,
+            Status = newStatus == QueueStatus.Confirmed
+                ? UpdatedQueueStatus.Confirmed
+                : UpdatedQueueStatus.Completed
+        };
     }
 }

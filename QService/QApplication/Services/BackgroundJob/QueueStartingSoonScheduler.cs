@@ -4,15 +4,17 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using QApplication.Interfaces.Data;
+using QContracts.QueueEvents;
+using QContracts.QueueEvents.Enums;
 using QDomain.Enums;
-using QDomain.Events;
 
 namespace QApplication.Services.BackgroundJob;
 
-public class QueueStartingSoonScheduler: BackgroundService
+public class QueueStartingSoonScheduler : BackgroundService
 {
     private readonly ILogger<QueueStartingSoonScheduler> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
+
     public QueueStartingSoonScheduler(ILogger<QueueStartingSoonScheduler> logger, IServiceScopeFactory scopeFactory)
     {
         _logger = logger;
@@ -21,12 +23,11 @@ public class QueueStartingSoonScheduler: BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-
         while (!stoppingToken.IsCancellationRequested)
         {
             var now = DateTimeOffset.UtcNow;
             var fiveMinuteLater = now.AddMinutes(5);
-            
+
             using var scope = _scopeFactory.CreateScope();
             var dbContext = scope.ServiceProvider
                 .GetRequiredService<IQueueApplicationDbContext>();
@@ -35,19 +36,20 @@ public class QueueStartingSoonScheduler: BackgroundService
                 .GetRequiredService<IPublishEndpoint>();
 
             var queuesStartingSoon = await dbContext.Queues
-                .Where(q => q.Status == QueueStatus.Confirmed )
-                .Where(q => q.StartTime >= now && q.StartTime <= fiveMinuteLater)
-                .Where(q=>!q.IsStartingSoonNotified)
+                .Where(q => q.Status == QueueStatus.Confirmed
+                            && q.StartTime >= now && q.StartTime <= fiveMinuteLater
+                            && !q.IsStartingSoonNotified)
                 .ToListAsync(stoppingToken);
 
             foreach (var queue in queuesStartingSoon)
             {
-                var eventMessage = new QueueStartingSoonEvent
+                var eventMessage = new QueueEvent
                 {
                     QueueId = queue.Id,
                     CustomerId = queue.CustomerId,
                     EmployeeId = queue.EmployeeId,
-                    StartTime = queue.StartTime
+                    StartTime = queue.StartTime,
+                    EventType = QueueEventType.StartingSoon,
                 };
 
                 await publishEndpoint.Publish(eventMessage, stoppingToken);
@@ -55,11 +57,10 @@ public class QueueStartingSoonScheduler: BackgroundService
 
                 queue.IsStartingSoonNotified = true;
             }
-            
+
 
             await dbContext.SaveChangesAsync(stoppingToken);
             await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
         }
-        
     }
 }

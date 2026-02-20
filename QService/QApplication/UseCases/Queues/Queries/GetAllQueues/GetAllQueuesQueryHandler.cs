@@ -29,7 +29,7 @@ public class GetAllQueuesQueryHandler: IRequestHandler<GetAllQueuesQuery, PagedR
         var hashKey = CacheKeys.AllQueuesHashKey;
         var filed = CacheKeys.AllQueuesField(request.PageNumber );
 
-        var cached = await _cache.HashGetAsync<PagedResponse<QueueResponseModel>>(hashKey, filed, cancellationToken);
+        var cached = await _cache.HashGetAsync<PagedResponse<QueueResponseModel>>(hashKey, filed);
 
         if (cached is not null)
         {
@@ -67,7 +67,7 @@ public class GetAllQueuesQueryHandler: IRequestHandler<GetAllQueuesQuery, PagedR
             TotalCount = totalCount
         };
         
-        await _cache.HashSetAsync(hashKey, filed, pagedResponse, TimeSpan.FromMinutes(10), cancellationToken);
+        await _cache.HashSetAsync(hashKey, filed, pagedResponse, TimeSpan.FromMinutes(10));
 
 
         return pagedResponse;

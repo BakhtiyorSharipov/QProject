@@ -6,11 +6,10 @@ using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
-using QContracts.CashingEvents;
-using QContracts.SmsEvents;
+using QContracts.QueueEvents;
+using QContracts.QueueEvents.Enums;
 using QDomain.Enums;
 using QDomain.Models;
-using StackExchange.Redis;
 
 namespace QApplication.UseCases.Queues.Commands.CreateQueue;
 
@@ -122,32 +121,23 @@ public class CreateQueueCommandHandler : IRequestHandler<CreateQueueCommand, Add
             Status = QueueStatus.Pending,
             CreatedAt = DateTime.UtcNow
         };
-        
+
 
         await _dbContext.Queues.AddAsync(queue, cancellationToken);
         _logger.LogDebug("Saving new queue to repository");
         await _dbContext.SaveChangesAsync(cancellationToken);
 
 
-        await _publishEndpoint.Publish(new CacheResetEvent
+        await _publishEndpoint.Publish(new QueueEvent
         {
             QueueId = queue.Id,
             CustomerId = queue.CustomerId,
             EmployeeId = queue.EmployeeId,
-            OccuredAt = DateTimeOffset.Now
-        }, cancellationToken);
-
-        await _publishEndpoint.Publish(new QueueBookedEvent
-        {
-            QueueId = queue.Id,
-            EmployeeId = queue.EmployeeId,
-            CustomerId = queue.CustomerId,
             StartTime = queue.StartTime,
-            OccuredAt = DateTimeOffset.Now
+            EventType = QueueEventType.Created,
         }, cancellationToken);
 
-        
-        
+
         var response = new AddQueueResponseModel()
         {
             Id = queue.Id,

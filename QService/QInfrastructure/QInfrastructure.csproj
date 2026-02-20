@@ -26,6 +26,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\..\QNotificationService\QNotificationService.Contracts\QNotificationService.Contracts.csproj" />
         <ProjectReference Include="..\QApplication\QApplication.csproj"/>
         <ProjectReference Include="..\..\QContracts\QContracts.csproj"/>
         <ProjectReference Include="..\QDomain\QDomain.csproj"/>
