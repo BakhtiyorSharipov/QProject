@@ -1,10 +1,6 @@
-using System.Net;
-using MassTransit;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using QApplication.Exceptions;
-using QApplication.Interfaces.Data;
+using QApplication.Interfaces;
 using QApplication.Responses;
 using QContracts.QueueEvents;
 using QContracts.QueueEvents.Enums;
@@ -15,16 +11,14 @@ namespace QApplication.UseCases.Queues.Commands.CancelQueueByEmployee;
 public class CancelQueueByEmployeeCommandHandler : IRequestHandler<CancelQueueByEmployeeCommand, QueueResponseModel>
 {
     private readonly ILogger<CancelQueueByEmployeeCommandHandler> _logger;
-    private readonly IQueueApplicationDbContext _dbContext;
-    private readonly IPublishEndpoint _publishEndpoint;
+    private readonly IQueueCancellationService _cancellationService;
 
 
     public CancelQueueByEmployeeCommandHandler(ILogger<CancelQueueByEmployeeCommandHandler> logger,
-        IQueueApplicationDbContext dbContext, IPublishEndpoint publishEndpoint)
+        IQueueCancellationService cancellationService)
     {
         _logger = logger;
-        _dbContext = dbContext;
-        _publishEndpoint = publishEndpoint;
+        _cancellationService = cancellationService;
     }
 
     public async Task<QueueResponseModel> Handle(CancelQueueByEmployeeCommand request,
@@ -32,42 +26,13 @@ public class CancelQueueByEmployeeCommandHandler : IRequestHandler<CancelQueueBy
     {
         _logger.LogInformation("Cancelling queue Id {id} by employee", request.QueueId);
 
-        var dbQueue = await _dbContext.Queues.FirstOrDefaultAsync(s => s.Id == request.QueueId, cancellationToken);
-        if (dbQueue == null)
-        {
-            _logger.LogWarning("Queue with Id {QueueId} not found for employee cancellation", request.QueueId);
-            throw new HttpStatusCodeException(HttpStatusCode.NotFound);
-        }
-
-        dbQueue.Status = QueueStatus.CancelledByEmployee;
-        dbQueue.CancelReason = request.CancelReason;
+        var dbQueue = await _cancellationService.GetAndValidateQueueForCancellation(request.QueueId, cancellationToken);
 
 
-        _logger.LogDebug("Saving employee cancellation changes to repository");
-        await _dbContext.SaveChangesAsync(cancellationToken);
-
-
-        await _publishEndpoint.Publish(new QueueUpdatedEvent()
-        {
-            QueueId = dbQueue.Id,
-            CustomerId = dbQueue.CustomerId,
-            EmployeeId = dbQueue.EmployeeId,
-            StartTime = dbQueue.StartTime,
-            Status = UpdatedQueueStatus.CanceledByEmployee,
-            CancelReason = dbQueue.CancelReason,
-        }, cancellationToken);
-
-
-        var response = new QueueResponseModel
-        {
-            Id = dbQueue.Id,
-            CustomerId = dbQueue.CustomerId,
-            EmployeeId = dbQueue.EmployeeId,
-            ServiceId = dbQueue.ServiceId,
-            StartTime = dbQueue.StartTime,
-            Status = dbQueue.Status
-        };
-
+        var response = await _cancellationService.ProcessCancellation(dbQueue, QueueStatus.CancelledByEmployee,
+            request.CancelReason,
+            UpdatedQueueStatus.CanceledByEmployee, cancellationToken);
+        
         _logger.LogInformation("Successfully cancelled queue Id {id} by employee", request.QueueId);
         return response;
     }

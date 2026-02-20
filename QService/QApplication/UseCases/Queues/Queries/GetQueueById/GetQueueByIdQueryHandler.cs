@@ -53,7 +53,7 @@ public class GetQueueByIdQueryHandler: IRequestHandler<GetQueueByIdQuery, QueueR
             _logger.LogInformation("Queue with Id {id} fetched successfully", request.Id);
             return response;
 
-        }, absoluteExpiration: TimeSpan.FromMinutes(10), slidingExpiration: TimeSpan.FromMinutes(5), cancellationToken: cancellationToken);
+        }, absoluteExpiration: TimeSpan.FromMinutes(10), slidingExpiration: TimeSpan.FromMinutes(5));
 
         if (queue==null)
         {

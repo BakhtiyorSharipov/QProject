@@ -1,6 +1,6 @@
 using MassTransit;
-using QContracts.NotificationEvents;
 using QNotificationService.Application.Interfaces;
+using QNotificationService.Contracts.NotificationEvents;
 
 namespace QNotificationService.Infrastructure.Consumers;
 

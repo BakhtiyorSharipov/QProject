@@ -7,6 +7,7 @@ using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QContracts.QueueEvents;
+using QContracts.QueueEvents.Enums;
 using QDomain.Enums;
 using QDomain.Models;
 
@@ -120,25 +121,23 @@ public class CreateQueueCommandHandler : IRequestHandler<CreateQueueCommand, Add
             Status = QueueStatus.Pending,
             CreatedAt = DateTime.UtcNow
         };
-        
+
 
         await _dbContext.Queues.AddAsync(queue, cancellationToken);
         _logger.LogDebug("Saving new queue to repository");
         await _dbContext.SaveChangesAsync(cancellationToken);
 
 
-        await _publishEndpoint.Publish(new QueueCreatedEvent
+        await _publishEndpoint.Publish(new QueueEvent
         {
-            OccurredAt = DateTimeOffset.Now,
             QueueId = queue.Id,
             CustomerId = queue.CustomerId,
             EmployeeId = queue.EmployeeId,
-            StartTime = queue.StartTime
+            StartTime = queue.StartTime,
+            EventType = QueueEventType.Created,
         }, cancellationToken);
 
-        
-        
-        
+
         var response = new AddQueueResponseModel()
         {
             Id = queue.Id,

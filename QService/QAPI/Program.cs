@@ -14,6 +14,7 @@ using QApplication.Interfaces.Data;
 using QApplication.Services;
 using QApplication.Services.BackgroundJob;
 using QApplication.Validators.AuthValidators;
+using QContracts.QueueEvents;
 using QDomain.Models;
 using QInfrastructure.Consumers.Cache;
 using QInfrastructure.Consumers.QueueConsumers;
@@ -34,7 +35,7 @@ builder.Services.AddFluentValidation(fv =>
 
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<ITokenService, TokenService>();
-
+builder.Services.AddScoped<IQueueCancellationService, QueueCancellationService>();
 builder.Services.AddScoped<IQueueApplicationDbContext, QueueDbContext>();
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
@@ -52,9 +53,7 @@ builder.Services.AddHostedService<QueueStartingSoonScheduler>();
 builder.Services.AddMassTransit(x =>
 {
     x.AddConsumer<CompanyCacheResetConsumer>();
-    x.AddConsumer<QueueCreatedEventConsumer>();
-    x.AddConsumer<QueueStartingSoonConsumer>();
-    x.AddConsumer<QueueUpdatedEventConsumer>();
+    x.AddConsumer<QueueEventConsumer>();
     x.UsingRabbitMq((context, cfg) =>
     {
         var configuration = context.GetService<IConfiguration>();

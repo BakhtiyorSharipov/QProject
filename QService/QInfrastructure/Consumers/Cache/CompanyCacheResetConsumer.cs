@@ -21,7 +21,7 @@ public class CompanyCacheResetConsumer : IConsumer<CompanyCacheResetEvent>
         var evt = context.Message;
         _logger.LogInformation("Processing cache event for CompanyId {CompanyId}", evt.CompanyId);
 
-        await _cache.HashRemoveAsync(CacheKeys.AllCompaniesKey, context.CancellationToken);
+        await _cache.HashRemoveAsync(CacheKeys.AllCompaniesKey);
         await _cache.RemoveAsync(CacheKeys.CompanyById(evt.CompanyId));
 
         _logger.LogInformation("Cache event processed for CompanyId {CompanyId}", evt.CompanyId);

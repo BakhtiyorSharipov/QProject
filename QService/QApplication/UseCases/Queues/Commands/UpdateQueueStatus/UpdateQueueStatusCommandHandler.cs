@@ -190,29 +190,10 @@ public class UpdateQueueStatusCommandHandler : IRequestHandler<UpdateQueueStatus
         await _dbContext.SaveChangesAsync(cancellationToken);
 
 
-        if (dbQueue.Status == QueueStatus.Confirmed)
+        if (dbQueue.Status == QueueStatus.Confirmed || dbQueue.Status == QueueStatus.Completed)
         {
-            await _publishEndpoint.Publish(new QueueUpdatedEvent()
-            {
-                QueueId = dbQueue.Id,
-                CustomerId = dbQueue.CustomerId,
-                EmployeeId = dbQueue.EmployeeId,
-                StartTime = dbQueue.StartTime,
-                Status = UpdatedQueueStatus.Confirmed,
-                CancelReason = dbQueue.CancelReason,
-            }, cancellationToken);
-        }
-        else if (dbQueue.Status == QueueStatus.Completed)
-        {
-            await _publishEndpoint.Publish(new QueueUpdatedEvent()
-            {
-                QueueId = dbQueue.Id,
-                CustomerId = dbQueue.CustomerId,
-                EmployeeId = dbQueue.EmployeeId,
-                StartTime = dbQueue.StartTime,
-                Status = UpdatedQueueStatus.Completed,
-                CancelReason = dbQueue.CancelReason,
-            }, cancellationToken);
+            var queueUpdatedEvent = CreateQueueUpdatedEvent(dbQueue, request.newStatus);
+            await _publishEndpoint.Publish(queueUpdatedEvent, cancellationToken);
         }
 
 
@@ -230,5 +211,22 @@ public class UpdateQueueStatusCommandHandler : IRequestHandler<UpdateQueueStatus
         _logger.LogInformation("Successfully updated queue {QueueId} status to {NewStatus}", request.QueueId,
             request.newStatus);
         return response;
+    }
+    
+
+    private QueueEvent CreateQueueUpdatedEvent(QueueEntity dbQueue, QueueStatus newStatus)
+    {
+        return new QueueEvent
+        {
+            QueueId = dbQueue.Id,
+            CustomerId = dbQueue.CustomerId,
+            EmployeeId = dbQueue.EmployeeId,
+            StartTime = dbQueue.StartTime,
+            EventType = QueueEventType.Updated,
+            CancelReason = dbQueue.CancelReason,
+            Status = newStatus == QueueStatus.Confirmed
+                ? UpdatedQueueStatus.Confirmed
+                : UpdatedQueueStatus.Completed
+        };
     }
 }

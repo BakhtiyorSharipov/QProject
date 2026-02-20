@@ -23,7 +23,7 @@ public class RedisCacheService: ICacheService
         _db = redis.GetDatabase();
     }
 
-    public  async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default)
+    public  async Task<T?> GetAsync<T>(string key)
     {
         var value = await _db.StringGetAsync(key);
         if (!value.HasValue)
@@ -32,22 +32,21 @@ public class RedisCacheService: ICacheService
         return JsonSerializer.Deserialize<T>(value!, SerializerOptions);
     }
 
-    public async Task SetAsync<T>(string key, T value, TimeSpan? absoluteExpiration = null, TimeSpan? slidingExpiration = null,
-        CancellationToken cancellationToken = default)
+    public async Task SetAsync<T>(string key, T value, TimeSpan? absoluteExpiration = null, TimeSpan? slidingExpiration = null)
     {
         var json = JsonSerializer.Serialize(value, SerializerOptions);
         await _db.StringSetAsync(key, json, absoluteExpiration);
     }
 
-    public async Task RemoveAsync(string key, CancellationToken cancellationToken = default)
+    public async Task RemoveAsync(string key)
     {
         await _db.KeyDeleteAsync(key);
     }
 
     public async Task<T?> GetOrCreateAsync<T>(string key, Func<Task<T>> factory, TimeSpan? absoluteExpiration = null,
-        TimeSpan? slidingExpiration = null, CancellationToken cancellationToken = default)
+        TimeSpan? slidingExpiration = null)
     {
-        var cached = await GetAsync<T>(key, cancellationToken);
+        var cached = await GetAsync<T>(key);
         if (cached is not null)
             return cached;
 
@@ -55,11 +54,11 @@ public class RedisCacheService: ICacheService
         if (value is null)
             return default;
 
-        await SetAsync(key, value, absoluteExpiration, slidingExpiration, cancellationToken);
+        await SetAsync(key, value, absoluteExpiration, slidingExpiration);
         return value;
     }
 
-    public  async Task<T?> HashGetAsync<T>(string key, string field, CancellationToken ct = default)
+    public  async Task<T?> HashGetAsync<T>(string key, string field)
     {
         var value = await _db.HashGetAsync(key, field);
         if (!value.HasValue)
@@ -68,7 +67,7 @@ public class RedisCacheService: ICacheService
         return JsonSerializer.Deserialize<T>(value!, SerializerOptions);
     }
 
-    public async Task HashSetAsync<T>(string key, string field, T value, TimeSpan? expiry = null, CancellationToken ct = default)
+    public async Task HashSetAsync<T>(string key, string field, T value, TimeSpan? expiry = null)
     {
         var json = JsonSerializer.Serialize(value, SerializerOptions);
         await _db.HashSetAsync(key, field, json);
@@ -79,7 +78,7 @@ public class RedisCacheService: ICacheService
         }
     }
 
-    public async Task HashRemoveAsync(string key, CancellationToken ct = default)
+    public async Task HashRemoveAsync(string key)
     {
         await _db.KeyDeleteAsync(key);
     }

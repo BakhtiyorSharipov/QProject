@@ -8,14 +8,13 @@ public static class CacheResetExtensions
         this ICacheService cacheService,
         int queueId,
         int customerId,
-        int employeeId,
-        CancellationToken cancellationToken = default)
+        int employeeId)
     {
         await Task.WhenAll(
-            cacheService.HashRemoveAsync(CacheKeys.AllQueuesHashKey, cancellationToken),
-            cacheService.HashRemoveAsync(CacheKeys.CustomerQueuesHashKey(customerId), cancellationToken),
-            cacheService.RemoveAsync(CacheKeys.QueueId(queueId), cancellationToken),
-            cacheService.RemoveAsync(CacheKeys.EmployeeId(employeeId), cancellationToken));
+            cacheService.HashRemoveAsync(CacheKeys.AllQueuesHashKey),
+            cacheService.HashRemoveAsync(CacheKeys.CustomerQueuesHashKey(customerId)),
+            cacheService.RemoveAsync(CacheKeys.QueueId(queueId)),
+            cacheService.RemoveAsync(CacheKeys.EmployeeId(employeeId)));
     }
 }
 

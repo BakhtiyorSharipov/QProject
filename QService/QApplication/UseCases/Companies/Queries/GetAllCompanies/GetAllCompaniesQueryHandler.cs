@@ -32,7 +32,7 @@ public class GetAllCompaniesQueryHandler : IRequestHandler<GetAllCompaniesQuery,
         var hashKey = CacheKeys.AllCompaniesKey;
         var filed = CacheKeys.AllCompaniesFiled(request.PageNumber);
 
-        var cached = await _cache.HashGetAsync<PagedResponse<CompanyResponseModel>>(hashKey, filed, cancellationToken);
+        var cached = await _cache.HashGetAsync<PagedResponse<CompanyResponseModel>>(hashKey, filed);
 
         if (cached is not null)
         {
@@ -68,7 +68,7 @@ public class GetAllCompaniesQueryHandler : IRequestHandler<GetAllCompaniesQuery,
             TotalCount = totalCount
         };
 
-        await _cache.HashSetAsync(hashKey, filed, pagedResponse, TimeSpan.FromMinutes(10), cancellationToken);
+        await _cache.HashSetAsync(hashKey, filed, pagedResponse, TimeSpan.FromMinutes(10));
 
         return pagedResponse;
     }

@@ -7,14 +7,14 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="MassTransit" Version="8.5.7" />
-      <PackageReference Include="MassTransit.RabbitMQ" Version="8.5.7" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
+        <PackageReference Include="MassTransit" Version="8.5.7"/>
+        <PackageReference Include="MassTransit.RabbitMQ" Version="8.5.7"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0"/>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\..\QContracts\QContracts.csproj" />
-      <ProjectReference Include="..\..\QNotificationService.Application\QNotificationService.Application\QNotificationService.Application.csproj" />
+        <ProjectReference Include="..\..\QNotificationService.Application\QNotificationService.Application\QNotificationService.Application.csproj"/>
+        <ProjectReference Include="..\..\QNotificationService.Contracts\QNotificationService.Contracts.csproj"/>
     </ItemGroup>
 
 </Project>

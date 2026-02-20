@@ -4,8 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using QApplication.Interfaces.Data;
-using QContracts.NotificationEvents;
 using QContracts.QueueEvents;
+using QContracts.QueueEvents.Enums;
 using QDomain.Enums;
 
 namespace QApplication.Services.BackgroundJob;
@@ -43,12 +43,13 @@ public class QueueStartingSoonScheduler : BackgroundService
 
             foreach (var queue in queuesStartingSoon)
             {
-                var eventMessage = new QueueStartingSoonEvent
+                var eventMessage = new QueueEvent
                 {
                     QueueId = queue.Id,
                     CustomerId = queue.CustomerId,
                     EmployeeId = queue.EmployeeId,
-                    StartTime = queue.StartTime
+                    StartTime = queue.StartTime,
+                    EventType = QueueEventType.StartingSoon,
                 };
 
                 await publishEndpoint.Publish(eventMessage, stoppingToken);
