@@ -1,0 +1,6 @@
+@QBranchService.API_HostAddress = http://localhost:5048
+
+GET {{QBranchService.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
