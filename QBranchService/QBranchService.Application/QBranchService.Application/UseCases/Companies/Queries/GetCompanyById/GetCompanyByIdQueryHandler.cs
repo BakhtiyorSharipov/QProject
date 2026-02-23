@@ -37,7 +37,8 @@ public class GetCompanyByIdQueryHandler: IRequestHandler<GetCompanyByIdQuery, Co
             CompanyName = dbCompany.CompanyName,
             Address = dbCompany.Address,
             EmailAddress = dbCompany.EmailAddress,
-            PhoneNumber = dbCompany.PhoneNumber
+            PhoneNumber = dbCompany.PhoneNumber,
+            CreatedAt = dbCompany.CreatedAt
         };
 
         _logger.LogInformation("Company with Id {CompanyId} fetched successfully", request.Id);

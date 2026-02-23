@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using QBranchService.Application;
+using QBranchService.Application.Helpers;
 using QBranchService.Application.Interfaces.Data;
 using QBranchService.Infrastructure.Persistence.DataBase;
 
@@ -7,7 +8,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplicationService();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new TimeOnlyJsonConverter());
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IBranchServiceApplicationDbContext, BranchServiceDbContext>();
