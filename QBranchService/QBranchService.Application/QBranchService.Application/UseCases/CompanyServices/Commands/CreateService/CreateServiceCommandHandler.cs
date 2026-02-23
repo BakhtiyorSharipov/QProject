@@ -6,7 +6,7 @@ using QBranchService.Domain.Models;
 
 namespace QBranchService.Application.UseCases.CompanyServices.Commands.CreateService;
 
-public class CreateServiceCommandHandler: IRequestHandler<CreateServiceCommand, ServiceResponseModel>
+public class CreateServiceCommandHandler: IRequestHandler<CreateServiceCommand, CompanyServiceResponseModel>
 {
     private readonly ILogger<CreateServiceCommandHandler> _logger;
     private readonly IBranchServiceApplicationDbContext _dbContext;
@@ -17,7 +17,7 @@ public class CreateServiceCommandHandler: IRequestHandler<CreateServiceCommand, 
         _dbContext = dbContext;
     }
 
-    public async Task<ServiceResponseModel> Handle(CreateServiceCommand request, CancellationToken cancellationToken)
+    public async Task<CompanyServiceResponseModel> Handle(CreateServiceCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Adding new service with Name {request.ServiceName}", request.ServiceName);
         
@@ -27,16 +27,16 @@ public class CreateServiceCommandHandler: IRequestHandler<CreateServiceCommand, 
             CompanyId = request.CompanyId,
             ServiceName = request.ServiceName,
             ServiceDescription = request.ServiceDescription,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTimeOffset.UtcNow
         };
 
         await _dbContext.CompanyServices.AddAsync(service, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Service {service.ServiceName} added successfully with Id {service.Id}.",
-            service.ServiceName);
+            service.ServiceName, service.Id);
 
-        var response = new ServiceResponseModel()
+        var response = new CompanyServiceResponseModel()
         {
             Id = service.Id,
             CompanyId = service.CompanyId,

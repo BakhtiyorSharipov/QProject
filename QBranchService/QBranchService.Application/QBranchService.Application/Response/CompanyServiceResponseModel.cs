@@ -1,6 +1,6 @@
 namespace QBranchService.Application.Response;
 
-public class ServiceResponseModel
+public class CompanyServiceResponseModel
 {
     public int Id { get; set; }
     public int CompanyId { get; set; }

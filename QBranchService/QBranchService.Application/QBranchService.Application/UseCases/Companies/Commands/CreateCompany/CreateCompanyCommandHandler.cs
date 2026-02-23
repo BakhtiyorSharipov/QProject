@@ -1,4 +1,3 @@
-using MassTransit;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using QBranchService.Application.Interfaces.Data;
@@ -14,7 +13,7 @@ public class CreateCompanyCommandHandler : IRequestHandler<CreateCompanyCommand,
 
 
     public CreateCompanyCommandHandler(ILogger<CreateCompanyCommandHandler> logger,
-        IBranchServiceApplicationDbContext dbContext, IPublishEndpoint publishEndpoint)
+        IBranchServiceApplicationDbContext dbContext)
     {
         _logger = logger;
         _dbContext = dbContext;
@@ -30,7 +29,7 @@ public class CreateCompanyCommandHandler : IRequestHandler<CreateCompanyCommand,
             Address = request.Address,
             EmailAddress = request.EmailAddress,
             PhoneNumber = request.PhoneNumber,
-            CreatedAt = DateTimeOffset.Now
+            CreatedAt = DateTimeOffset.UtcNow
         };
 
         await _dbContext.Companies.AddAsync(company, cancellationToken);

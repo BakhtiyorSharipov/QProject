@@ -9,7 +9,7 @@ using QBranchService.Domain.Models;
 
 namespace QBranchService.Application.UseCases.CompanyServices.Queries.GetServiceById;
 
-public class GetServiceByIdQueryHandler: IRequestHandler<GetServiceByIdQuery, ServiceResponseModel>
+public class GetServiceByIdQueryHandler: IRequestHandler<GetServiceByIdQuery, CompanyServiceResponseModel>
 {
     private readonly ILogger<GetServiceByIdQueryHandler> _logger;
     private readonly IBranchServiceApplicationDbContext _dbContext;
@@ -20,7 +20,7 @@ public class GetServiceByIdQueryHandler: IRequestHandler<GetServiceByIdQuery, Se
         _dbContext = dbContext;
     }
 
-    public async Task<ServiceResponseModel> Handle(GetServiceByIdQuery request, CancellationToken cancellationToken)
+    public async Task<CompanyServiceResponseModel> Handle(GetServiceByIdQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Getting service by Id {id}", request.Id);
         var dbService = await _dbContext.CompanyServices.FirstOrDefaultAsync(s=>s.Id== request.Id, cancellationToken);
@@ -30,7 +30,7 @@ public class GetServiceByIdQueryHandler: IRequestHandler<GetServiceByIdQuery, Se
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(CompanyServiceEntity));
         }
 
-        var response = new ServiceResponseModel()
+        var response = new CompanyServiceResponseModel()
         {
             Id = dbService.Id,
             CompanyId = dbService.CompanyId,

@@ -8,7 +8,7 @@ using QBranchService.Application.UseCases.CompanyServices.Queries.GetAllServices
 
 namespace QApplication.UseCases.Services.Queries.GetAllServices;
 
-public class GetAllServicesQueryHandler: IRequestHandler<GetAllServicesQuery, PagedResponse<ServiceResponseModel>>
+public class GetAllServicesQueryHandler: IRequestHandler<GetAllServicesQuery, PagedResponse<CompanyServiceResponseModel>>
 {
     private const int PageSize = 15;
     private readonly ILogger<GetAllServicesQueryHandler> _logger;
@@ -20,7 +20,7 @@ public class GetAllServicesQueryHandler: IRequestHandler<GetAllServicesQuery, Pa
         _dbContext = dbContext;
     }
 
-    public async Task<PagedResponse<ServiceResponseModel>> Handle(GetAllServicesQuery request, CancellationToken cancellationToken)
+    public async Task<PagedResponse<CompanyServiceResponseModel>> Handle(GetAllServicesQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Getting all services. PageNumber: {pageNumber}, PageSize: {pageSize}", request.PageNumber,
             PageSize);
@@ -33,7 +33,7 @@ public class GetAllServicesQueryHandler: IRequestHandler<GetAllServicesQuery, Pa
             .Take(PageSize)
             .ToListAsync(cancellationToken);
 
-        var response = dbServices.Select(service => new ServiceResponseModel()
+        var response = dbServices.Select(service => new CompanyServiceResponseModel()
         {
             Id = service.Id,
             CompanyId = service.CompanyId,
@@ -43,7 +43,7 @@ public class GetAllServicesQueryHandler: IRequestHandler<GetAllServicesQuery, Pa
         
         _logger.LogInformation("Fetched {serviceCount} services.", response.Count);
 
-        return new PagedResponse<ServiceResponseModel>
+        return new PagedResponse<CompanyServiceResponseModel>
         {
             Items = response,
             PageNumber = request.PageNumber,

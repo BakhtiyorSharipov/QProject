@@ -9,7 +9,7 @@ using QBranchService.Domain.Models;
 
 namespace QBranchService.Application.UseCases.CompanyServices.Commands.UpdateService;
 
-public class UpdateServiceCommandHandler : IRequestHandler<UpdateServiceCommand, ServiceResponseModel>
+public class UpdateServiceCommandHandler : IRequestHandler<UpdateServiceCommand, CompanyServiceResponseModel>
 {
     private readonly ILogger<UpdateServiceCommandHandler> _logger;
     private readonly IBranchServiceApplicationDbContext _dbContext;
@@ -21,7 +21,7 @@ public class UpdateServiceCommandHandler : IRequestHandler<UpdateServiceCommand,
         _dbContext = dbContext;
     }
 
-    public async Task<ServiceResponseModel> Handle(UpdateServiceCommand request, CancellationToken cancellationToken)
+    public async Task<CompanyServiceResponseModel> Handle(UpdateServiceCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Updating service with Id {id}.", request.Id);
 
@@ -41,7 +41,7 @@ public class UpdateServiceCommandHandler : IRequestHandler<UpdateServiceCommand,
 
         _logger.LogInformation("Service with Id {id} updated successfully.", request.Id);
 
-        var response = new ServiceResponseModel()
+        var response = new CompanyServiceResponseModel()
         {
             Id = dbService.Id,
             CompanyId = dbService.CompanyId,

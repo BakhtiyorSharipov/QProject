@@ -1,9 +1,11 @@
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
+using QBranchService.Application;
 using QBranchService.Application.Interfaces.Data;
 using QBranchService.Infrastructure.Persistence.DataBase;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddApplicationService();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
