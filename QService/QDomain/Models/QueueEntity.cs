@@ -22,6 +22,9 @@ public class QueueEntity: BaseEntity
     
     public int ServiceId { get; set; }
     public ServiceEntity Service { get; set; }
+
+    // public int CompanyId { get; set; }
+    // public int BranchId { get; set; }
     
     
 }
