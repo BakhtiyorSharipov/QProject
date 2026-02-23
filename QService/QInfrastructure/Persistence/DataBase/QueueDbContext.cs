@@ -11,6 +11,8 @@ public class QueueDbContext: DbContext, IQueueApplicationDbContext
         
     }
     
+    
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Ignore<BaseEntity>();
@@ -33,7 +35,7 @@ public class QueueDbContext: DbContext, IQueueApplicationDbContext
     public DbSet<RefreshTokenEntity> RefreshTokens { get; set; }
     public DbSet<ReviewEntity> Reviews { get; set; }
     public DbSet<ServiceEntity> Services { get; set; }
-    public DbSet<User> Users { get; set; }
+    public DbSet<UserEntity> Users { get; set; }
     
     
 }

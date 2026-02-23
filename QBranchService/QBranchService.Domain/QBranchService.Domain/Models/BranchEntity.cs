@@ -12,5 +12,5 @@ public class BranchEntity
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.Now;
 
     public int CompanyId { get; set; }
-    public required CompanyEntity Company { get; set; }
+    public CompanyEntity Company { get; set; }
 }

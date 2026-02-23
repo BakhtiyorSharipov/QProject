@@ -8,5 +8,5 @@ public class BranchConfigurationEntity
     public TimeOnly CloseTime { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.Now;
     public int BranchId { get; set; }
-    public required BranchEntity Branch { get; set; } 
+    public BranchEntity Branch { get; set; } 
 }

@@ -9,6 +9,5 @@ public class CompanyServiceEntity
 
     public int CompanyId { get; set; }
 
-    public required CompanyEntity Company { get; set; }
-    // public List<EmployeeEntity> Employees { get; set; } = [];
+    public CompanyEntity Company { get; set; }
 }

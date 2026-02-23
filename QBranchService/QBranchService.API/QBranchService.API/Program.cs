@@ -10,15 +10,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IBranchServiceApplicationDbContext, BranchServiceDbContext>();
 
-builder.Services.AddDbContext<BranchServiceDbContext>(
-    options =>
-    {
-        var dataSourceBuilder =
-            new NpgsqlDataSourceBuilder(builder.Configuration.GetConnectionString("DefaultConnection"));
-        dataSourceBuilder.EnableDynamicJson();
-        var datasource = dataSourceBuilder.Build();
-        options.UseNpgsql(datasource);
-    });
+
+builder.Services.AddDbContext<BranchServiceDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

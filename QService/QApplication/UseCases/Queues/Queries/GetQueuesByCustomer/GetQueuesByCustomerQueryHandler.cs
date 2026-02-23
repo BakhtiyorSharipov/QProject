@@ -40,7 +40,7 @@ public class GetQueuesByCustomerQueryHandler : IRequestHandler<GetQueuesByCustom
         
         if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
         {
-            throw new UnauthorizedAccessException("User not authenticated");
+            throw new UnauthorizedAccessException("UserEntity not authenticated");
         }
 
         var users = await _dbContext.Users.Where(s => s.Id == userId).ToListAsync(cancellationToken);

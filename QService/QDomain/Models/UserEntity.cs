@@ -2,7 +2,7 @@ using QDomain.Enums;
 
 namespace QDomain.Models;
 
-public class User: BaseEntity
+public class UserEntity: BaseEntity
 {
     public string EmailAddress { get; set; }
     public string PasswordHash { get; set; }
