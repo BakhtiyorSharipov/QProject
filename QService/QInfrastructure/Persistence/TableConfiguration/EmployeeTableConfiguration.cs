@@ -10,13 +10,12 @@ public class EmployeeTableConfiguration : IEntityTypeConfiguration<EmployeeEntit
     {
         builder.ToTable("Employees");
         builder.HasKey(s => s.Id);
+        builder.HasIndex(s => s.ServiceId);
 
         builder.HasMany(s => s.Queues)
             .WithOne(s => s.Employee)
             .HasForeignKey(s => s.EmployeeId);
 
-        builder.HasOne(s => s.Service)
-            .WithMany(s => s.Employees)
-            .HasForeignKey(s => s.ServiceId);
+        
     }
 }

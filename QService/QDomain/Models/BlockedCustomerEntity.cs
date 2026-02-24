@@ -7,7 +7,6 @@ public class BlockedCustomerEntity: BaseEntity
     public bool DoesBanForever { get; set; }
     public DateTime CreatedAt { get; set; }= DateTime.UtcNow;
     public int CompanyId { get; set; }
-    public CompanyEntity Company { get; set; }
     
     public int CustomerId { get; set; }
     public CustomerEntity Customer { get; set; }

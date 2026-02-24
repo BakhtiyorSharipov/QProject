@@ -1,10 +1,14 @@
 using System.Net;
+using MassTransit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
+using QApplication.Messages;
 using QApplication.Responses;
+using QBranchService.Contracts.Requests;
+using QBranchService.Contracts.Responses;
 using QDomain.Models;
 
 namespace QApplication.UseCases.BlockedCustomers.Commands.CreateBlockedCustomer;
@@ -13,11 +17,13 @@ public class CreateBlockedCustomerCommandHandler: IRequestHandler<CreateBlockedC
 {
     private readonly ILogger<CreateBlockedCustomerCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
+    private readonly IRequestClient<CompanyRequest> _validationClient;
 
-    public CreateBlockedCustomerCommandHandler(ILogger<CreateBlockedCustomerCommandHandler> logger, IQueueApplicationDbContext dbContext)
+    public CreateBlockedCustomerCommandHandler(ILogger<CreateBlockedCustomerCommandHandler> logger, IQueueApplicationDbContext dbContext, IRequestClient<CompanyRequest> validationClient)
     {
         _logger = logger;
         _dbContext = dbContext;
+        _validationClient = validationClient;
     }
 
     public async Task<BlockedCustomerResponseModel> Handle(CreateBlockedCustomerCommand request, CancellationToken cancellationToken)
@@ -32,11 +38,35 @@ public class CreateBlockedCustomerCommandHandler: IRequestHandler<CreateBlockedC
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(CustomerEntity));
         }
 
-        var company = await _dbContext.Companies.FirstOrDefaultAsync(s => s.Id == request.CompanyId, cancellationToken);
-        if (company == null)
+
+        var validationResponse = await _validationClient.GetResponse<CompanyResponse>(new ValidateCompanyMessage
         {
-            _logger.LogWarning("Company with Id {request.CompanyId} not found.", request.CompanyId);
-            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(CompanyEntity));
+            RequestId = Guid.NewGuid(),
+            CompanyId = request.CompanyId,
+            RequestedAt = DateTimeOffset.UtcNow
+        }, cancellationToken, RequestTimeout.After(s:5));
+
+        if (!validationResponse.Message.IsValid)
+        {
+            _logger.LogWarning("Company validation failed: {ErrorMessage}", 
+                validationResponse.Message.ErrorMessage);
+            throw new HttpStatusCodeException(HttpStatusCode.BadRequest,
+                validationResponse.Message.ErrorMessage ?? "Invalid company");
+        }
+        
+        var existingBlock = await _dbContext.BlockedCustomers
+            .FirstOrDefaultAsync(b => 
+                    b.CustomerId == request.CustomerId && 
+                    b.CompanyId == request.CompanyId &&
+                    (b.DoesBanForever || b.BannedUntil > DateTime.UtcNow), 
+                cancellationToken);
+
+        if (existingBlock != null)
+        {
+            _logger.LogWarning("Customer {CustomerId} is already blocked for Company {CompanyId}", 
+                request.CustomerId, request.CompanyId);
+            throw new HttpStatusCodeException(HttpStatusCode.Conflict, 
+                "Customer is already blocked for this company");
         }
         
 

@@ -10,10 +10,7 @@ public class BlockedCustomerTableConfiguration: IEntityTypeConfiguration<Blocked
     {
         builder.ToTable("BlockedCustomers");
         builder.HasKey(s => s.Id);
-
-        builder.HasOne(s => s.Company)
-            .WithMany()
-            .HasForeignKey(s => s.CompanyId);
+        builder.HasIndex(s => s.CompanyId);
 
         builder.HasOne(s => s.Customer)
             .WithMany()

@@ -14,6 +14,7 @@ using QApplication.Interfaces.Data;
 using QApplication.Services;
 using QApplication.Services.BackgroundJob;
 using QApplication.Validators.AuthValidators;
+using QBranchService.Contracts.Requests;
 using QContracts.QueueEvents;
 using QDomain.Models;
 using QInfrastructure.Consumers.Cache;
@@ -52,6 +53,9 @@ builder.Services.AddHostedService<QueueStartingSoonScheduler>();
 
 builder.Services.AddMassTransit(x =>
 {
+    x.AddRequestClient<BranchIdsRequest>();
+    x.AddRequestClient<CompanyRequest>();
+    x.AddRequestClient<CompanyServiceRequest>();
     x.AddConsumer<CompanyCacheResetConsumer>();
     x.AddConsumer<QueueEventConsumer>();
     x.UsingRabbitMq((context, cfg) =>

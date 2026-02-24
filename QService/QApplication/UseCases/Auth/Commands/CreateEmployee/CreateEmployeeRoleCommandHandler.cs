@@ -1,33 +1,42 @@
 using System.Net;
+using MassTransit;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
+using QApplication.Messages;
+using QBranchService.Contracts.Requests;
+using QBranchService.Contracts.Responses;
 using QDomain.Enums;
 using QDomain.Models;
 
 namespace QApplication.UseCases.Auth.Commands.CreateEmployee;
 
-public class CreateEmployeeRoleCommandHandler: IRequestHandler<CreateEmployeeRoleCommand, UserEntity>
+public class CreateEmployeeRoleCommandHandler : IRequestHandler<CreateEmployeeRoleCommand, UserEntity>
 {
     private readonly ILogger<CreateEmployeeRoleCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly IPasswordHasher<UserEntity> _passwordHasher;
+    private readonly IRequestClient<CompanyServiceRequest> _validationClient;
 
-    public CreateEmployeeRoleCommandHandler(ILogger<CreateEmployeeRoleCommandHandler> logger, IQueueApplicationDbContext dbContext, IPasswordHasher<UserEntity> passwordHasher)
+    public CreateEmployeeRoleCommandHandler(ILogger<CreateEmployeeRoleCommandHandler> logger,
+        IQueueApplicationDbContext dbContext, IPasswordHasher<UserEntity> passwordHasher,
+        IRequestClient<CompanyServiceRequest> validationClient)
     {
         _logger = logger;
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
+        _validationClient = validationClient;
     }
 
     public async Task<UserEntity> Handle(CreateEmployeeRoleCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Registering employee with {email} email address", request.EmailAddress);
         _logger.LogDebug("Finding creator Id for registering employee");
-        var creator = await _dbContext.Users.FirstOrDefaultAsync(s => s.Id == request.createdByUserId, cancellationToken);
+        var creator =
+            await _dbContext.Users.FirstOrDefaultAsync(s => s.Id == request.createdByUserId, cancellationToken);
         if (creator == null)
         {
             _logger.LogWarning("Creator with Id {id} not found", request.createdByUserId);
@@ -42,28 +51,37 @@ public class CreateEmployeeRoleCommandHandler: IRequestHandler<CreateEmployeeRol
         }
 
         _logger.LogDebug("Checking email for already exists emails");
-        if (await _dbContext.Users.FirstOrDefaultAsync(s=>s.EmailAddress== request.EmailAddress, cancellationToken) != null)
+        if (await _dbContext.Users.FirstOrDefaultAsync(s => s.EmailAddress == request.EmailAddress,
+                cancellationToken) != null)
         {
-            
             _logger.LogWarning("Email is already exists.");
             throw new HttpStatusCodeException(HttpStatusCode.BadRequest, "Email already exists");
         }
-        
+
         if (!request.ServiceId.HasValue)
         {
             _logger.LogError("ServiceId is required for creating an employee");
-            throw new HttpStatusCodeException(HttpStatusCode.BadRequest, "ServiceId is required for creating an employee");
+            throw new HttpStatusCodeException(HttpStatusCode.BadRequest,
+                "ServiceId is required for creating an employee");
         }
 
-        var serviceExists = await _dbContext.Services
-            .AnyAsync(s => s.Id == request.ServiceId.Value, cancellationToken);
-    
-        if (!serviceExists)
+        var validationResponse = await _validationClient.GetResponse<CompanyServiceResponse>(
+            new ValidateCompanyServiceMessage
+            {
+                RequestId = Guid.NewGuid(),
+                CompanyServiceId = request.ServiceId.Value,
+                RequestedAt = DateTimeOffset.UtcNow
+            }, cancellationToken, RequestTimeout.After(s: 15));
+
+        if (!validationResponse.Message.IsValid)
         {
-            _logger.LogError("Service with Id {serviceId} does not exist", request.ServiceId);
-            throw new HttpStatusCodeException(HttpStatusCode.BadRequest, $"Service with ID {request.ServiceId} does not exist");
+            _logger.LogWarning("CompanyService validation failed: {ErrorMessage}",
+                validationResponse.Message.ErrorMessage);
+            throw new HttpStatusCodeException(HttpStatusCode.BadRequest,
+                validationResponse.Message.ErrorMessage ?? "Invalid companyService");
         }
-        
+
+
         var employee = new EmployeeEntity
         {
             ServiceId = request.ServiceId.Value,
@@ -76,15 +94,15 @@ public class CreateEmployeeRoleCommandHandler: IRequestHandler<CreateEmployeeRol
 
         await _dbContext.Employees.AddAsync(employee, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
-        
+
         var user = new UserEntity
         {
             EmployeeId = employee.Id,
             EmailAddress = request.EmailAddress,
             Roles = UserRoles.Employee
         };
-        
-        
+
+
         _logger.LogDebug("Hashing password");
         user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
 

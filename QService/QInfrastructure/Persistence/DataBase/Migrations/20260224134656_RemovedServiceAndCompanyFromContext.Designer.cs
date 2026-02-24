@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using QInfrastructure.Persistence.DataBase;
@@ -11,9 +12,11 @@ using QInfrastructure.Persistence.DataBase;
 namespace QInfrastructure.Persistence.DataBase.Migrations
 {
     [DbContext(typeof(QueueDbContext))]
-    partial class EFContextModelSnapshot : ModelSnapshot
+    [Migration("20260224134656_RemovedServiceAndCompanyFromContext")]
+    partial class RemovedServiceAndCompanyFromContext
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -92,6 +95,38 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                     b.HasIndex("CustomerId");
 
                     b.ToTable("BlockedCustomers", (string)null);
+                });
+
+            modelBuilder.Entity("QDomain.Models.CompanyEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EmailAddress")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Companies", (string)null);
                 });
 
             modelBuilder.Entity("QDomain.Models.ComplaintEntity", b =>
@@ -185,10 +220,15 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int?>("ServiceEntityId")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("ServiceId")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ServiceEntityId");
 
                     b.HasIndex("ServiceId");
 
@@ -317,6 +357,35 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                     b.ToTable("Reviews", (string)null);
                 });
 
+            modelBuilder.Entity("QDomain.Models.ServiceEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ServiceDescription")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ServiceName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
+
+                    b.ToTable("Services", (string)null);
+                });
+
             modelBuilder.Entity("QDomain.Models.UserEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -383,11 +452,19 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
 
             modelBuilder.Entity("QDomain.Models.BlockedCustomerEntity", b =>
                 {
+                    b.HasOne("QDomain.Models.CompanyEntity", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("QDomain.Models.CustomerEntity", "Customer")
                         .WithMany()
                         .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Company");
 
                     b.Navigation("Customer");
                 });
@@ -409,6 +486,13 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                     b.Navigation("Customer");
 
                     b.Navigation("Queue");
+                });
+
+            modelBuilder.Entity("QDomain.Models.EmployeeEntity", b =>
+                {
+                    b.HasOne("QDomain.Models.ServiceEntity", null)
+                        .WithMany("Employees")
+                        .HasForeignKey("ServiceEntityId");
                 });
 
             modelBuilder.Entity("QDomain.Models.QueueEntity", b =>
@@ -460,6 +544,17 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                     b.Navigation("Queue");
                 });
 
+            modelBuilder.Entity("QDomain.Models.ServiceEntity", b =>
+                {
+                    b.HasOne("QDomain.Models.CompanyEntity", "Company")
+                        .WithMany("Services")
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+                });
+
             modelBuilder.Entity("QDomain.Models.UserEntity", b =>
                 {
                     b.HasOne("QDomain.Models.CustomerEntity", "Customer")
@@ -473,6 +568,11 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                     b.Navigation("Customer");
 
                     b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("QDomain.Models.CompanyEntity", b =>
+                {
+                    b.Navigation("Services");
                 });
 
             modelBuilder.Entity("QDomain.Models.CustomerEntity", b =>
@@ -489,6 +589,11 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                     b.Navigation("AvailabilitySchedules");
 
                     b.Navigation("Queues");
+                });
+
+            modelBuilder.Entity("QDomain.Models.ServiceEntity", b =>
+                {
+                    b.Navigation("Employees");
                 });
 
             modelBuilder.Entity("QDomain.Models.UserEntity", b =>

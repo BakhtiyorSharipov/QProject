@@ -12,6 +12,7 @@ public class QueueTableConfiguration: IEntityTypeConfiguration<QueueEntity>
         builder.HasKey(s => s.Id);
         builder.HasIndex(s => s.CompanyId);
         builder.HasIndex(s => s.BranchId);
+        builder.HasIndex(s => s.ServiceId);
         
         builder.HasOne(s => s.Customer)
             .WithMany(s => s.Queues)
@@ -21,9 +22,9 @@ public class QueueTableConfiguration: IEntityTypeConfiguration<QueueEntity>
             .WithMany(s => s.Queues)
             .HasForeignKey(s => s.EmployeeId);
 
-        builder.HasOne(s => s.Service)
-            .WithMany()
-            .HasForeignKey(s => s.ServiceId);
+        // builder.HasOne(s => s.Service)
+        //     .WithMany()
+        //     .HasForeignKey(s => s.ServiceId);
 
     }
 }

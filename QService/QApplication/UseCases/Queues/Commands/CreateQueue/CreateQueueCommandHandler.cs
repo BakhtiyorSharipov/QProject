@@ -5,7 +5,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
+using QApplication.Messages;
 using QApplication.Responses;
+using QBranchService.Contracts.Requests;
+using QBranchService.Contracts.Responses;
 using QContracts.QueueEvents;
 using QContracts.QueueEvents.Enums;
 using QDomain.Enums;
@@ -18,19 +21,39 @@ public class CreateQueueCommandHandler : IRequestHandler<CreateQueueCommand, Add
     private readonly ILogger<CreateQueueCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly IPublishEndpoint _publishEndpoint;
+    private readonly IRequestClient<BranchIdsRequest> _validationClient;
 
     public CreateQueueCommandHandler(ILogger<CreateQueueCommandHandler> logger, IQueueApplicationDbContext dbContext,
-        IPublishEndpoint publishEndpoint)
+        IPublishEndpoint publishEndpoint, IRequestClient<BranchIdsRequest> validationClient)
     {
         _logger = logger;
         _dbContext = dbContext;
         _publishEndpoint = publishEndpoint;
+        _validationClient = validationClient;
     }
 
     public async Task<AddQueueResponseModel> Handle(CreateQueueCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Adding new queue for EmployeeId {id}", request.EmployeeId);
 
+        var validationResponse = await _validationClient.GetResponse<BranchIdsResponse>(new ValidateBranchIdsMessage
+        {
+            RequestId = Guid.NewGuid(),
+            CompanyId = request.CompanyId,
+            BranchId = request.BranchId,
+            CompanyServiceId = request.ServiceId,
+            RequestedAt = DateTimeOffset.UtcNow
+        }, cancellationToken, RequestTimeout.After(s: 5));
+
+        if (!validationResponse.Message.IsValid)
+        {
+            _logger.LogWarning("Validation failed: {ErrorMessage}", validationResponse.Message.ErrorMessage);
+            throw new HttpStatusCodeException(HttpStatusCode.BadRequest,
+                validationResponse.Message.ErrorMessage ?? "Invalid companyId or BranchId or CompanyServiceId");
+        }
+        
+        _logger.LogInformation("IDs validated successfully for Company {CompanyId}, Branch {BranchId}, Service {ServiceId}",
+            request.CompanyId, request.BranchId, request.ServiceId);
 
         var schedule = await _dbContext.AvailabilitySchedules.Where(s => s.EmployeeId == request.EmployeeId)
             .ToListAsync(cancellationToken);
@@ -48,13 +71,7 @@ public class CreateQueueCommandHandler : IRequestHandler<CreateQueueCommand, Add
             _logger.LogWarning("Customer with Id {id} not found for adding new queue ", request.CustomerId);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(CustomerEntity));
         }
-
-        var service = await _dbContext.Services.FirstOrDefaultAsync(s => s.Id == request.ServiceId, cancellationToken);
-        if (service == null)
-        {
-            _logger.LogWarning("Service with Id {id} not found for adding new queue", service.Id);
-            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(ServiceEntity));
-        }
+        
 
         _logger.LogDebug("Checking if time slot {startTime} is available for 30- minute booking",
             request.StartTime);
@@ -97,16 +114,16 @@ public class CreateQueueCommandHandler : IRequestHandler<CreateQueueCommand, Add
         }
 
 
-        _logger.LogDebug("Checking if is customer blocked for CompanyId: {id}", service.CompanyId);
+        _logger.LogDebug("Checking if is customer blocked for CompanyId: {id}", request.CompanyId);
         var blocked =
             await _dbContext.BlockedCustomers.FirstOrDefaultAsync(s => s.CustomerId == request.CustomerId,
                 cancellationToken);
         if (blocked != null &&
             blocked.DoesBanForever &&
-            service.CompanyId == blocked.CompanyId)
+            request.CompanyId == blocked.CompanyId)
         {
             _logger.LogWarning("Customer {id} is blocked from Company {companyId}", request.CustomerId,
-                service.CompanyId);
+                request.CompanyId);
             throw new Exception("You are blocked by this company!");
         }
 
@@ -114,6 +131,8 @@ public class CreateQueueCommandHandler : IRequestHandler<CreateQueueCommand, Add
         _logger.LogInformation("Creating new queue entity");
         var queue = new QueueEntity()
         {
+            CompanyId = request.CompanyId,
+            BranchId = request.BranchId,
             CustomerId = request.CustomerId,
             EmployeeId = request.EmployeeId,
             ServiceId = request.ServiceId,
@@ -152,3 +171,4 @@ public class CreateQueueCommandHandler : IRequestHandler<CreateQueueCommand, Add
         return response;
     }
 }
+

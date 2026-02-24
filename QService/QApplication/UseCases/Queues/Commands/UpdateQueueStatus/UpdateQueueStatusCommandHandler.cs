@@ -107,14 +107,14 @@ public class UpdateQueueStatusCommandHandler : IRequestHandler<UpdateQueueStatus
                 .ToListAsync(cancellationToken);
 
             var count = queuesByCustomer.Count(s => s.Status == QueueStatus.DidNotCome);
-            if (count >= 3 && !Exists(dbQueue.CustomerId, dbQueue.Service.CompanyId))
+            if (count >= 3 && !Exists(dbQueue.CustomerId, dbQueue.CompanyId))
             {
                 _logger.LogWarning("CustomerId {id} automatically blocked for CompanyId {companyId}: 3+ DidNotCome",
-                    dbQueue.CustomerId, dbQueue.Service.CompanyId);
+                    dbQueue.CustomerId, dbQueue.CompanyId);
                 BlockedCustomerEntity blockedCustomer = new BlockedCustomerEntity
                 {
                     CustomerId = dbQueue.CustomerId,
-                    CompanyId = dbQueue.Service.CompanyId,
+                    CompanyId = dbQueue.CompanyId,
                     DoesBanForever = true,
                     Reason = "Did not come 3 times",
                     BannedUntil = DateTime.MaxValue,

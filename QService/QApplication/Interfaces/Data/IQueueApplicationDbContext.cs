@@ -5,7 +5,6 @@ namespace QApplication.Interfaces.Data;
 
 public interface IQueueApplicationDbContext
 { 
-    DbSet<CompanyEntity> Companies { get; set; }
     DbSet<CustomerEntity> Customers { get; set; }
     DbSet<EmployeeEntity> Employees { get; set; }
     DbSet<AvailabilityScheduleEntity> AvailabilitySchedules { get; set; }
@@ -14,7 +13,6 @@ public interface IQueueApplicationDbContext
     DbSet<QueueEntity> Queues { get; set; }
     DbSet<RefreshTokenEntity> RefreshTokens { get; set; }
     DbSet<ReviewEntity> Reviews { get; set; }
-    DbSet<ServiceEntity> Services { get; set; }
     DbSet<UserEntity> Users { get; set; }
     
 

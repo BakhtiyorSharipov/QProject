@@ -9,7 +9,6 @@ public class EmployeeEntity: BaseEntity
 
     public DateTime CreatedAt { get; set; }
     public int? ServiceId { get; set; }
-    public ServiceEntity Service { get; set; }
 
     public List<QueueEntity> Queues { get; set; } = new();
 

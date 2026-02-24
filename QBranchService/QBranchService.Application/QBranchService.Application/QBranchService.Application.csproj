@@ -16,6 +16,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\QBranchService.Contracts\QBranchService.Contracts\QBranchService.Contracts.csproj" />
       <ProjectReference Include="..\..\QBranchService.Domain\QBranchService.Domain\QBranchService.Domain.csproj" />
     </ItemGroup>
 
