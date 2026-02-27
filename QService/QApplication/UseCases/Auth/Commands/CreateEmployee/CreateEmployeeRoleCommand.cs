@@ -4,6 +4,7 @@ using QDomain.Models;
 namespace QApplication.UseCases.Auth.Commands.CreateEmployee;
 
 public record CreateEmployeeRoleCommand(
+    int BranchId,
     int? ServiceId,
     string EmailAddress,
     string Password,

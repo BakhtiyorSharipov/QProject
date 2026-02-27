@@ -1,8 +1,10 @@
 using System.Net;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
+using QApplication.Extensions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QDomain.Enums;
@@ -14,31 +16,38 @@ public class CreateReviewCommandHandler: IRequestHandler<CreateReviewCommand, Re
 {
     private readonly ILogger<CreateReviewCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
+    private readonly IHttpContextAccessor _contextAccessor;
 
-    public CreateReviewCommandHandler(ILogger<CreateReviewCommandHandler> logger, IQueueApplicationDbContext dbContext)
+    public CreateReviewCommandHandler(ILogger<CreateReviewCommandHandler> logger, IQueueApplicationDbContext dbContext, IHttpContextAccessor contextAccessor)
     {
         _logger = logger;
         _dbContext = dbContext;
+        _contextAccessor = contextAccessor;
     }
 
     public async Task<ReviewResponseModel> Handle(CreateReviewCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Adding new review to this queue Id {request.QueueId}", request.QueueId);
 
+        var currentCustomer = await _contextAccessor.CurrentCustomer(_dbContext, cancellationToken);
+        var customerId = currentCustomer.Id;
+        
 
-        var queue = await _dbContext.Queues.FirstOrDefaultAsync(s => s.Id == request.QueueId, cancellationToken);
+        var queue = await _dbContext.Queues
+            .Where(s=>s.CustomerId== customerId)
+            .FirstOrDefaultAsync(s => s.Id == request.QueueId, cancellationToken);
         if (queue == null)
         {
             _logger.LogWarning("Queue with Id {request.QueueId} not found for adding new review.", request.QueueId);
-            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, $"Queue with Id {request.QueueId} not found for this employee");
         }
 
         var customer =
-            await _dbContext.Customers.FirstOrDefaultAsync(s => s.Id == request.CustomerId, cancellationToken);
+            await _dbContext.Customers.FirstOrDefaultAsync(s => s.Id == customerId, cancellationToken);
         if (customer == null)
         {
             _logger.LogWarning("Customer with Id {request.CustomerId} not found for adding new review.",
-                request.CustomerId);
+                customerId);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(CustomerEntity));
         }
 
@@ -59,7 +68,7 @@ public class CreateReviewCommandHandler: IRequestHandler<CreateReviewCommand, Re
 
         var review = new ReviewEntity()
         {
-            CustomerId = request.CustomerId,
+            CustomerId = customerId,
             QueueId = request.QueueId,
             Grade = request.Grade,
             ReviewText = request.ReviewText,
@@ -81,6 +90,7 @@ public class CreateReviewCommandHandler: IRequestHandler<CreateReviewCommand, Re
             Id = review.Id,
             CustomerId = review.CustomerId,
             QueueId = review.QueueId,
+            EmployeeId = review.Queue.EmployeeId,
             Grade = review.Grade,
             ReviewText = review.ReviewText
         };

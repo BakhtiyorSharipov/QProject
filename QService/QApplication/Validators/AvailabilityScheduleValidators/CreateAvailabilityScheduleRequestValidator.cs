@@ -9,8 +9,7 @@ public class CreateAvailabilityScheduleRequestValidator: AbstractValidator<Creat
 {
     public CreateAvailabilityScheduleRequestValidator()
     {
-        RuleFor(x => x.EmployeeId)
-            .GreaterThan(0).WithMessage("EmployeeId must be greater than 0");
+      
 
         RuleFor(x => x.Description)
             .MaximumLength(500).WithMessage("Description must be at most 500 characters");

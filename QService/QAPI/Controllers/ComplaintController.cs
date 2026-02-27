@@ -25,7 +25,7 @@ public class ComplaintController: ControllerBase
         _mediator = mediator;
     }
     
-    [Authorize(Roles = nameof(UserRoles.Employee)+","+nameof(UserRoles.CompanyAdmin)+","+nameof(UserRoles.SystemAdmin))]
+    [Authorize(Roles = nameof(UserRoles.Employee)+","+ nameof(UserRoles.Customer))]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ComplaintResponseModel>>> GetAllComplaintsAsync([FromQuery]int pageNumber=1)
     {
@@ -35,7 +35,7 @@ public class ComplaintController: ControllerBase
         return Ok(complaints);
     }
 
-    [Authorize(Roles = nameof(UserRoles.Employee)+","+nameof(UserRoles.CompanyAdmin)+","+nameof(UserRoles.SystemAdmin))]
+    [Authorize(Roles = nameof(UserRoles.Employee)+","+ nameof(UserRoles.Customer))]
     [HttpGet("{id}")]
     public async Task<ActionResult<ComplaintResponseModel>> GetComplaintByIdAsync([FromRoute]int id)
     {
@@ -56,7 +56,7 @@ public class ComplaintController: ControllerBase
         return Ok(complaint);
     }
 
-    [Authorize(Roles = nameof(UserRoles.Employee)+","+nameof(UserRoles.CompanyAdmin)+","+nameof(UserRoles.SystemAdmin))]
+    [Authorize(Roles = nameof(UserRoles.Employee))]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateComplaintStatusAsync([FromRoute] int id, [FromBody] UpdateComplaintStatusRequest request)
     {

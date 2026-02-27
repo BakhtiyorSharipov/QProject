@@ -7,8 +7,7 @@ public class CreateCompanyAdminRequestValidator: AbstractValidator<CreateCompany
 {
     public CreateCompanyAdminRequestValidator()
     {
-        RuleFor(x => x.ServiceId)
-            .GreaterThan(0).WithMessage("ServiceId must be greater than 0");
+        
         
         RuleFor(x => x.FirstName)
             .NotEmpty().WithMessage("First name is required.")

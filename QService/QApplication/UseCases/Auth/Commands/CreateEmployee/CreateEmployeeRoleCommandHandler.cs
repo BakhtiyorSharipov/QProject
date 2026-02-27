@@ -1,10 +1,12 @@
 using System.Net;
 using MassTransit;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
+using QApplication.Extensions;
 using QApplication.Interfaces.Data;
 using QApplication.Messages;
 using QBranchService.Contracts.Requests;
@@ -19,16 +21,18 @@ public class CreateEmployeeRoleCommandHandler : IRequestHandler<CreateEmployeeRo
     private readonly ILogger<CreateEmployeeRoleCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly IPasswordHasher<UserEntity> _passwordHasher;
-    private readonly IRequestClient<CompanyServiceRequest> _validationClient;
+    private readonly IRequestClient<BranchIdsRequest> _validationClient;
+    private readonly IHttpContextAccessor _contextAccessor;
 
     public CreateEmployeeRoleCommandHandler(ILogger<CreateEmployeeRoleCommandHandler> logger,
         IQueueApplicationDbContext dbContext, IPasswordHasher<UserEntity> passwordHasher,
-        IRequestClient<CompanyServiceRequest> validationClient)
+        IRequestClient<BranchIdsRequest> validationClient, IHttpContextAccessor contextAccessor)
     {
         _logger = logger;
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
         _validationClient = validationClient;
+        _contextAccessor = contextAccessor;
     }
 
     public async Task<UserEntity> Handle(CreateEmployeeRoleCommand request, CancellationToken cancellationToken)
@@ -65,25 +69,33 @@ public class CreateEmployeeRoleCommandHandler : IRequestHandler<CreateEmployeeRo
                 "ServiceId is required for creating an employee");
         }
 
-        var validationResponse = await _validationClient.GetResponse<CompanyServiceResponse>(
-            new ValidateCompanyServiceMessage
+        var currentEmployee = await _contextAccessor.CurrentEmployee(_dbContext,cancellationToken);
+
+        var companyId = currentEmployee.CompanyId;
+
+        var validationResponse = await _validationClient.GetResponse<BranchIdsResponse>(
+            new ValidateBranchIdsMessage()
             {
                 RequestId = Guid.NewGuid(),
+                CompanyId = companyId,
+                BranchId = request.BranchId,
                 CompanyServiceId = request.ServiceId.Value,
                 RequestedAt = DateTimeOffset.UtcNow
             }, cancellationToken, RequestTimeout.After(s: 15));
 
         if (!validationResponse.Message.IsValid)
         {
-            _logger.LogWarning("CompanyService validation failed: {ErrorMessage}",
-                validationResponse.Message.ErrorMessage);
+            _logger.LogWarning("Validation failed: {ErrorMessage}", validationResponse.Message.ErrorMessage);
             throw new HttpStatusCodeException(HttpStatusCode.BadRequest,
-                validationResponse.Message.ErrorMessage ?? "Invalid companyService");
+                validationResponse.Message.ErrorMessage ?? "Invalid companyId or BranchId or CompanyServiceId");
         }
-
+        
+        
 
         var employee = new EmployeeEntity
         {
+            CompanyId = companyId,
+            BranchId = request.BranchId,
             ServiceId = request.ServiceId.Value,
             FirstName = request.FirstName,
             LastName = request.LastName,
@@ -108,7 +120,7 @@ public class CreateEmployeeRoleCommandHandler : IRequestHandler<CreateEmployeeRo
 
         await _dbContext.Users.AddAsync(user, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
-        _logger.LogInformation("Employee with {email} email address registered successfully");
+        _logger.LogInformation("Employee with {email} email address registered successfully", request.EmailAddress);
         return user;
     }
 }

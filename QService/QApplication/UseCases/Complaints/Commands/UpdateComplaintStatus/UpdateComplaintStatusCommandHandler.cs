@@ -1,8 +1,10 @@
 using System.Net;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
+using QApplication.Extensions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QDomain.Enums;
@@ -14,17 +16,25 @@ public class UpdateComplaintStatusCommandHandler: IRequestHandler<UpdateComplain
 {
     private readonly ILogger<UpdateComplaintStatusCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
+    private readonly IHttpContextAccessor _contextAccessor;
 
-    public UpdateComplaintStatusCommandHandler(ILogger<UpdateComplaintStatusCommandHandler> logger, IQueueApplicationDbContext dbContext)
+    public UpdateComplaintStatusCommandHandler(ILogger<UpdateComplaintStatusCommandHandler> logger, IQueueApplicationDbContext dbContext, IHttpContextAccessor contextAccessor)
     {
         _logger = logger;
         _dbContext = dbContext;
+        _contextAccessor = contextAccessor;
     }
 
     public async Task<ComplaintResponseModel> Handle(UpdateComplaintStatusCommand request, CancellationToken cancellationToken)
     {
          _logger.LogInformation("Updating complaint status with Id {id}", request.Id);
-         var dbComplaint = await _dbContext.Complaints.FirstOrDefaultAsync(s => s.Id == request.Id);
+
+         var currentEmployee = await _contextAccessor.CurrentEmployee(_dbContext, cancellationToken);
+         var companyId = currentEmployee.CompanyId; 
+         
+         var dbComplaint = await _dbContext.Complaints
+             .Where(s=>s.Queue.CompanyId== companyId || s.Queue.EmployeeId== currentEmployee.Id)
+             .FirstOrDefaultAsync(s => s.Id == request.Id, cancellationToken);
         if (dbComplaint == null)
         {
             _logger.LogWarning("Complaint with Id {id} not found for updating status.", request.Id);
@@ -78,6 +88,7 @@ public class UpdateComplaintStatusCommandHandler: IRequestHandler<UpdateComplain
             Id = dbComplaint.Id,
             CustomerId = dbComplaint.CustomerId,
             QueueId = dbComplaint.QueueId,
+            EmployeeId = dbComplaint.Queue.EmployeeId,
             ComplaintText = dbComplaint.ComplaintText,
             ResponseText = dbComplaint.ResponseText,
             ComplaintStatus = dbComplaint.ComplaintStatus

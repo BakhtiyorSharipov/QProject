@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Caching;
 using QApplication.Exceptions;
+using QApplication.Extensions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QDomain.Models;
@@ -33,31 +34,9 @@ public class GetQueuesByCustomerQueryHandler : IRequestHandler<GetQueuesByCustom
     public async Task<PagedResponse<QueueResponseModel>> Handle(GetQueuesByCustomerQuery request,
         CancellationToken cancellationToken)
     {
-        var userClaim = _contextAccessor.HttpContext!.User;
-
-        var userIdClaim = userClaim.FindFirst("id");
         
-        
-        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
-        {
-            throw new UnauthorizedAccessException("UserEntity not authenticated");
-        }
-
-        var users = await _dbContext.Users.Where(s => s.Id == userId).ToListAsync(cancellationToken);
-
-        int customerId=0;
-        foreach (var user in users)
-        {
-            if (user.CustomerId.HasValue)
-            {
-                customerId = user.CustomerId.Value;
-            }
-            else
-            {
-                _logger.LogInformation("Customer not found");
-                throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(CustomerEntity));
-            }
-        }
+        var currentCustomer = await _contextAccessor.CurrentCustomer(_dbContext, cancellationToken);
+        var customerId = currentCustomer.Id;
         
 
         _logger.LogInformation("Getting all customer's queue. PageNumber: {pageNumber}, PageSize: {pageSize}",
@@ -65,7 +44,7 @@ public class GetQueuesByCustomerQueryHandler : IRequestHandler<GetQueuesByCustom
 
        
 
-        var hashKey = CacheKeys.CustomerQueuesHashKey(userId);
+        var hashKey = CacheKeys.CustomerQueuesHashKey(customerId);
         var filed = CacheKeys.CustomerQueuesField(request.PageNumber);
 
         var cached = await _cache.HashGetAsync<PagedResponse<QueueResponseModel>>(hashKey, filed);
@@ -77,6 +56,12 @@ public class GetQueuesByCustomerQueryHandler : IRequestHandler<GetQueuesByCustom
         
         var query = _dbContext.Queues
             .Where(s => s.CustomerId == customerId);
+        
+        if (!query.Any())
+        {
+            _logger.LogWarning("No queues found for CustomerId: {customerId}", customerId);
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
+        }
 
         var totalCount = await query.CountAsync(cancellationToken);
 
@@ -90,6 +75,8 @@ public class GetQueuesByCustomerQueryHandler : IRequestHandler<GetQueuesByCustom
         var response = queues.Select(queue => new QueueResponseModel()
         {
             Id = queue.Id,
+            CompanyId = queue.CompanyId,
+            BranchId = queue.BranchId,
             CustomerId = queue.CustomerId,
             EmployeeId = queue.EmployeeId,
             ServiceId = queue.ServiceId,

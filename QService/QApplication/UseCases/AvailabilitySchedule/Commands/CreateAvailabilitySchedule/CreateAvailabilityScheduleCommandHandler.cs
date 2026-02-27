@@ -1,8 +1,10 @@
 using System.Net;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
+using QApplication.Extensions;
 using QApplication.Interfaces.Data;
 using QApplication.Requests.AvailabilityScheduleRequest;
 using QApplication.Responses;
@@ -15,24 +17,24 @@ public class CreateAvailabilityScheduleCommandHandler: IRequestHandler<CreateAva
 {
     private readonly ILogger<CreateAvailabilityScheduleCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
+    private readonly IHttpContextAccessor _contextAccessor;
 
-    public CreateAvailabilityScheduleCommandHandler(ILogger<CreateAvailabilityScheduleCommandHandler> logger, IQueueApplicationDbContext dbContext)
+    public CreateAvailabilityScheduleCommandHandler(ILogger<CreateAvailabilityScheduleCommandHandler> logger, IQueueApplicationDbContext dbContext, IHttpContextAccessor contextAccessor)
     {
         _logger = logger;
         _dbContext = dbContext;
+        _contextAccessor = contextAccessor;
     }
 
     public async Task<List<AvailabilityScheduleResponseModel>> Handle(CreateAvailabilityScheduleCommand request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Adding new schedule for EmployeeId {id}", request.EmployeeId);
+        var currentEmployee = await _contextAccessor.CurrentEmployee(_dbContext, cancellationToken);
         
-        var employee =
-            await _dbContext.Employees.FirstOrDefaultAsync(s => s.Id == request.EmployeeId, cancellationToken);
-        if (employee == null)
-        {
-            _logger.LogWarning("Employee with Id {id} not found", request.EmployeeId);
-            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(EmployeeEntity));
-        }
+        _logger.LogInformation("Adding new schedule for EmployeeId {id}", currentEmployee.Id);
+
+        
+        
+       
 
         if (request.AvailableSlots == null || !request.AvailableSlots.Any())
         {
@@ -149,9 +151,9 @@ public class CreateAvailabilityScheduleCommandHandler: IRequestHandler<CreateAva
         }
 
 
-        _logger.LogDebug("Checking for schedule overlap for EmployeeId: {id}", request.EmployeeId);
+        _logger.LogDebug("Checking for schedule overlap for EmployeeId: {id}", currentEmployee.Id);
         var schedulesByEmployee =
-            await _dbContext.AvailabilitySchedules.Where(s => s.EmployeeId == request.EmployeeId).ToListAsync(cancellationToken);
+            await _dbContext.AvailabilitySchedules.Where(s => s.EmployeeId == currentEmployee.Id).ToListAsync(cancellationToken);
 
         foreach (var schedule in schedulesByEmployee)
         {
@@ -185,7 +187,7 @@ public class CreateAvailabilityScheduleCommandHandler: IRequestHandler<CreateAva
                     if (overlap)
                     {
                         _logger.LogError("Overlapping schedule for EmployeeId: {employeeId}",
-                            request.EmployeeId);
+                            currentEmployee.Id);
                         throw new Exception("This time slot already exists or overlaps with an existing schedule.");
                     }
                 }
@@ -199,7 +201,7 @@ public class CreateAvailabilityScheduleCommandHandler: IRequestHandler<CreateAva
         {
             schedules.Add(new AvailabilityScheduleEntity
             {
-                EmployeeId = request.EmployeeId,
+                EmployeeId = currentEmployee.Id,
                 GroupId = nextGroupId,
                 Description = request.Description,
                 AvailableSlots = new List<Interval<DateTimeOffset>> { interval },
@@ -230,7 +232,7 @@ public class CreateAvailabilityScheduleCommandHandler: IRequestHandler<CreateAva
             DayOfWeek = slot.AvailableSlots.First().From.DayOfWeek
         }).ToList();
 
-        _logger.LogInformation("Successfully added schedules for EmployeeId: {id}", request.EmployeeId);
+        _logger.LogInformation("Successfully added schedules for EmployeeId: {id}", currentEmployee.Id);
         return responses;
     }
 }

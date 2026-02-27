@@ -1,6 +1,8 @@
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using QApplication.Extensions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
 
@@ -11,11 +13,13 @@ public class GetAllBlockedCustomersQueryHandler: IRequestHandler<GetAllBlockedCu
     private const int PageSize = 15;
     private readonly ILogger<GetAllBlockedCustomersQueryHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
+    private readonly IHttpContextAccessor _contextAccessor;
 
-    public GetAllBlockedCustomersQueryHandler(ILogger<GetAllBlockedCustomersQueryHandler> logger, IQueueApplicationDbContext dbContext)
+    public GetAllBlockedCustomersQueryHandler(ILogger<GetAllBlockedCustomersQueryHandler> logger, IQueueApplicationDbContext dbContext, IHttpContextAccessor contextAccessor)
     {
         _logger = logger;
         _dbContext = dbContext;
+        _contextAccessor = contextAccessor;
     }
 
     public async Task<PagedResponse<BlockedCustomerResponseModel>> Handle(GetAllBlockedCustomersQuery request, CancellationToken cancellationToken)
@@ -23,9 +27,15 @@ public class GetAllBlockedCustomersQueryHandler: IRequestHandler<GetAllBlockedCu
         _logger.LogInformation("Getting all blocked customers. PageNumber: {pageNumber}, PageSize: {ageSize}", request.PageNumber,
             PageSize);
 
-        var totalCount = await _dbContext.BlockedCustomers.CountAsync(cancellationToken);
+        var currentEmployee =await _contextAccessor.CurrentEmployee(_dbContext, cancellationToken);
+        var companyId = currentEmployee.CompanyId;
+
+        var totalCount = await _dbContext.BlockedCustomers
+            .Where(s=>s.CompanyId== companyId)
+            .CountAsync(cancellationToken);
 
         var dbBlockedCustomers = await _dbContext.BlockedCustomers
+            .Where(s=>s.CompanyId== companyId)
             .OrderBy(c => c.Id)
             .Skip((request.PageNumber-1) * PageSize)
             .Take(PageSize).ToListAsync(cancellationToken);

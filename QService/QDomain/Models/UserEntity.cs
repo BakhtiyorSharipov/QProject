@@ -4,8 +4,6 @@ namespace QDomain.Models;
 
 public class UserEntity: BaseEntity
 {
-    public int? CompanyId { get; set; }
-    public int? BranchId { get; set; }
     public string EmailAddress { get; set; }
     public string PasswordHash { get; set; }
     public UserRoles Roles { get; set; }

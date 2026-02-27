@@ -1,5 +1,4 @@
 using MediatR;
-using QApplication.Responses;
 
 namespace QApplication.UseCases.AvailabilitySchedule.Commands.DeleteAvailabilitySchedule;
 

@@ -1,10 +1,14 @@
 using System.Net;
+using MassTransit;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
+using QApplication.Messages;
+using QBranchService.Contracts.Requests;
+using QBranchService.Contracts.Responses;
 using QDomain.Enums;
 using QDomain.Models;
 
@@ -15,12 +19,14 @@ public class CreateCompanyAdminCommandHandler: IRequestHandler<CreateCompanyAdmi
     private readonly ILogger<CreateCompanyAdminCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly IPasswordHasher<UserEntity> _passwordHasher;
+    private readonly IRequestClient<CompanyRequest> _validationClient;
 
-    public CreateCompanyAdminCommandHandler(ILogger<CreateCompanyAdminCommandHandler> logger, IQueueApplicationDbContext dbContext, IPasswordHasher<UserEntity> passwordHasher)
+    public CreateCompanyAdminCommandHandler(ILogger<CreateCompanyAdminCommandHandler> logger, IQueueApplicationDbContext dbContext, IPasswordHasher<UserEntity> passwordHasher, IRequestClient<CompanyRequest> validationClient)
     {
         _logger = logger;
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
+        _validationClient = validationClient;
     }
 
     public async Task<UserEntity> Handle(CreateCompanyAdminCommand request, CancellationToken cancellationToken)
@@ -50,8 +56,23 @@ public class CreateCompanyAdminCommandHandler: IRequestHandler<CreateCompanyAdmi
             throw new HttpStatusCodeException(HttpStatusCode.BadRequest, "Email already exists");
         }
 
+        var validationResponse = await _validationClient.GetResponse<CompanyResponse>(new ValidateCompanyMessage
+        {
+            RequestId = Guid.NewGuid(),
+            CompanyId = request.CompanyId,
+            RequestedAt = DateTimeOffset.UtcNow
+        }, cancellationToken, RequestTimeout.After(s:5));
+
+        if (!validationResponse.Message.IsValid)
+        {
+            _logger.LogWarning("Company {CompanyId} not found.", request.CompanyId);
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, "Company not found");
+        }
+
         var employee = new EmployeeEntity
         {
+            CompanyId = request.CompanyId,
+            BranchId = null,
             ServiceId = null,
             FirstName = request.FirstName,
             LastName = request.LastName,

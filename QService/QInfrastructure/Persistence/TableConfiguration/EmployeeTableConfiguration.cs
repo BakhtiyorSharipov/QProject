@@ -11,6 +11,8 @@ public class EmployeeTableConfiguration : IEntityTypeConfiguration<EmployeeEntit
         builder.ToTable("Employees");
         builder.HasKey(s => s.Id);
         builder.HasIndex(s => s.ServiceId);
+        builder.HasIndex(s => s.CompanyId);
+        builder.HasIndex(s => s.BranchId);
 
         builder.HasMany(s => s.Queues)
             .WithOne(s => s.Employee)

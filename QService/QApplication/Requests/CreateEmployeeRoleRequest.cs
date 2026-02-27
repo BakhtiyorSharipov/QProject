@@ -2,6 +2,7 @@ namespace QApplication.Requests;
 
 public class CreateEmployeeRoleRequest
 {
+    public int BranchId { get; set; }
     public int ServiceId { get; set; }
     public string EmailAddress { get; set; } = null!; 
     public string Password { get; set; } = null!;

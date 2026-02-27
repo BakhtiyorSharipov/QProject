@@ -29,4 +29,10 @@ public static class CacheKeys
     public static string CustomerQueuesField(int pageNumber)
         => $"{pageNumber}";
     
+    public static string EmployeeQueuesHashKey(int employeeId)
+        => $"customer:{employeeId}:queues";
+    
+    public static string EmployeeQueuesField(int pageNumber)
+        => $"{pageNumber}";
+    
 }

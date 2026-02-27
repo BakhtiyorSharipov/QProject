@@ -6,7 +6,7 @@ using QApplication.UseCases.Queues.Commands.CancelQueueByCustomer;
 using QApplication.UseCases.Queues.Commands.CancelQueueByEmployee;
 using QApplication.UseCases.Queues.Commands.CreateQueue;
 using QApplication.UseCases.Queues.Commands.UpdateQueueStatus;
-using QApplication.UseCases.Queues.Queries;
+using QApplication.UseCases.Queues.Queries.GetAllQueues;
 using QApplication.UseCases.Queues.Queries.GetQueueById;
 using QApplication.UseCases.Queues.Queries.GetQueuesByCustomer;
 using QApplication.UseCases.Queues.Queries.GetQueuesByEmployee;
@@ -27,7 +27,7 @@ public class QueueController : ControllerBase
         _mediator = mediator;
     }
 
-    [Authorize(Roles = nameof(UserRoles.CompanyAdmin) + "," + nameof(UserRoles.SystemAdmin))]
+    [Authorize(Roles = nameof(UserRoles.CompanyAdmin))]
     [HttpGet]
     public async Task<ActionResult<PagedResponse<QueueResponseModel>>> GetAllAsync([FromQuery]int pageNumber=1)
     {
@@ -105,15 +105,14 @@ public class QueueController : ControllerBase
         return Ok(queue);
     }
 
-    [Authorize(Roles =
-        nameof(UserRoles.CompanyAdmin) + "," + nameof(UserRoles.SystemAdmin) + "," + nameof(UserRoles.Employee))]
-    [HttpGet("history/employee/{employeeId}")]
-    public async Task<IEnumerable<QueueResponseModel>> GetQueuesByEmployeeAsync([FromRoute] int employeeId)
+    [Authorize(Roles =nameof(UserRoles.Employee))]
+    [HttpGet("history/employee/")]
+    public async Task<ActionResult<PagedResponse<QueueResponseModel>>> GetQueuesByEmployeeAsync([FromRoute] int pageNumber=1)
     {
-        _logger.LogInformation("Received request to get employee queue history with Id: {employeeId}", employeeId);
-        var query = new GetQueuesByEmployeeQuery(employeeId);
+        _logger.LogInformation("Received request to get employee queue history with PageNumber: {pageNUmber}", pageNumber);
+        var query = new GetQueuesByEmployeeQuery(pageNumber);
         var queue = await _mediator.Send(query);
-        _logger.LogInformation("Successfully returned {queueCount} queues.", employeeId);
-        return queue;
+        _logger.LogInformation("Successfully returned queues.");
+        return Ok(queue);
     }
 }

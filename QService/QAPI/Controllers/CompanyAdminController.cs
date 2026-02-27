@@ -2,29 +2,29 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QApplication.Requests;
-using QApplication.UseCases.Auth.Commands.CreateCompanyAdmin;
+using QApplication.UseCases.Auth.Commands.CreateEmployee;
 using QDomain.Enums;
 
 namespace QAPI.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = nameof(UserRoles.SystemAdmin))]
-public class SystemAdminController : ControllerBase
+[Authorize(Roles = nameof(UserRoles.CompanyAdmin))]
+public class CompanyAdminController: ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public SystemAdminController(IMediator mediator)
+    public CompanyAdminController(IMediator mediator)
     {
         _mediator = mediator;
     }
 
-
-    [HttpPost("create-company-admin")]
-    public async Task<IActionResult> CreateCompanyAdminAsync([FromBody] CreateCompanyAdminRequest request)
+    
+    [HttpPost("create-employee")]
+    public async Task<IActionResult> CreateEmployeeAsync([FromBody] CreateEmployeeRoleRequest request)
     {
         var creatorId = int.Parse(User.FindFirst("id")?.Value ?? "0");
-        var command = new CreateCompanyAdminCommand(request.CompanyId, request.EmailAddress, request.Password,
+        var command = new CreateEmployeeRoleCommand(request.BranchId, request.ServiceId, request.EmailAddress, request.Password,
             request.FirstName, request.LastName, request.Position, request.PhoneNumber, creatorId);
         var user = await _mediator.Send(command);
         return CreatedAtAction(null, new { id = user.Id },
