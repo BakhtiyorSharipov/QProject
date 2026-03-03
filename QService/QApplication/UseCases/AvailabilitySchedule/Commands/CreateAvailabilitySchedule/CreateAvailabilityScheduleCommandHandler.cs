@@ -13,30 +13,30 @@ using QDomain.Models;
 
 namespace QApplication.UseCases.AvailabilitySchedule.Commands.CreateAvailabilitySchedule;
 
-public class CreateAvailabilityScheduleCommandHandler: IRequestHandler<CreateAvailabilityScheduleCommand, List<AvailabilityScheduleResponseModel>>
+public class CreateAvailabilityScheduleCommandHandler : IRequestHandler<CreateAvailabilityScheduleCommand,
+    List<AvailabilityScheduleResponseModel>>
 {
     private readonly ILogger<CreateAvailabilityScheduleCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly IHttpContextAccessor _contextAccessor;
 
-    public CreateAvailabilityScheduleCommandHandler(ILogger<CreateAvailabilityScheduleCommandHandler> logger, IQueueApplicationDbContext dbContext, IHttpContextAccessor contextAccessor)
+    public CreateAvailabilityScheduleCommandHandler(ILogger<CreateAvailabilityScheduleCommandHandler> logger,
+        IQueueApplicationDbContext dbContext, IHttpContextAccessor contextAccessor)
     {
         _logger = logger;
         _dbContext = dbContext;
         _contextAccessor = contextAccessor;
     }
 
-    public async Task<List<AvailabilityScheduleResponseModel>> Handle(CreateAvailabilityScheduleCommand request, CancellationToken cancellationToken)
+    public async Task<List<AvailabilityScheduleResponseModel>> Handle(CreateAvailabilityScheduleCommand request,
+        CancellationToken cancellationToken)
     {
         var currentEmployee = await _contextAccessor.CurrentEmployee(_dbContext, cancellationToken);
-        
+
         _logger.LogInformation("Adding new schedule for EmployeeId {id}", currentEmployee.Id);
 
-        
-        
-       
 
-        if (request.AvailableSlots == null || !request.AvailableSlots.Any())
+        if (!request.AvailableSlots.Any())
         {
             _logger.LogError("Invalid available slot. At least one available time slot must be provided");
             throw new Exception("At least one available time slot must be provided");
@@ -88,9 +88,8 @@ public class CreateAvailabilityScheduleCommandHandler: IRequestHandler<CreateAva
         }
 
 
+        var allSchedules = _dbContext.AvailabilitySchedules;
 
-        var allSchedules =  _dbContext.AvailabilitySchedules;
-        
         int? nextGroupId = (allSchedules.Max(s => s.GroupId) ?? 0) + 1;
 
         if (request.RepeatSlot == RepeatSlot.None)
@@ -153,7 +152,8 @@ public class CreateAvailabilityScheduleCommandHandler: IRequestHandler<CreateAva
 
         _logger.LogDebug("Checking for schedule overlap for EmployeeId: {id}", currentEmployee.Id);
         var schedulesByEmployee =
-            await _dbContext.AvailabilitySchedules.Where(s => s.EmployeeId == currentEmployee.Id).ToListAsync(cancellationToken);
+            await _dbContext.AvailabilitySchedules.Where(s => s.EmployeeId == currentEmployee.Id)
+                .ToListAsync(cancellationToken);
 
         foreach (var schedule in schedulesByEmployee)
         {

@@ -5,7 +5,9 @@ namespace QBranchService.Application.UseCases.BranchConfigurations.Commands.Crea
 
 public record CreateBranchConfigurationCommand(
     int BranchId, 
-    int MaxTickets, 
+    int MaxTicketsPerDay, 
     TimeOnly OpenTime, 
-    TimeOnly CloseTime)
+    TimeOnly CloseTime,
+    TimeOnly? BreakStartTime,
+    TimeOnly? BreakEndTime)
     : IRequest<BranchConfigurationResponseModel>;

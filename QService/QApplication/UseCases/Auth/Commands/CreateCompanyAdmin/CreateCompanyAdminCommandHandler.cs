@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
 using QApplication.Messages;
+using QBranchService.Contracts.Interfaces;
 using QBranchService.Contracts.Requests;
 using QBranchService.Contracts.Responses;
 using QDomain.Enums;
@@ -19,14 +20,16 @@ public class CreateCompanyAdminCommandHandler: IRequestHandler<CreateCompanyAdmi
     private readonly ILogger<CreateCompanyAdminCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly IPasswordHasher<UserEntity> _passwordHasher;
-    private readonly IRequestClient<CompanyRequest> _validationClient;
+    private readonly IBranchService _branchService;
 
-    public CreateCompanyAdminCommandHandler(ILogger<CreateCompanyAdminCommandHandler> logger, IQueueApplicationDbContext dbContext, IPasswordHasher<UserEntity> passwordHasher, IRequestClient<CompanyRequest> validationClient)
+    public CreateCompanyAdminCommandHandler(ILogger<CreateCompanyAdminCommandHandler> logger, 
+        IQueueApplicationDbContext dbContext, 
+        IPasswordHasher<UserEntity> passwordHasher, IBranchService branchService)
     {
         _logger = logger;
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
-        _validationClient = validationClient;
+        _branchService = branchService;
     }
 
     public async Task<UserEntity> Handle(CreateCompanyAdminCommand request, CancellationToken cancellationToken)
@@ -55,18 +58,20 @@ public class CreateCompanyAdminCommandHandler: IRequestHandler<CreateCompanyAdmi
             _logger.LogWarning("Email is already exists.");
             throw new HttpStatusCodeException(HttpStatusCode.BadRequest, "Email already exists");
         }
+        
 
-        var validationResponse = await _validationClient.GetResponse<CompanyResponse>(new ValidateCompanyMessage
+        var company = await _branchService.CheckCompanyId(new CompanyRequest
         {
             RequestId = Guid.NewGuid(),
             CompanyId = request.CompanyId,
             RequestedAt = DateTimeOffset.UtcNow
-        }, cancellationToken, RequestTimeout.After(s:5));
+        });
 
-        if (!validationResponse.Message.IsValid)
+        if (!company.IsValid)
         {
-            _logger.LogWarning("Company {CompanyId} not found.", request.CompanyId);
-            throw new HttpStatusCodeException(HttpStatusCode.NotFound, "Company not found");
+            _logger.LogInformation("Company with Id {companyId} not found", request.CompanyId);
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound,
+                company.ErrorMessage ?? "Company not found");
         }
 
         var employee = new EmployeeEntity
@@ -96,7 +101,7 @@ public class CreateCompanyAdminCommandHandler: IRequestHandler<CreateCompanyAdmi
 
         await _dbContext.Users.AddAsync(user, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
-        _logger.LogInformation("Employee with {email} email address registered successfully");
+        _logger.LogInformation("Employee with {email} email address registered successfully", request.EmailAddress);
         return user;
     }
 }

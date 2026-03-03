@@ -36,9 +36,11 @@ public class GetBranchConfigurationByIdQueryHandler: IRequestHandler<GetBranchCo
         {
             Id = dbBranchConfiguration.Id,
             BranchId = dbBranchConfiguration.BranchId,
-            MaxTickets = dbBranchConfiguration.MaxTickets,
+            MaxTicketsPerDay = dbBranchConfiguration.MaxTicketsPerDay,
             OpenTime = dbBranchConfiguration.OpenTime,
             CloseTime = dbBranchConfiguration.CloseTime,
+            BreakStartTime = dbBranchConfiguration.BreakStartTime,
+            BreakEndTime = dbBranchConfiguration.BreakEndTime,
             CreatedAt = dbBranchConfiguration.CreatedAt
         };
 

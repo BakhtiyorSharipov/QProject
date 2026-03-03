@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using QApplication.Responses;
 using QBranchService.Application.Requests;
 using QBranchService.Application.Response;
 using QBranchService.Application.UseCases.Branches.Commands.CreateBranch;
@@ -25,7 +26,7 @@ public class BranchController: ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<BranchResponseModel>>> GetAll([FromQuery] int pageNumber = 1)
+    public async Task<ActionResult<PagedResponse<BranchResponseModel>>> GetAll([FromQuery] int pageNumber = 1)
     {
         _logger.LogInformation("Received request to get all branches. PageNumber: {PageNumber}, PageSize: 15",
             pageNumber);

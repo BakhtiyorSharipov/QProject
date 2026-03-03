@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using QApplication.Responses;
 using QBranchService.Application.Requests;
 using QBranchService.Application.Response;
 using QBranchService.Application.UseCases.BranchConfigurations.Commands.CreateBranchConfiguration;
@@ -25,7 +26,7 @@ public class BranchConfigurationController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<BranchConfigurationResponseModel>>> GetAll(
+    public async Task<ActionResult<PagedResponse<BranchConfigurationResponseModel>>> GetAll(
         [FromQuery] int pageNumber = 1)
     {
         _logger.LogInformation(
@@ -51,7 +52,7 @@ public class BranchConfigurationController : ControllerBase
     public async Task<IActionResult> PostAsync([FromBody] CreateBranchConfigurationCommand request)
     {
         _logger.LogInformation("Received request to create new branch configuration. MaxTickets: {maxTickets}",
-            request.MaxTickets);
+            request.MaxTicketsPerDay);
         var createBranchConfiguration = await _mediator.Send(request);
         _logger.LogInformation("Successfully created branch configuration with Id: {branchId}",
             createBranchConfiguration.Id);
@@ -63,7 +64,12 @@ public class BranchConfigurationController : ControllerBase
     {
         _logger.LogInformation("Received request to update branch configuration with Id: {branchId}", id);
 
-        var command = new UpdateBranchConfigurationCommand(id, request.MaxTickets, request.OpenTime, request.CloseTime);
+        var command = new UpdateBranchConfigurationCommand(id,
+            request.MaxTicketsPerDay,
+            request.OpenTime,
+            request.CloseTime,
+            request.BreakStartTime,
+            request.BreakEndTime);
 
         var update = await _mediator.Send(command);
         _logger.LogInformation("Successfully updated branch configuration with Id: {branchId}", id);

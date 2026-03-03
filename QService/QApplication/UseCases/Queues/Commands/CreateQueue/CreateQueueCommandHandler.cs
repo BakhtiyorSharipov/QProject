@@ -7,10 +7,9 @@ using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
 using QApplication.Extensions;
 using QApplication.Interfaces.Data;
-using QApplication.Messages;
 using QApplication.Responses;
+using QBranchService.Contracts.Interfaces;
 using QBranchService.Contracts.Requests;
-using QBranchService.Contracts.Responses;
 using QContracts.QueueEvents;
 using QContracts.QueueEvents.Enums;
 using QDomain.Enums;
@@ -23,45 +22,107 @@ public class CreateQueueCommandHandler : IRequestHandler<CreateQueueCommand, Add
     private readonly ILogger<CreateQueueCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly IPublishEndpoint _publishEndpoint;
-    private readonly IRequestClient<BranchIdsRequest> _validationClient;
     private readonly IHttpContextAccessor _contextAccessor;
+    private readonly IBranchService _branchService;
 
     public CreateQueueCommandHandler(ILogger<CreateQueueCommandHandler> logger, IQueueApplicationDbContext dbContext,
-        IPublishEndpoint publishEndpoint, IRequestClient<BranchIdsRequest> validationClient, IHttpContextAccessor contextAccessor)
+        IPublishEndpoint publishEndpoint,
+        IHttpContextAccessor contextAccessor,
+        IBranchService branchService)
     {
         _logger = logger;
         _dbContext = dbContext;
         _publishEndpoint = publishEndpoint;
-        _validationClient = validationClient;
         _contextAccessor = contextAccessor;
+        _branchService = branchService;
     }
 
     public async Task<AddQueueResponseModel> Handle(CreateQueueCommand request, CancellationToken cancellationToken)
     {
-
         var currentCustomer = await _contextAccessor.CurrentCustomer(_dbContext, cancellationToken);
         var customerId = currentCustomer.Id;
-        
+
         _logger.LogInformation("Adding new queue for EmployeeId {id}", request.EmployeeId);
 
-        var validationResponse = await _validationClient.GetResponse<BranchIdsResponse>(new ValidateBranchIdsMessage
+
+        var validationResponse = await _branchService.ValidateQueueCreationAsync(
+            new QueueCreationValidationRequest
+            {
+                RequestId = Guid.NewGuid(),
+                BranchId = request.BranchId,
+                RequestedStartTime = request.StartTime
+            });
+
+        if (!validationResponse.IsValid)
+        {
+            _logger.LogWarning("Branch validation failed: {ErrorMessage}", validationResponse.ErrorMessage);
+            throw new HttpStatusCodeException(HttpStatusCode.BadRequest, validationResponse.ErrorMessage!);
+        }
+
+        
+        var ticketsToday = await _dbContext.Queues
+            .CountAsync(q => q.BranchId == request.BranchId &&
+                             q.StartTime.Date == request.StartTime.Date &&
+                             q.Status != QueueStatus.CancelledByEmployee &&
+                             q.Status != QueueStatus.CancelledByCustomer,
+                cancellationToken);
+
+        if (ticketsToday >= validationResponse.MaxTicketsPerDay)
+        {
+            _logger.LogWarning("Daily ticket limit reached for Branch {BranchId}. Today: {TicketsToday}/{MaxTickets}",
+                request.BranchId, ticketsToday, validationResponse.MaxTicketsPerDay);
+
+            throw new HttpStatusCodeException(HttpStatusCode.BadRequest,
+                $"Maximum tickets for today ({validationResponse.MaxTicketsPerDay}) has been reached");
+        }
+
+        _logger.LogInformation("Branch validation passed. Tickets today: {TicketsToday}/{MaxTickets}",
+            ticketsToday, validationResponse.MaxTicketsPerDay);
+
+
+        var companyResult = await _branchService.CheckCompanyId(new CompanyRequest
+        {
+            RequestId = Guid.NewGuid(),
+            CompanyId = request.CompanyId,
+            RequestedAt = DateTimeOffset.UtcNow
+        });
+
+        if (!companyResult.IsValid)
+        {
+            _logger.LogInformation("Company with Id {CompanyId} not found", request.CompanyId);
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound,
+                companyResult.ErrorMessage ?? "Company not found");
+        }
+
+        var branchResult = await _branchService.CheckBranchId(new BranchRequest
         {
             RequestId = Guid.NewGuid(),
             CompanyId = request.CompanyId,
             BranchId = request.BranchId,
+            RequestedAt = DateTimeOffset.UtcNow
+        });
+
+        if (!branchResult.IsValid)
+        {
+            _logger.LogInformation("Branch with Id {BranchId} not found", request.BranchId);
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound,
+                companyResult.ErrorMessage ?? "Branch not found");
+        }
+
+        var companyServiceResult = await _branchService.CheckCompanyServiceId(new CompanyServiceRequest
+        {
+            RequestId = Guid.NewGuid(),
+            CompanyId = request.CompanyId,
             CompanyServiceId = request.ServiceId,
             RequestedAt = DateTimeOffset.UtcNow
-        }, cancellationToken, RequestTimeout.After(s: 5));
+        });
 
-        if (!validationResponse.Message.IsValid)
+        if (!companyServiceResult.IsValid)
         {
-            _logger.LogWarning("Validation failed: {ErrorMessage}", validationResponse.Message.ErrorMessage);
-            throw new HttpStatusCodeException(HttpStatusCode.BadRequest,
-                validationResponse.Message.ErrorMessage ?? "Invalid companyId or BranchId or CompanyServiceId");
+            _logger.LogInformation("CompanyService with Id {CompanyServiceId} not found", request.ServiceId);
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound,
+                companyResult.ErrorMessage ?? "CompanyService not found");
         }
-        
-        _logger.LogInformation("IDs validated successfully for Company {CompanyId}, Branch {BranchId}, Service {ServiceId}",
-            request.CompanyId, request.BranchId, request.ServiceId);
 
         var schedule = await _dbContext.AvailabilitySchedules.Where(s => s.EmployeeId == request.EmployeeId)
             .ToListAsync(cancellationToken);
@@ -71,6 +132,11 @@ public class CreateQueueCommandHandler : IRequestHandler<CreateQueueCommand, Add
                 request.EmployeeId);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(EmployeeEntity));
         }
+
+        _logger.LogInformation(
+            "IDs validated successfully for Company {CompanyId}, Branch {BranchId}, Service {ServiceId}",
+            request.CompanyId, request.BranchId, request.ServiceId);
+
 
         var customer =
             await _dbContext.Customers.FirstOrDefaultAsync(s => s.Id == customerId, cancellationToken);
@@ -83,12 +149,13 @@ public class CreateQueueCommandHandler : IRequestHandler<CreateQueueCommand, Add
         var employee = await _dbContext.Employees
             .Where(s => s.CompanyId == request.CompanyId)
             .FirstOrDefaultAsync(s => s.Id == request.EmployeeId, cancellationToken);
-        if (employee==null)
+        if (employee == null)
         {
             _logger.LogWarning("Employee with Id {EmployeeId} not found for this company ", request.EmployeeId);
-            throw new HttpStatusCodeException(HttpStatusCode.NotFound, $"Employee with Id {request.EmployeeId} not found for this company");
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound,
+                $"Employee with Id {request.EmployeeId} not found for this company");
         }
-        
+
 
         _logger.LogDebug("Checking if time slot {startTime} is available for 30- minute booking",
             request.StartTime);
@@ -190,4 +257,3 @@ public class CreateQueueCommandHandler : IRequestHandler<CreateQueueCommand, Add
         return response;
     }
 }
-
