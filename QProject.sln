@@ -72,6 +72,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "QBranchService.Contracts", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QBranchService.Contracts", "QBranchService\QBranchService.Contracts\QBranchService.Contracts\QBranchService.Contracts.csproj", "{12FA537F-32E1-4FD6-919F-33D078A9244E}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "QBranchService.IntegrationTest", "QBranchService.IntegrationTest", "{F5A4373E-347F-411D-84A0-92F5AE083044}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QBranchService.API.IntegrationTest", "QBranchService\QBranchService.API.IntegrationTest\QBranchService.API.IntegrationTest.csproj", "{C1513417-17BA-4BC5-AD11-C4E49B35B400}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -142,6 +146,10 @@ Global
 		{12FA537F-32E1-4FD6-919F-33D078A9244E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{12FA537F-32E1-4FD6-919F-33D078A9244E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{12FA537F-32E1-4FD6-919F-33D078A9244E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C1513417-17BA-4BC5-AD11-C4E49B35B400}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C1513417-17BA-4BC5-AD11-C4E49B35B400}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C1513417-17BA-4BC5-AD11-C4E49B35B400}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C1513417-17BA-4BC5-AD11-C4E49B35B400}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{5783EC36-5C9E-4A3F-A8D3-48BABDBF164E} = {6776BC61-9590-4E29-989E-19161C4F98F7}
@@ -175,5 +183,7 @@ Global
 		{4D51C494-9129-442F-B747-C7862F6ADFDD} = {F77A9A43-CE50-42AE-8EF6-7F6BA0F5AEFF}
 		{98633760-8CBD-4E54-9F45-1CA38F982EA7} = {ADE39C35-95E6-4524-95E7-A263B1CCCB7A}
 		{12FA537F-32E1-4FD6-919F-33D078A9244E} = {98633760-8CBD-4E54-9F45-1CA38F982EA7}
+		{F5A4373E-347F-411D-84A0-92F5AE083044} = {ADE39C35-95E6-4524-95E7-A263B1CCCB7A}
+		{C1513417-17BA-4BC5-AD11-C4E49B35B400} = {F5A4373E-347F-411D-84A0-92F5AE083044}
 	EndGlobalSection
 EndGlobal
