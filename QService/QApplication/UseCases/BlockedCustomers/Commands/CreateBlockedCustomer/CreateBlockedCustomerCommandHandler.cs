@@ -7,8 +7,8 @@ using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
 using QApplication.Extensions;
 using QApplication.Interfaces.Data;
-using QApplication.Messages;
 using QApplication.Responses;
+using QBranchService.Contracts.Interfaces;
 using QBranchService.Contracts.Requests;
 using QBranchService.Contracts.Responses;
 using QDomain.Models;
@@ -19,15 +19,17 @@ public class CreateBlockedCustomerCommandHandler: IRequestHandler<CreateBlockedC
 {
     private readonly ILogger<CreateBlockedCustomerCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
+    private readonly IBranchService _branchService;
     private readonly IRequestClient<CompanyRequest> _validationClient;
     private readonly IHttpContextAccessor _contextAccessor;
 
-    public CreateBlockedCustomerCommandHandler(ILogger<CreateBlockedCustomerCommandHandler> logger, IQueueApplicationDbContext dbContext, IRequestClient<CompanyRequest> validationClient, IHttpContextAccessor contextAccessor)
+    public CreateBlockedCustomerCommandHandler(ILogger<CreateBlockedCustomerCommandHandler> logger, IQueueApplicationDbContext dbContext, IRequestClient<CompanyRequest> validationClient, IHttpContextAccessor contextAccessor, IBranchService branchService)
     {
         _logger = logger;
         _dbContext = dbContext;
         _validationClient = validationClient;
         _contextAccessor = contextAccessor;
+        _branchService = branchService;
     }
 
     public async Task<BlockedCustomerResponseModel> Handle(CreateBlockedCustomerCommand request, CancellationToken cancellationToken)
@@ -45,19 +47,19 @@ public class CreateBlockedCustomerCommandHandler: IRequestHandler<CreateBlockedC
         var currentEmployee = await _contextAccessor.CurrentEmployee(_dbContext, cancellationToken);
         var companyId = currentEmployee.CompanyId;
 
-        var validationResponse = await _validationClient.GetResponse<CompanyResponse>(new ValidateCompanyMessage
+        var validationResponse = await _branchService.CheckCompanyId(new CompanyRequest
         {
             RequestId = Guid.NewGuid(),
             CompanyId = companyId,
             RequestedAt = DateTimeOffset.UtcNow
-        }, cancellationToken, RequestTimeout.After(s:5));
+        });
 
-        if (!validationResponse.Message.IsValid)
+        if (!validationResponse.IsValid)
         {
             _logger.LogWarning("Company validation failed: {ErrorMessage}", 
-                validationResponse.Message.ErrorMessage);
+                validationResponse.ErrorMessage);
             throw new HttpStatusCodeException(HttpStatusCode.BadRequest,
-                validationResponse.Message.ErrorMessage ?? "Invalid company");
+                validationResponse.ErrorMessage ?? "Invalid company");
         }
         
         var existingBlock = await _dbContext.BlockedCustomers

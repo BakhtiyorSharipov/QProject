@@ -48,7 +48,6 @@ public class QueueEventConsumer : IConsumer<QueueEvent>
 
                 await HandleStartingSoonEvent(evt);
 
-                _logger.LogInformation("Published notification event for QueueId {QueueId}", evt.QueueId);
                 break;
 
             case QueueEventType.Updated:

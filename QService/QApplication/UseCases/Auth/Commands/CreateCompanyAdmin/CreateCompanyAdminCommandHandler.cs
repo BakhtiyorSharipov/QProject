@@ -1,15 +1,12 @@
 using System.Net;
-using MassTransit;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
-using QApplication.Messages;
 using QBranchService.Contracts.Interfaces;
 using QBranchService.Contracts.Requests;
-using QBranchService.Contracts.Responses;
 using QDomain.Enums;
 using QDomain.Models;
 
