@@ -9,6 +9,7 @@ using QApplication.Exceptions;
 using QApplication.Extensions;
 using QApplication.Interfaces.Data;
 using QApplication.Messages;
+using QBranchService.Contracts.Interfaces;
 using QBranchService.Contracts.Requests;
 using QBranchService.Contracts.Responses;
 using QDomain.Enums;
@@ -21,18 +22,19 @@ public class CreateEmployeeRoleCommandHandler : IRequestHandler<CreateEmployeeRo
     private readonly ILogger<CreateEmployeeRoleCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly IPasswordHasher<UserEntity> _passwordHasher;
-    private readonly IRequestClient<BranchIdsRequest> _validationClient;
+    private readonly IBranchService _branchService;
     private readonly IHttpContextAccessor _contextAccessor;
 
     public CreateEmployeeRoleCommandHandler(ILogger<CreateEmployeeRoleCommandHandler> logger,
         IQueueApplicationDbContext dbContext, IPasswordHasher<UserEntity> passwordHasher,
-        IRequestClient<BranchIdsRequest> validationClient, IHttpContextAccessor contextAccessor)
+        IHttpContextAccessor contextAccessor,
+        IBranchService branchService)
     {
         _logger = logger;
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
-        _validationClient = validationClient;
         _contextAccessor = contextAccessor;
+        _branchService = branchService;
     }
 
     public async Task<UserEntity> Handle(CreateEmployeeRoleCommand request, CancellationToken cancellationToken)
@@ -69,28 +71,55 @@ public class CreateEmployeeRoleCommandHandler : IRequestHandler<CreateEmployeeRo
                 "ServiceId is required for creating an employee");
         }
 
-        var currentEmployee = await _contextAccessor.CurrentEmployee(_dbContext,cancellationToken);
+        var currentEmployee = await _contextAccessor.CurrentEmployee(_dbContext, cancellationToken);
 
         var companyId = currentEmployee.CompanyId;
 
-        var validationResponse = await _validationClient.GetResponse<BranchIdsResponse>(
-            new ValidateBranchIdsMessage()
-            {
-                RequestId = Guid.NewGuid(),
-                CompanyId = companyId,
-                BranchId = request.BranchId,
-                CompanyServiceId = request.ServiceId.Value,
-                RequestedAt = DateTimeOffset.UtcNow
-            }, cancellationToken, RequestTimeout.After(s: 15));
 
-        if (!validationResponse.Message.IsValid)
+        var companyResult = await _branchService.CheckCompanyId(new CompanyRequest
         {
-            _logger.LogWarning("Validation failed: {ErrorMessage}", validationResponse.Message.ErrorMessage);
-            throw new HttpStatusCodeException(HttpStatusCode.BadRequest,
-                validationResponse.Message.ErrorMessage ?? "Invalid companyId or BranchId or CompanyServiceId");
+            RequestId = Guid.NewGuid(),
+            CompanyId = companyId,
+            RequestedAt = DateTimeOffset.UtcNow
+        });
+
+        if (!companyResult.IsValid)
+        {
+            _logger.LogInformation("Company with Id {CompanyId} not found", companyId);
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound,
+                companyResult.ErrorMessage ?? "Company not found");
         }
-        
-        
+
+        var branchResult = await _branchService.CheckBranchId(new BranchRequest
+        {
+            RequestId = Guid.NewGuid(),
+            CompanyId = companyId,
+            BranchId = request.BranchId,
+            RequestedAt = DateTimeOffset.UtcNow
+        });
+
+        if (!branchResult.IsValid)
+        {
+            _logger.LogInformation("Branch with Id {BranchId} not found", request.BranchId);
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound,
+                companyResult.ErrorMessage ?? "Branch not found");
+        }
+
+        var companyServiceResult = await _branchService.CheckCompanyServiceId(new CompanyServiceRequest
+        {
+            RequestId = Guid.NewGuid(),
+            CompanyId = companyId,
+            CompanyServiceId = request.ServiceId.Value,
+            RequestedAt = DateTimeOffset.UtcNow
+        });
+
+        if (!companyServiceResult.IsValid)
+        {
+            _logger.LogInformation("CompanyService with Id {CompanyServiceId} not found", request.ServiceId);
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound,
+                companyResult.ErrorMessage ?? "CompanyService not found");
+        }
+
 
         var employee = new EmployeeEntity
         {

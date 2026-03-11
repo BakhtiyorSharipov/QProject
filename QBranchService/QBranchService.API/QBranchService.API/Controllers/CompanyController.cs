@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using QApplication.Responses;
 using QBranchService.Application.Requests;
 using QBranchService.Application.Response;
 using QBranchService.Application.UseCases.Companies.Commands.CreateCompany;
@@ -24,7 +25,7 @@ public class CompanyController : ControllerBase
     }
     
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<CompanyResponseModel>>> GetAllAsync([FromQuery]int pageNumber=1)
+    public async Task<ActionResult<PagedResponse<CompanyResponseModel>>> GetAllAsync([FromQuery]int pageNumber=1)
     {
         _logger.LogInformation("Received request to get all companies. PageNumber: {PageNumber}, PageSize: 15",
             pageNumber);

@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using QApplication.Responses;
 using QBranchService.Application.Requests;
 using QBranchService.Application.Response;
 using QBranchService.Application.UseCases.CompanyServices.Commands.CreateService;
@@ -24,7 +25,7 @@ public class CompanyServiceController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<CompanyServiceResponseModel>>> GetAllAsync([FromQuery]int pageNumber=1)
+    public async Task<ActionResult<PagedResponse<CompanyServiceResponseModel>>> GetAllAsync([FromQuery]int pageNumber=1)
     {
         _logger.LogInformation("Received request to get all services. PageNumber: {PageNumber}, PageSize: 15",
             pageNumber);

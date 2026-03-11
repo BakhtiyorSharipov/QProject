@@ -41,9 +41,11 @@ public class GetAllBranchConfigurationsQueryHandler : IRequestHandler<GetAllBran
         {
             Id = s.Id,
             BranchId = s.BranchId,
-            MaxTickets = s.MaxTickets,
+            MaxTicketsPerDay = s.MaxTicketsPerDay,
             OpenTime = s.OpenTime,
             CloseTime = s.CloseTime,
+            BreakStartTime = s.BreakStartTime,
+            BreakEndTime = s.BreakEndTime,
             CreatedAt = s.CreatedAt
         }).ToList();
 

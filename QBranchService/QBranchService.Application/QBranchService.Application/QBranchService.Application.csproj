@@ -7,6 +7,9 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="FluentValidation" Version="12.1.0" />
+      <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
+      <PackageReference Include="MagicOnion.Server" Version="7.10.0" />
       <PackageReference Include="MassTransit" Version="8.5.7" />
       <PackageReference Include="MassTransit.Abstractions" Version="8.5.7" />
       <PackageReference Include="MassTransit.RabbitMQ" Version="8.5.7" />

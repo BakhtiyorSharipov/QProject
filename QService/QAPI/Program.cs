@@ -1,5 +1,8 @@
+using System.Net;
 using System.Text;
 using FluentValidation.AspNetCore;
+using Grpc.Net.Client;
+using MagicOnion.Client;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -14,8 +17,7 @@ using QApplication.Interfaces.Data;
 using QApplication.Services;
 using QApplication.Services.BackgroundJob;
 using QApplication.Validators.AuthValidators;
-using QBranchService.Contracts.Requests;
-using QContracts.QueueEvents;
+using QBranchService.Contracts.Interfaces;
 using QDomain.Models;
 using QInfrastructure.Consumers.Cache;
 using QInfrastructure.Consumers.QueueConsumers;
@@ -26,6 +28,37 @@ using StackExchange.Redis;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+
+builder.Services.AddSingleton(provider =>
+{
+    var branchServiceUrl = builder.Configuration["Services:BranchService"]
+                           ?? "http://localhost:5002";
+
+    var logger = provider.GetRequiredService<ILogger<Program>>();
+    logger.LogInformation("Connecting to BranchService gRPC at {Url}", branchServiceUrl);
+
+    var channel = GrpcChannel.ForAddress(branchServiceUrl, new GrpcChannelOptions
+    {
+        LoggerFactory = provider.GetService<ILoggerFactory>(),
+        HttpVersion = HttpVersion.Version20,
+        HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact
+    });
+
+    return channel;
+});
+
+builder.Services.AddSingleton<IBranchService>(provider =>
+{
+    var channel = provider.GetRequiredService<GrpcChannel>();
+    var logger = provider.GetRequiredService<ILogger<IBranchService>>();
+
+    logger.LogInformation("Creating MagicOnion client for IBranchValidationService");
+
+    return MagicOnionClient.Create<IBranchService>(channel);
+});
+
+
 
 builder.Services.AddApplicationService();
 builder.Services.AddFluentValidation(fv =>
@@ -53,9 +86,9 @@ builder.Services.AddHostedService<QueueStartingSoonScheduler>();
 
 builder.Services.AddMassTransit(x =>
 {
-    x.AddRequestClient<BranchIdsRequest>();
-    x.AddRequestClient<CompanyRequest>();
-    x.AddRequestClient<CompanyServiceRequest>();
+    // x.AddRequestClient<BranchIdsRequest>();
+    // x.AddRequestClient<CompanyRequest>();
+    // x.AddRequestClient<CompanyServiceRequest>();
     x.AddConsumer<CompanyCacheResetConsumer>();
     x.AddConsumer<QueueEventConsumer>();
     x.UsingRabbitMq((context, cfg) =>

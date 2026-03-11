@@ -35,9 +35,11 @@ public class
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(BranchConfigurationEntity));
         }
 
-        dbBranchConfiguration.MaxTickets = request.MaxTickest;
+        dbBranchConfiguration.MaxTicketsPerDay = request.MaxTicketsPerDay;
         dbBranchConfiguration.OpenTime = request.OpenTime;
         dbBranchConfiguration.CloseTime = request.CloseTime;
+        dbBranchConfiguration.BreakStartTime = request.BreakStartTime;
+        dbBranchConfiguration.BreakEndTime = request.BreakEndTime;
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -47,9 +49,11 @@ public class
         {
             Id = dbBranchConfiguration.Id,
             BranchId = dbBranchConfiguration.BranchId,
-            MaxTickets = dbBranchConfiguration.MaxTickets,
+            MaxTicketsPerDay = dbBranchConfiguration.MaxTicketsPerDay,
             OpenTime = dbBranchConfiguration.OpenTime,
             CloseTime = dbBranchConfiguration.CloseTime,
+            BreakStartTime = dbBranchConfiguration.BreakStartTime,
+            BreakEndTime = dbBranchConfiguration.BreakEndTime,
             CreatedAt = dbBranchConfiguration.CreatedAt
         };
 

@@ -24,9 +24,11 @@ public class CreateBranchConfigurationCommandHandler: IRequestHandler<CreateBran
         var branchConfiguration = new BranchConfigurationEntity
         {
             BranchId = request.BranchId,
-            MaxTickets = request.MaxTickets,
+            MaxTicketsPerDay = request.MaxTicketsPerDay,
             OpenTime = request.OpenTime,
             CloseTime = request.CloseTime,
+            BreakStartTime = request.BreakStartTime,
+            BreakEndTime = request.BreakEndTime,
             CreatedAt = DateTimeOffset.UtcNow
         };
 
@@ -39,9 +41,11 @@ public class CreateBranchConfigurationCommandHandler: IRequestHandler<CreateBran
         {
             Id = branchConfiguration.Id,
             BranchId = branchConfiguration.BranchId,
-            MaxTickets = branchConfiguration.MaxTickets,
+            MaxTicketsPerDay = branchConfiguration.MaxTicketsPerDay,
             OpenTime = branchConfiguration.OpenTime,
             CloseTime = branchConfiguration.CloseTime,
+            BreakStartTime = branchConfiguration.BreakStartTime,
+            BreakEndTime = branchConfiguration.BreakEndTime,
             CreatedAt = branchConfiguration.CreatedAt
         };
 

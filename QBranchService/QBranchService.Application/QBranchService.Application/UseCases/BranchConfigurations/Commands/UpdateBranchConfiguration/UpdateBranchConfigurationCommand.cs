@@ -5,6 +5,8 @@ namespace QBranchService.Application.UseCases.BranchConfigurations.Commands.Upda
 
 public record UpdateBranchConfigurationCommand(
     int Id,
-    int MaxTickest,
+    int MaxTicketsPerDay,
     TimeOnly OpenTime,
-    TimeOnly CloseTime): IRequest<BranchConfigurationResponseModel>;
+    TimeOnly CloseTime,
+    TimeOnly? BreakStartTime,
+    TimeOnly? BreakEndTime): IRequest<BranchConfigurationResponseModel>;
