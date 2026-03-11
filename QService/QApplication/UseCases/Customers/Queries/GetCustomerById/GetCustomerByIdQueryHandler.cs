@@ -13,7 +13,13 @@ public class GetCustomerByIdQueryHandler: IRequestHandler<GetCustomerByIdQuery, 
 {
     private readonly ILogger<GetCustomerByIdQueryHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
-    
+
+    public GetCustomerByIdQueryHandler(ILogger<GetCustomerByIdQueryHandler> logger, IQueueApplicationDbContext dbContext)
+    {
+        _logger = logger;
+        _dbContext = dbContext;
+    }
+
     public async Task<CustomerResponseModel> Handle(GetCustomerByIdQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Getting customer with Id {CustomerId}", request.Id);

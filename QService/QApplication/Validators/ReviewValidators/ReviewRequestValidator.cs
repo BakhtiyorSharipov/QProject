@@ -9,9 +9,6 @@ public class ReviewRequestValidator: AbstractValidator<CreateReviewCommand>
     {
         RuleFor(x => x.QueueId)
             .GreaterThan(0).WithMessage("QueueId must be greater than 0");
-        
-        RuleFor(x=>x.CustomerId)
-            .GreaterThan(0).WithMessage("CustomerId must be greater than 0");
 
         RuleFor(x => x.Grade)
             .InclusiveBetween(0, 5).WithMessage("Grade must be between 1 to 5");

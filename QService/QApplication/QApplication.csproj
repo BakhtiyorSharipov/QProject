@@ -7,6 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\QBranchService\QBranchService.Contracts\QBranchService.Contracts\QBranchService.Contracts.csproj" />
       <ProjectReference Include="..\..\QContracts\QContracts.csproj" />
       <ProjectReference Include="..\QDomain\QDomain.csproj" />
     </ItemGroup>

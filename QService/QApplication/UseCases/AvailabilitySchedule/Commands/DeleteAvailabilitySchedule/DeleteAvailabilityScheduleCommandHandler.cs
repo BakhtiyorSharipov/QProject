@@ -1,8 +1,10 @@
 using System.Net;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
+using QApplication.Extensions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QDomain.Models;
@@ -13,12 +15,14 @@ public class DeleteAvailabilityScheduleCommandHandler : IRequestHandler<DeleteAv
 {
     private readonly ILogger<DeleteAvailabilityScheduleCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
+    private readonly IHttpContextAccessor _contextAccessor;
 
     public DeleteAvailabilityScheduleCommandHandler(ILogger<DeleteAvailabilityScheduleCommandHandler> logger,
-        IQueueApplicationDbContext dbContext)
+        IQueueApplicationDbContext dbContext, IHttpContextAccessor contextAccessor)
     {
         _logger = logger;
         _dbContext = dbContext;
+        _contextAccessor = contextAccessor;
     }
 
     public async Task<bool> Handle(DeleteAvailabilityScheduleCommand request, CancellationToken cancellationToken)
@@ -26,8 +30,12 @@ public class DeleteAvailabilityScheduleCommandHandler : IRequestHandler<DeleteAv
         _logger.LogInformation("Deleting schedule with Id: {id}, DeleteAllSlots: {delete}", request.Id,
             request.DeleteAllSlots);
 
+        var currentEmployee =await _contextAccessor.CurrentEmployee(_dbContext, cancellationToken);
+        
         var dbAvailabilitySchedule =
-            await _dbContext.AvailabilitySchedules.FirstOrDefaultAsync(s => s.Id == request.Id, cancellationToken);
+            await _dbContext.AvailabilitySchedules
+                .Where(s=>s.EmployeeId== currentEmployee.Id)
+                .FirstOrDefaultAsync(s => s.Id == request.Id, cancellationToken);
 
         if (dbAvailabilitySchedule == null)
         {

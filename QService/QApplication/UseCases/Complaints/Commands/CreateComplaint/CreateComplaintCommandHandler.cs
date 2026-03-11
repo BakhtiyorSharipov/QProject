@@ -1,8 +1,10 @@
 using System.Net;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
+using QApplication.Extensions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QDomain.Enums;
@@ -14,26 +16,25 @@ public class CreateComplaintCommandHandler: IRequestHandler<CreateComplaintComma
 {
     private readonly ILogger<CreateComplaintCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
+    private readonly IHttpContextAccessor _contextAccessor;
 
-    public CreateComplaintCommandHandler(ILogger<CreateComplaintCommandHandler> logger, IQueueApplicationDbContext dbContext)
+    public CreateComplaintCommandHandler(ILogger<CreateComplaintCommandHandler> logger, IQueueApplicationDbContext dbContext, IHttpContextAccessor contextAccessor)
     {
         _logger = logger;
         _dbContext = dbContext;
+        _contextAccessor = contextAccessor;
     }
 
     public async Task<ComplaintResponseModel> Handle(CreateComplaintCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Adding new complaint to this queue Id {queueId}", request.QueueId);
 
-        var customerId = await _dbContext.Customers.FirstOrDefaultAsync(s => s.Id == request.CustomerId, cancellationToken);
-        if (customerId == null)
-        {
-            _logger.LogWarning("Customer with Id {customerId} not found for adding new complaint.",
-                request.CustomerId);
-            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(CustomerEntity));
-        }
+        var currentCustomer = await _contextAccessor.CurrentCustomer(_dbContext, cancellationToken);
+        
 
-        var queueId = await _dbContext.Queues.FirstOrDefaultAsync(s => s.Id == request.QueueId, cancellationToken);
+        var queueId = await _dbContext.Queues
+            .Where(s=>s.CustomerId== currentCustomer.Id)
+            .FirstOrDefaultAsync(s => s.Id == request.QueueId, cancellationToken);
         if (queueId == null)
         {
             _logger.LogWarning("Queue with Id {queueId} not found for adding new complaint,", request.QueueId);
@@ -51,7 +52,7 @@ public class CreateComplaintCommandHandler: IRequestHandler<CreateComplaintComma
 
         var complaints = await _dbContext.Complaints.Where(s => s.QueueId == request.QueueId)
             .ToListAsync(cancellationToken);
-        var isDouble = complaints.Any(s => s.CustomerId == customerId.Id);
+        var isDouble = complaints.Any(s => s.CustomerId == currentCustomer.Id);
         if (isDouble)
         {
             _logger.LogError("Overlapping complaint for this queue Id {queueId}", request.QueueId);
@@ -60,7 +61,7 @@ public class CreateComplaintCommandHandler: IRequestHandler<CreateComplaintComma
 
         var complaint = new ComplaintEntity
         {
-            CustomerId = request.CustomerId,
+            CustomerId = currentCustomer.Id,
             QueueId = request.QueueId,
             ComplaintText = request.ComplaintText,
             ComplaintStatus = ComplaintStatus.Pending,
@@ -76,6 +77,7 @@ public class CreateComplaintCommandHandler: IRequestHandler<CreateComplaintComma
             Id = complaint.Id,
             CustomerId = complaint.CustomerId,
             QueueId = complaint.QueueId,
+            EmployeeId = complaint.Queue.EmployeeId,
             ComplaintText = complaint.ComplaintText,
             ComplaintStatus = complaint.ComplaintStatus
         };

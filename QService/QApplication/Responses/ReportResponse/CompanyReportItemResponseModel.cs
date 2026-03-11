@@ -17,5 +17,5 @@ public class CompanyReportItemResponseModel
     
     public int TotalCustomers { get; set; }
     public int BlockedCustomers { get; set; }
-    public List<string> MostPopularServices { get; set; } = new();
+    // public List<string> MostPopularServices { get; set; } = new();
 }

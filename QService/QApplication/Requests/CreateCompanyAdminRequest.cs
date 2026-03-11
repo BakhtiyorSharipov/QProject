@@ -2,7 +2,7 @@ namespace QApplication.Requests;
 
 public class CreateCompanyAdminRequest
 {
-    public int ServiceId { get; set; }
+    public int CompanyId { get; set; }
     public string EmailAddress { get; set; } = null!; 
     public string Password { get; set; } = null!;
     public string FirstName { get; set; } = null!;

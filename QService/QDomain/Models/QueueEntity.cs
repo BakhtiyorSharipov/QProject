@@ -6,6 +6,8 @@ public class QueueEntity : BaseEntity
 {
     public int CompanyId { get; set; }
     public int BranchId { get; set; }
+    public int ServiceId { get; set; }
+    
 
     public DateTimeOffset StartTime { get; set; }
 
@@ -23,6 +25,5 @@ public class QueueEntity : BaseEntity
     public int CustomerId { get; set; }
     public CustomerEntity Customer { get; set; }
 
-    public int ServiceId { get; set; }
-    public ServiceEntity Service { get; set; }
+    
 }

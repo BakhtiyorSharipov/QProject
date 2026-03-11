@@ -1,9 +1,11 @@
 using System.Net;
 using MassTransit;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
+using QApplication.Extensions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QContracts.QueueEvents;
@@ -18,25 +20,32 @@ public class UpdateQueueStatusCommandHandler : IRequestHandler<UpdateQueueStatus
     private readonly ILogger<UpdateQueueStatusCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly IPublishEndpoint _publishEndpoint;
+    private readonly IHttpContextAccessor _contextAccessor;
 
     public UpdateQueueStatusCommandHandler(ILogger<UpdateQueueStatusCommandHandler> logger,
-        IQueueApplicationDbContext dbContext, IPublishEndpoint publishEndpoint)
+        IQueueApplicationDbContext dbContext, IPublishEndpoint publishEndpoint, IHttpContextAccessor contextAccessor)
     {
         _logger = logger;
         _dbContext = dbContext;
         _publishEndpoint = publishEndpoint;
+        _contextAccessor = contextAccessor;
     }
 
     public async Task<UpdateQueueStatusResponseModel> Handle(UpdateQueueStatusCommand request,
         CancellationToken cancellationToken)
     {
+
+        var currentEmployee = await _contextAccessor.CurrentEmployee(_dbContext, cancellationToken);
+        var employeeId = currentEmployee.Id;
         _logger.LogInformation("Updating queue status for QueueId: {QueueId} to {NewStatus}", request.QueueId,
             request.newStatus);
-        var dbQueue = await _dbContext.Queues.FirstOrDefaultAsync(s => s.Id == request.QueueId, cancellationToken);
+        var dbQueue = await _dbContext.Queues
+            .Where(s=>s.EmployeeId==employeeId)
+            .FirstOrDefaultAsync(s => s.Id == request.QueueId, cancellationToken);
         if (dbQueue == null)
         {
-            _logger.LogWarning("Queue with Id {QueueId} not found for status update", request.QueueId);
-            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(QueueEntity));
+            _logger.LogWarning("Queue with Id {QueueId} not found for this employee", request.QueueId);
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, $"Queue with Id {request.QueueId} not found for this employee");
         }
 
         _logger.LogDebug("Current queue status: {CurrentStatus}, requested new status: {NewStatus}", dbQueue.Status,
@@ -107,14 +116,14 @@ public class UpdateQueueStatusCommandHandler : IRequestHandler<UpdateQueueStatus
                 .ToListAsync(cancellationToken);
 
             var count = queuesByCustomer.Count(s => s.Status == QueueStatus.DidNotCome);
-            if (count >= 3 && !Exists(dbQueue.CustomerId, dbQueue.Service.CompanyId))
+            if (count >= 3 && !Exists(dbQueue.CustomerId, dbQueue.CompanyId))
             {
                 _logger.LogWarning("CustomerId {id} automatically blocked for CompanyId {companyId}: 3+ DidNotCome",
-                    dbQueue.CustomerId, dbQueue.Service.CompanyId);
+                    dbQueue.CustomerId, dbQueue.CompanyId);
                 BlockedCustomerEntity blockedCustomer = new BlockedCustomerEntity
                 {
                     CustomerId = dbQueue.CustomerId,
-                    CompanyId = dbQueue.Service.CompanyId,
+                    CompanyId = dbQueue.CompanyId,
                     DoesBanForever = true,
                     Reason = "Did not come 3 times",
                     BannedUntil = DateTime.MaxValue,
@@ -200,6 +209,8 @@ public class UpdateQueueStatusCommandHandler : IRequestHandler<UpdateQueueStatus
         var response = new UpdateQueueStatusResponseModel
         {
             Id = dbQueue.Id,
+            CompanyId = dbQueue.CompanyId,
+            BranchId = dbQueue.BranchId,
             CustomerId = dbQueue.CustomerId,
             EmployeeId = dbQueue.EmployeeId,
             ServiceId = dbQueue.ServiceId,

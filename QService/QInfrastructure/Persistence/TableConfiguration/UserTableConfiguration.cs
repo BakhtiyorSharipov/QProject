@@ -12,8 +12,7 @@ public class UserTableConfiguration:IEntityTypeConfiguration<UserEntity>
         builder.HasKey(u => u.Id);
         builder.Property(u => u.EmailAddress).IsRequired().HasMaxLength(150);
         builder.HasIndex(u => u.EmailAddress).IsUnique();
-        builder.HasIndex(s => s.CompanyId);
-        builder.HasIndex(s => s.BranchId);
+        
 
         builder.Property(u => u.PasswordHash).IsRequired();
         builder.Property(u => u.Roles).IsRequired();

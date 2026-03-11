@@ -4,7 +4,7 @@ using QDomain.Models;
 namespace QApplication.UseCases.Auth.Commands.CreateCompanyAdmin;
 
 public record CreateCompanyAdminCommand(
-    int ServiceId,
+    int CompanyId,
     string EmailAddress,
     string Password,
     string FirstName,

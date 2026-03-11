@@ -25,7 +25,6 @@ public class QueueDbContext: DbContext, IQueueApplicationDbContext
         return base.SaveChangesAsync(cancellationToken);
     }
 
-    public DbSet<CompanyEntity> Companies { get; set; }
     public DbSet<CustomerEntity> Customers { get; set; }
     public DbSet<EmployeeEntity> Employees { get; set; }
     public DbSet<AvailabilityScheduleEntity> AvailabilitySchedules { get; set; }
@@ -34,7 +33,6 @@ public class QueueDbContext: DbContext, IQueueApplicationDbContext
     public DbSet<QueueEntity> Queues { get; set; }
     public DbSet<RefreshTokenEntity> RefreshTokens { get; set; }
     public DbSet<ReviewEntity> Reviews { get; set; }
-    public DbSet<ServiceEntity> Services { get; set; }
     public DbSet<UserEntity> Users { get; set; }
     
     

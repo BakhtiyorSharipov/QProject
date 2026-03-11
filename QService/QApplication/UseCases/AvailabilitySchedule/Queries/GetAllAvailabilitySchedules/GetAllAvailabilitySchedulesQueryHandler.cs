@@ -1,6 +1,8 @@
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using QApplication.Extensions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
 
@@ -11,11 +13,13 @@ public class GetAllAvailabilitySchedulesQueryHandler: IRequestHandler<GetAllAvai
     private const int PageSize = 15;
     private readonly ILogger<GetAllAvailabilitySchedulesQueryHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
+    private readonly IHttpContextAccessor _contextAccessor;
 
-    public GetAllAvailabilitySchedulesQueryHandler(ILogger<GetAllAvailabilitySchedulesQueryHandler> logger, IQueueApplicationDbContext dbContext)
+    public GetAllAvailabilitySchedulesQueryHandler(ILogger<GetAllAvailabilitySchedulesQueryHandler> logger, IQueueApplicationDbContext dbContext, IHttpContextAccessor contextAccessor)
     {
         _logger = logger;
         _dbContext = dbContext;
+        _contextAccessor = contextAccessor;
     }
 
     public async Task<PagedResponse<AvailabilityScheduleResponseModel>> Handle(GetAllAvailabilitySchedulesQuery request, CancellationToken cancellationToken)
@@ -23,9 +27,13 @@ public class GetAllAvailabilitySchedulesQueryHandler: IRequestHandler<GetAllAvai
         _logger.LogInformation("Getting all companies. PageNumber: {pageNumber}, PageSize: {pageSize}", request.PageNumber,
             PageSize);
 
-        var totalCount = await _dbContext.AvailabilitySchedules.CountAsync(cancellationToken);
+        var currentEmployee = await _contextAccessor.CurrentEmployee(_dbContext, cancellationToken);
+        var totalCount = await _dbContext.AvailabilitySchedules
+            .Where(s=>s.EmployeeId== currentEmployee.Id)
+            .CountAsync(cancellationToken);
 
         var dbAvailabilitySchedule = await _dbContext.AvailabilitySchedules
+            .Where(s=>s.EmployeeId== currentEmployee.Id)
             .OrderBy(c => c.Id)
             .Skip((request.PageNumber-1) * PageSize)
             .Take(PageSize).ToListAsync(cancellationToken);

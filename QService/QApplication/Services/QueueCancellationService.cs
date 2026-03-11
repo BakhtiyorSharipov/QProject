@@ -63,6 +63,8 @@ public class QueueCancellationService: IQueueCancellationService
         return new QueueResponseModel
         {
             Id = queue.Id,
+            CompanyId = queue.CompanyId,
+            BranchId = queue.BranchId,
             CustomerId = queue.CustomerId,
             EmployeeId = queue.EmployeeId,
             ServiceId = queue.ServiceId,

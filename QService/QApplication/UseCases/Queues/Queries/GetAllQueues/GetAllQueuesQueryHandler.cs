@@ -1,13 +1,13 @@
-using System.Globalization;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Caching;
+using QApplication.Extensions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
-using StackExchange.Redis;
 
-namespace QApplication.UseCases.Queues.Queries;
+namespace QApplication.UseCases.Queues.Queries.GetAllQueues;
 
 public class GetAllQueuesQueryHandler: IRequestHandler<GetAllQueuesQuery, PagedResponse<QueueResponseModel>>
 {
@@ -15,17 +15,22 @@ public class GetAllQueuesQueryHandler: IRequestHandler<GetAllQueuesQuery, PagedR
     private readonly ILogger<GetAllQueuesQueryHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly ICacheService _cache;
-    public GetAllQueuesQueryHandler(ILogger<GetAllQueuesQueryHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache)
+    private readonly IHttpContextAccessor _contextAccessor;
+    public GetAllQueuesQueryHandler(ILogger<GetAllQueuesQueryHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache, IHttpContextAccessor contextAccessor)
     {
         _logger = logger;
         _dbContext = dbContext;
         _cache = cache;
+        _contextAccessor = contextAccessor;
     }
 
     public async Task<PagedResponse<QueueResponseModel>> Handle(GetAllQueuesQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Getting all queues. PageNumber: {pageNumber}, PageSize: {pageSize}", request.PageNumber, PageSize);
 
+        var currentEmployee = await _contextAccessor.CurrentEmployee(_dbContext, cancellationToken);
+        var companyId = currentEmployee.CompanyId;
+        
         var hashKey = CacheKeys.AllQueuesHashKey;
         var filed = CacheKeys.AllQueuesField(request.PageNumber );
 
@@ -36,9 +41,12 @@ public class GetAllQueuesQueryHandler: IRequestHandler<GetAllQueuesQuery, PagedR
             return cached;
         }
         
-        var totalCount = await _dbContext.Queues.CountAsync(cancellationToken);
+        var totalCount = await _dbContext.Queues
+            .Where(s=>s.CompanyId== companyId)
+            .CountAsync(cancellationToken);
 
         var dbQueues =await  _dbContext.Queues
+            .Where(s=>s.CompanyId== companyId)
             .OrderBy(s => s.Id)
             .Skip((request.PageNumber - 1) * PageSize)
             .Take(PageSize)
@@ -48,6 +56,8 @@ public class GetAllQueuesQueryHandler: IRequestHandler<GetAllQueuesQuery, PagedR
         var response = dbQueues.Select(queue => new QueueResponseModel()
         {
             Id = queue.Id,
+            CompanyId = queue.CompanyId,
+            BranchId = queue.BranchId,
             CustomerId = queue.CustomerId,
             EmployeeId = queue.EmployeeId,
             ServiceId = queue.ServiceId,

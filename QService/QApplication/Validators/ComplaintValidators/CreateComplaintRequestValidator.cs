@@ -8,8 +8,7 @@ public class CreateComplaintRequestValidator: AbstractValidator<CreateComplaintC
 {
     public CreateComplaintRequestValidator()
     {
-        RuleFor(x => x.CustomerId)
-            .GreaterThan(0).WithMessage("CustomerId must be greater than 0");
+        
 
         RuleFor(x => x.QueueId)
             .GreaterThan(0).WithMessage("QueueId must be greater than 0");

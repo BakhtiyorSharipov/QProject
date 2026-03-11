@@ -1,8 +1,10 @@
 using System.Net;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
+using QApplication.Extensions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QDomain.Models;
@@ -13,18 +15,24 @@ public class GetAvailabilityScheduleByIdQueryHandler: IRequestHandler<GetAvailab
 {
     private readonly ILogger<GetAvailabilityScheduleByIdQueryHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
+    private readonly IHttpContextAccessor _contextAccessor;
 
-    public GetAvailabilityScheduleByIdQueryHandler(ILogger<GetAvailabilityScheduleByIdQueryHandler> logger, IQueueApplicationDbContext dbContext)
+    public GetAvailabilityScheduleByIdQueryHandler(ILogger<GetAvailabilityScheduleByIdQueryHandler> logger, IQueueApplicationDbContext dbContext, IHttpContextAccessor contextAccessor)
     {
         _logger = logger;
         _dbContext = dbContext;
+        _contextAccessor = contextAccessor;
     }
 
     public async Task<AvailabilityScheduleResponseModel> Handle(GetAvailabilityScheduleByIdQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Getting schedule with Id {id}", request.Id);
+
+        var currentEmployee =await _contextAccessor.CurrentEmployee(_dbContext, cancellationToken);
         var dbAvailabilitySchedule =
-            await _dbContext.AvailabilitySchedules.FirstOrDefaultAsync(s => s.Id == request.Id, cancellationToken);
+            await _dbContext.AvailabilitySchedules
+                .Where(s=>s.EmployeeId==currentEmployee.Id)
+                .FirstOrDefaultAsync(s => s.Id == request.Id, cancellationToken);
         if (dbAvailabilitySchedule == null)
         {
             _logger.LogWarning("Schedule with Id {id} not found", request.Id);
