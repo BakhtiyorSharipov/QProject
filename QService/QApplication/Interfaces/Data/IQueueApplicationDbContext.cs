@@ -15,7 +15,7 @@ public interface IQueueApplicationDbContext
     DbSet<RefreshTokenEntity> RefreshTokens { get; set; }
     DbSet<ReviewEntity> Reviews { get; set; }
     DbSet<ServiceEntity> Services { get; set; }
-    DbSet<User> Users { get; set; }
+    DbSet<UserEntity> Users { get; set; }
     
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);

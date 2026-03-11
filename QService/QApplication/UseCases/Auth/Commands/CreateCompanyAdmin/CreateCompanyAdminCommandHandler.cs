@@ -10,20 +10,20 @@ using QDomain.Models;
 
 namespace QApplication.UseCases.Auth.Commands.CreateCompanyAdmin;
 
-public class CreateCompanyAdminCommandHandler: IRequestHandler<CreateCompanyAdminCommand, User>
+public class CreateCompanyAdminCommandHandler: IRequestHandler<CreateCompanyAdminCommand, UserEntity>
 {
     private readonly ILogger<CreateCompanyAdminCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
-    private readonly IPasswordHasher<User> _passwordHasher;
+    private readonly IPasswordHasher<UserEntity> _passwordHasher;
 
-    public CreateCompanyAdminCommandHandler(ILogger<CreateCompanyAdminCommandHandler> logger, IQueueApplicationDbContext dbContext, IPasswordHasher<User> passwordHasher)
+    public CreateCompanyAdminCommandHandler(ILogger<CreateCompanyAdminCommandHandler> logger, IQueueApplicationDbContext dbContext, IPasswordHasher<UserEntity> passwordHasher)
     {
         _logger = logger;
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
     }
 
-    public async Task<User> Handle(CreateCompanyAdminCommand request, CancellationToken cancellationToken)
+    public async Task<UserEntity> Handle(CreateCompanyAdminCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Registering companyAdmin with {email} email address", request.EmailAddress);
         _logger.LogDebug("Finding creator Id for registering employee");
@@ -63,7 +63,7 @@ public class CreateCompanyAdminCommandHandler: IRequestHandler<CreateCompanyAdmi
         await _dbContext.Employees.AddAsync(employee, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
         
-        var user = new User
+        var user = new UserEntity
         {
             EmployeeId = employee.Id,
             EmailAddress = request.EmailAddress,

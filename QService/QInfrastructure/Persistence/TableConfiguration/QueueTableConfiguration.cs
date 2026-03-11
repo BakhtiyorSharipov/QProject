@@ -10,6 +10,8 @@ public class QueueTableConfiguration: IEntityTypeConfiguration<QueueEntity>
     {
         builder.ToTable("Queues");
         builder.HasKey(s => s.Id);
+        builder.HasIndex(s => s.CompanyId);
+        builder.HasIndex(s => s.BranchId);
         
         builder.HasOne(s => s.Customer)
             .WithMany(s => s.Queues)

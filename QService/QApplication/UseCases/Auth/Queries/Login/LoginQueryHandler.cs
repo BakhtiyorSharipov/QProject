@@ -16,12 +16,12 @@ public class LoginQueryHandler: IRequestHandler<LoginQuery, AuthResponse>
 {
     private readonly ILogger<LoginQueryHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
-    private readonly IPasswordHasher<User> _passwordHasher;
+    private readonly IPasswordHasher<UserEntity> _passwordHasher;
     private readonly ITokenService _tokenService;
     private readonly IConfiguration _config;
 
 
-    public LoginQueryHandler(ILogger<LoginQueryHandler> logger, IQueueApplicationDbContext dbContext, IPasswordHasher<User> passwordHasher, IConfiguration config, ITokenService tokenService)
+    public LoginQueryHandler(ILogger<LoginQueryHandler> logger, IQueueApplicationDbContext dbContext, IPasswordHasher<UserEntity> passwordHasher, IConfiguration config, ITokenService tokenService)
     {
         _logger = logger;
         _dbContext = dbContext;
@@ -37,8 +37,8 @@ public class LoginQueryHandler: IRequestHandler<LoginQuery, AuthResponse>
             cancellationToken);
         if (user == null)
         {
-            _logger.LogWarning("User with {email} email address not found", request.EmailAddress);
-            throw new HttpStatusCodeException(HttpStatusCode.Unauthorized, "User not found");
+            _logger.LogWarning("UserEntity with {email} email address not found", request.EmailAddress);
+            throw new HttpStatusCodeException(HttpStatusCode.Unauthorized, "UserEntity not found");
         }
 
         _logger.LogDebug("Verifying password");

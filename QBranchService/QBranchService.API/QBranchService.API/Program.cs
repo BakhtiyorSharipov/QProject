@@ -1,8 +1,20 @@
+using Microsoft.EntityFrameworkCore;
+using QBranchService.Application;
+using QBranchService.Application.Interfaces.Data;
+using QBranchService.Infrastructure.Persistence.DataBase;
+
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddApplicationService();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<IBranchServiceApplicationDbContext, BranchServiceDbContext>();
+
+
+builder.Services.AddDbContext<BranchServiceDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

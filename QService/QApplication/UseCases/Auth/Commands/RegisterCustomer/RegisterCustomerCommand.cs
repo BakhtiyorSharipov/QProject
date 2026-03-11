@@ -1,5 +1,5 @@
 using MediatR;
-using User = QDomain.Models.User;
+using QDomain.Models;
 
 namespace QApplication.UseCases.Auth.Commands.RegisterCustomer;
 
@@ -8,4 +8,4 @@ public record RegisterCustomerCommand(
     string Password,
     string FirstName,
     string LastName,
-    string PhoneNumber) : IRequest<User>;
+    string PhoneNumber) : IRequest<UserEntity>;

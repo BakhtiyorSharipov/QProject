@@ -11,21 +11,21 @@ using QDomain.Models;
 
 namespace QApplication.UseCases.Auth.Commands.RegisterCustomer;
 
-public class RegisterCustomerCommandHandler : IRequestHandler<RegisterCustomerCommand, User>
+public class RegisterCustomerCommandHandler : IRequestHandler<RegisterCustomerCommand, UserEntity>
 {
     private readonly ILogger<RegisterCustomerCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
-    private readonly IPasswordHasher<User> _passwordHasher;
+    private readonly IPasswordHasher<UserEntity> _passwordHasher;
 
     public RegisterCustomerCommandHandler(ILogger<RegisterCustomerCommandHandler> logger,
-        IQueueApplicationDbContext dbContext, IPasswordHasher<User> passwordHasher)
+        IQueueApplicationDbContext dbContext, IPasswordHasher<UserEntity> passwordHasher)
     {
         _logger = logger;
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
     }
 
-    public async Task<User> Handle(RegisterCustomerCommand request, CancellationToken cancellationToken)
+    public async Task<UserEntity> Handle(RegisterCustomerCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Registering customer with {email} email address", request.EmailAddress);
         if (await _dbContext.Users.FirstOrDefaultAsync(s => s.EmailAddress == request.EmailAddress, cancellationToken) != null)
@@ -46,7 +46,7 @@ public class RegisterCustomerCommandHandler : IRequestHandler<RegisterCustomerCo
         await _dbContext.SaveChangesAsync(cancellationToken);
 
 
-        var user = new User
+        var user = new UserEntity
         {
             CustomerId = customer.Id,
             EmailAddress = request.EmailAddress,

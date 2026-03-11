@@ -368,7 +368,7 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                     b.ToTable("Services", (string)null);
                 });
 
-            modelBuilder.Entity("QDomain.Models.User", b =>
+            modelBuilder.Entity("QDomain.Models.UserEntity", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -498,13 +498,13 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
 
             modelBuilder.Entity("QDomain.Models.RefreshTokenEntity", b =>
                 {
-                    b.HasOne("QDomain.Models.User", "User")
+                    b.HasOne("QDomain.Models.UserEntity", "UserEntity")
                         .WithMany("RefreshTokens")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("User");
+                    b.Navigation("UserEntity");
                 });
 
             modelBuilder.Entity("QDomain.Models.ReviewEntity", b =>
@@ -537,15 +537,15 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                     b.Navigation("Company");
                 });
 
-            modelBuilder.Entity("QDomain.Models.User", b =>
+            modelBuilder.Entity("QDomain.Models.UserEntity", b =>
                 {
                     b.HasOne("QDomain.Models.CustomerEntity", "Customer")
                         .WithOne()
-                        .HasForeignKey("QDomain.Models.User", "CustomerId");
+                        .HasForeignKey("QDomain.Models.UserEntity", "CustomerId");
 
                     b.HasOne("QDomain.Models.EmployeeEntity", "Employee")
                         .WithOne()
-                        .HasForeignKey("QDomain.Models.User", "EmployeeId");
+                        .HasForeignKey("QDomain.Models.UserEntity", "EmployeeId");
 
                     b.Navigation("Customer");
 
@@ -578,7 +578,7 @@ namespace QInfrastructure.Persistence.DataBase.Migrations
                     b.Navigation("Employees");
                 });
 
-            modelBuilder.Entity("QDomain.Models.User", b =>
+            modelBuilder.Entity("QDomain.Models.UserEntity", b =>
                 {
                     b.Navigation("RefreshTokens");
                 });

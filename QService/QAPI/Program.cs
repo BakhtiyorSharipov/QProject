@@ -33,7 +33,7 @@ builder.Services.AddFluentValidation(fv =>
 });
 
 
-builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+builder.Services.AddScoped<IPasswordHasher<UserEntity>, PasswordHasher<UserEntity>>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IQueueCancellationService, QueueCancellationService>();
 builder.Services.AddScoped<IQueueApplicationDbContext, QueueDbContext>();
@@ -170,13 +170,13 @@ using (var scope = app.Services.CreateScope())
     await db.Database.MigrateAsync();
 
 
-    var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
+    var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<UserEntity>>();
 
     var sys = await db.Users
         .AnyAsync(u => u.EmailAddress == "systemAdmin@gmail.com");
     if (!sys)
     {
-        var sysUser = new User
+        var sysUser = new UserEntity
         {
             EmailAddress = "systemAdmin@gmail.com",
             Roles = QDomain.Enums.UserRoles.SystemAdmin,

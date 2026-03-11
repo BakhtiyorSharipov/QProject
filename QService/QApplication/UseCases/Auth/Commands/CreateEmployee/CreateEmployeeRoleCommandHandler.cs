@@ -10,20 +10,20 @@ using QDomain.Models;
 
 namespace QApplication.UseCases.Auth.Commands.CreateEmployee;
 
-public class CreateEmployeeRoleCommandHandler: IRequestHandler<CreateEmployeeRoleCommand, User>
+public class CreateEmployeeRoleCommandHandler: IRequestHandler<CreateEmployeeRoleCommand, UserEntity>
 {
     private readonly ILogger<CreateEmployeeRoleCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
-    private readonly IPasswordHasher<User> _passwordHasher;
+    private readonly IPasswordHasher<UserEntity> _passwordHasher;
 
-    public CreateEmployeeRoleCommandHandler(ILogger<CreateEmployeeRoleCommandHandler> logger, IQueueApplicationDbContext dbContext, IPasswordHasher<User> passwordHasher)
+    public CreateEmployeeRoleCommandHandler(ILogger<CreateEmployeeRoleCommandHandler> logger, IQueueApplicationDbContext dbContext, IPasswordHasher<UserEntity> passwordHasher)
     {
         _logger = logger;
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
     }
 
-    public async Task<User> Handle(CreateEmployeeRoleCommand request, CancellationToken cancellationToken)
+    public async Task<UserEntity> Handle(CreateEmployeeRoleCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Registering employee with {email} email address", request.EmailAddress);
         _logger.LogDebug("Finding creator Id for registering employee");
@@ -77,7 +77,7 @@ public class CreateEmployeeRoleCommandHandler: IRequestHandler<CreateEmployeeRol
         await _dbContext.Employees.AddAsync(employee, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
         
-        var user = new User
+        var user = new UserEntity
         {
             EmployeeId = employee.Id,
             EmailAddress = request.EmailAddress,

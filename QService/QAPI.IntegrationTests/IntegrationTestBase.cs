@@ -27,9 +27,9 @@ public abstract class IntegrationTestBase: IAsyncLifetime, IClassFixture<CustomW
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<QueueDbContext>();
         var tokenService = scope.ServiceProvider.GetRequiredService<ITokenService>();
-        var passwordHasher = new PasswordHasher<User>();
+        var passwordHasher = new PasswordHasher<UserEntity>();
         
-        var user = new User
+        var user = new UserEntity
         {
             EmailAddress = $"test_{Guid.NewGuid()}@test.com",
             Roles = Enum.Parse<UserRoles>(role),

@@ -20,7 +20,7 @@ public class LogoutCommandHandler : IRequestHandler<LogoutCommand>
     {
         _logger.LogInformation("Logout with {token} refresh token", request.refreshToken);
         var stored = await _dbContext.RefreshTokens
-            .Include(s => s.User)
+            .Include(s => s.UserEntity)
             .FirstOrDefaultAsync(s => s.Token == request.refreshToken, cancellationToken);
         if (stored == null)
         {

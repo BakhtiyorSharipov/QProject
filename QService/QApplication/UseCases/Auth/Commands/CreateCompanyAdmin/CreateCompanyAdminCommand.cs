@@ -11,4 +11,4 @@ public record CreateCompanyAdminCommand(
     string LastName,
     string Position,
     string PhoneNumber,
-    int createdByUserId): IRequest<User>;
+    int createdByUserId): IRequest<UserEntity>;

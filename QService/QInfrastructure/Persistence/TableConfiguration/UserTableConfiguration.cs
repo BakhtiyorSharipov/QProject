@@ -4,14 +4,16 @@ using QDomain.Models;
 
 namespace QInfrastructure.Persistence.TableConfiguration;
 
-public class UserTableConfiguration:IEntityTypeConfiguration<User>
+public class UserTableConfiguration:IEntityTypeConfiguration<UserEntity>
 {
-    public void Configure(EntityTypeBuilder<User> builder)
+    public void Configure(EntityTypeBuilder<UserEntity> builder)
     {
         builder.ToTable("Users");
         builder.HasKey(u => u.Id);
         builder.Property(u => u.EmailAddress).IsRequired().HasMaxLength(150);
         builder.HasIndex(u => u.EmailAddress).IsUnique();
+        builder.HasIndex(s => s.CompanyId);
+        builder.HasIndex(s => s.BranchId);
 
         builder.Property(u => u.PasswordHash).IsRequired();
         builder.Property(u => u.Roles).IsRequired();
@@ -19,14 +21,14 @@ public class UserTableConfiguration:IEntityTypeConfiguration<User>
 
         builder.HasOne(u => u.Customer)
             .WithOne()
-            .HasForeignKey<User>(u => u.CustomerId);
+            .HasForeignKey<UserEntity>(u => u.CustomerId);
 
         builder.HasOne(u => u.Employee)
             .WithOne()
-            .HasForeignKey<User>(u => u.EmployeeId);
+            .HasForeignKey<UserEntity>(u => u.EmployeeId);
         
         builder.HasMany(u => u.RefreshTokens)
-            .WithOne(t => t.User)
+            .WithOne(t => t.UserEntity)
             .HasForeignKey(t => t.UserId)
             .OnDelete(DeleteBehavior.Cascade);
     }

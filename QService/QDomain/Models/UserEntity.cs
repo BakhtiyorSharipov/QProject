@@ -2,8 +2,10 @@ using QDomain.Enums;
 
 namespace QDomain.Models;
 
-public class User: BaseEntity
+public class UserEntity: BaseEntity
 {
+    public int? CompanyId { get; set; }
+    public int? BranchId { get; set; }
     public string EmailAddress { get; set; }
     public string PasswordHash { get; set; }
     public UserRoles Roles { get; set; }
@@ -13,7 +15,8 @@ public class User: BaseEntity
 
     public int? EmployeeId { get; set; }
     public EmployeeEntity? Employee { get; set; }
-
+    
     public int? CustomerId { get; set; }
     public CustomerEntity? Customer { get; set; }
+
 }
