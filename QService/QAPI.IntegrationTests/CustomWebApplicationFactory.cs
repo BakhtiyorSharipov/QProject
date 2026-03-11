@@ -1,10 +1,12 @@
-using MassTransit.Logging;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using NSubstitute;
 using QAPI.IntegrationTests;
+using QBranchService.Contracts.Interfaces;
 using QInfrastructure.Persistence.DataBase;
 using Testcontainers.PostgreSql;
 using Testcontainers.RabbitMq;
@@ -30,10 +32,21 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
     private string? _postgresConnectionString;
     private string? _redisConnectionString;
     private string? _rabbitMqConnectionString;
+
+    public IBranchService BranchServiceMock { get; set; } = null!;
+    
     
     protected override IHost CreateHost(IHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+
+        builder.ConfigureServices(services =>
+        {
+            services.RemoveAll<IBranchService>();
+            BranchServiceMock = Substitute.For<IBranchService>();
+            services.AddScoped<IBranchService>(_ => BranchServiceMock);
+        });
+        
         builder.ConfigureHostConfiguration(config =>
         {
             Dictionary<string, string?> settings = new()

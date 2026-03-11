@@ -17,7 +17,7 @@ public class CustomerControllerTest: IntegrationTestBase
     }
 
     [Fact]
-    public async Task CreateCustomer_ShouldReturnCreatedQueue_WithValidRequest()
+    public async Task CreateCustomer_ShouldReturnCreatedCustomer_WithValidRequest()
     {
         var token = await GetJwtToken(nameof(UserRoles.SystemAdmin));
         var createCustomerCommand = new CreateCustomerCommand(
