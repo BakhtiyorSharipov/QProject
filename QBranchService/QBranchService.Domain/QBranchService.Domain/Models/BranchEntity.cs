@@ -9,7 +9,7 @@ public class BranchEntity
     public string PhoneNumber { get; set; } = string.Empty;
     public string EmailAddress { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
-    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.Now;
+    public DateTimeOffset CreatedAt { get; set; }
 
     public int CompanyId { get; set; }
     public CompanyEntity Company { get; set; }

@@ -6,7 +6,7 @@ public class BranchConfigurationEntity
     public int MaxTickets { get; set; }
     public TimeOnly OpenTime { get; set; }
     public TimeOnly CloseTime { get; set; }
-    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.Now;
+    public DateTimeOffset CreatedAt { get; set; }
     public int BranchId { get; set; }
     public BranchEntity Branch { get; set; } 
 }
