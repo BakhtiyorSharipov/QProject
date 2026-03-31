@@ -222,5 +222,182 @@ public class AggregationService : IAggregationService
         return response;
     }
 
-   
+    public async Task<DashboardResponse> GetCompanyDashboard(int companyId)
+    {
+        
+        _logger.LogInformation("Fetching dashboard for company Id {companyId}", companyId);
+    
+        var companyResult = await _branchService.CheckCompanyId(new CompanyRequest
+        {
+            RequestId = Guid.NewGuid(),
+            CompanyId = companyId,
+            RequestedAt = DateTimeOffset.UtcNow
+        });
+    
+        if (!companyResult.IsValid)
+        {
+            _logger.LogInformation("Company with Id {CompanyId} not found", companyId);
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound,
+                companyResult.ErrorMessage ?? "Company not found");
+        }
+
+        var companyBranches = await _branchService.GetCompanyBranches(companyId);
+        var companyServices = await _branchService.GetCompanyServices(companyId);
+        var companyCustomers = await _queueService.GetAllCompanyCustomers(companyId);
+        var companyBlockedCustomers = await _queueService.GetAllCompanyBlockedCustomers(companyId);
+        var companyEmployees = await _queueService.GetAllCompanyEmployees(companyId);
+        var companyQueues = await _queueService.GetCompanyQueuesAsync(companyId);
+        var companyReviews = await _queueService.GetCompanyReviewsAsync(companyId);
+        var companyComplaints = await _queueService.GetCompanyComplaintsAsync(companyId);
+
+        var totalBranches = companyBranches.Count;
+        var totalServices = companyServices.Count;
+        var totalCustomers = companyCustomers.Count;
+        var totalBlockedCustomers = companyBlockedCustomers.Count;
+        var totalEmployees = companyEmployees.Count;
+        var totalQueues = companyQueues.Count;
+        var totalCompletedQueues = companyQueues.Count(s => s.CurrentQueueStatus == CurrentQueueStatus.Completed);
+        var totalPendingQueues = companyQueues.Count(s => s.CurrentQueueStatus == CurrentQueueStatus.Pending);
+        var totalCancelledQueues = companyQueues.Count(s => s.CurrentQueueStatus == CurrentQueueStatus.CanceledByAdmin
+                                                            || s.CurrentQueueStatus ==
+                                                            CurrentQueueStatus.CancelledByCustomer
+                                                            || s.CurrentQueueStatus ==
+                                                            CurrentQueueStatus.CancelledByEmployee);
+
+        var totalDidNotComeQueues = companyQueues.Count(s => s.CurrentQueueStatus == CurrentQueueStatus.DidNotCome);
+        var totalReviews = companyReviews.Count;
+        var totalComplaints = companyComplaints.Count;
+        var totalPendingComplaints = companyComplaints.Count(s => s.Status == CurrentComplaintStatus.Pending);
+        var totalReviewedComplaints = companyComplaints.Count(s => s.Status == CurrentComplaintStatus.Reviewed);
+        var totalResolvedComplaints = companyComplaints.Count(s => s.Status == CurrentComplaintStatus.Resolved);
+
+        var groupedByService = companyQueues
+            .GroupBy(s => s.ServiceId)
+            .OrderByDescending(s => s.Count())
+            .FirstOrDefault();
+        
+
+        int? topServiceId = groupedByService?.Key;
+        int topServiceQueueCount = groupedByService?.Count() ?? 0;
+        string topServiceName ="Unknown";
+        if (topServiceId.HasValue)
+        {
+            var topService = companyServices.FirstOrDefault(s => s.CompanyServiceId == topServiceId);
+            if (topService != null)
+            {
+                topServiceName = topService.CompanyServiceName;
+            }
+        }
+
+        var groupedByBranch = companyQueues
+            .GroupBy(s => s.BranchId)
+            .OrderByDescending(s => s.Count())
+            .FirstOrDefault();
+
+        int? topBranchId = groupedByBranch?.Key;
+        int topBranchQueueCount = groupedByBranch?.Count() ?? 0;
+        string topBranchName = "Unknown";
+        if (topBranchId.HasValue)
+        {
+            var topBranch = companyBranches.FirstOrDefault(s => s.BranchId == topBranchId);
+            if (topBranch !=null)
+            {
+                topBranchName = topBranch.BranchName;
+            }
+        }
+
+
+        var groupedByEmployee = companyQueues
+            .GroupBy(s => s.EmployeeId)
+            .OrderByDescending(s => s.Count())
+            .FirstOrDefault();
+
+        int? topEmployeeId = groupedByEmployee?.Key;
+        int topEmployeeQueueCount = groupedByEmployee?.Count() ?? 0;
+        string topEmployeeName = "Unknown";
+        if (topEmployeeId.HasValue)
+        {
+            var topEmployee = companyEmployees.FirstOrDefault(s => s.EmployeeId == topEmployeeId);
+            if (topEmployee!=null)
+            {
+                topEmployeeName = topEmployee.FirstName;
+            }
+        }
+
+
+        var groupedByCustomer = companyQueues
+            .GroupBy(s => s.CustomerId)
+            .OrderByDescending(s => s.Count())
+            .FirstOrDefault();
+
+        int? topCustomerId = groupedByCustomer?.Key;
+        int topCustomerQueueCount = groupedByCustomer?.Count() ?? 0;
+        string topCustomerName = "Unknown";
+        if (topCustomerId.HasValue)
+        {
+            var topCustomer = companyCustomers.FirstOrDefault(s => s.CustomerId == topCustomerId);
+            if (topCustomer!= null)
+            {
+                topCustomerName = topCustomer.FirstName;
+            }
+        }
+        
+        var recentQueues = companyQueues
+            .OrderByDescending(q => q.CreatedAt)
+            .Take(5)
+            .ToList();
+        
+        var recentQueueItems = recentQueues.Select(q => new QueueReportItem
+        {
+            Id = q.Id,
+            CustomerName = q.CustomerName,
+            EmployeeName = q.EmployeeName,
+            Status = q.CurrentQueueStatus.ToString(),
+            StartTime = q.StartTime,
+            EndTime = q.EndTime
+        }).ToList();
+
+        var response = new DashboardResponse
+        {
+            CompanyId = companyId,
+            CompanyName = companyResult.CompanyName ?? "Unknown",
+            ReportDate = DateTime.UtcNow,
+            TotalBranches = totalBranches,
+            TotalServices = totalServices,
+            TotalCustomers = totalCustomers,
+            TotalBlockedCustomers = totalBlockedCustomers,
+            TotalEmployees = totalEmployees,
+            TotalQueues = totalQueues,
+            CompletedQueues = totalCompletedQueues,
+            PendingQueues = totalPendingQueues,
+            CancelledQueues = totalCancelledQueues,
+            DidNotComeQueues = totalDidNotComeQueues,
+            TotalReviews = totalReviews,
+            TotalComplaints = totalComplaints,
+            TotalPendingComplaints = totalPendingComplaints,
+            TotalReviewedComplaints = totalReviewedComplaints,
+            TotalResolvedComplaints = totalResolvedComplaints,
+            TopServiceName = topServiceName,
+            TopServiceQueueCount = topServiceQueueCount,
+            TopBranchName = topBranchName,
+            TopBranchQueueCount = topBranchQueueCount,
+            TopEmployeeName = topEmployeeName,
+            TopEmployeeQueueCount = topEmployeeQueueCount,
+            TopCustomerName = topCustomerName,
+            TopCustomerQueueCount = topCustomerQueueCount,
+            RecentQueues = recentQueueItems
+        };
+
+        return response;
+    }
+
+    public Task<EmployeeReportResponse> GetEmployeeReport(EmployeeReportRequest request)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<CustomerReportResponse> GetCustomerReport(CustomerReportRequest request)
+    {
+        throw new NotImplementedException();
+    }
 }

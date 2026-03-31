@@ -7,5 +7,8 @@ namespace QAggregationService.Contracts.Interfaces;
 public interface IAggregationService
 {
     Task<CompanyReportResponse> GetReportAsync(ReportRequest request);
-    
+    Task<DashboardResponse> GetCompanyDashboard( int companyId);
+
+    Task<EmployeeReportResponse> GetEmployeeReport(EmployeeReportRequest request);
+    Task<CustomerReportResponse> GetCustomerReport(CustomerReportRequest request);
 }

@@ -11,4 +11,7 @@ public interface IBranchService: IService<IBranchService>
     UnaryResult<CompanyServiceResponse> CheckCompanyServiceId(CompanyServiceRequest request);
     UnaryResult<QueueCreationValidationResponse> ValidateQueueCreationAsync(QueueCreationValidationRequest request);
 
+    UnaryResult<List<BranchResponse>> GetCompanyBranches(int companyId);
+    UnaryResult<List<CompanyServiceResponse>> GetCompanyServices(int companyId);
+
 }

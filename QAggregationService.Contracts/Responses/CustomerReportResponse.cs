@@ -5,9 +5,17 @@ namespace QAggregationService.Contracts.Responses;
 [MessagePackObject]
 public class CustomerReportResponse
 {
-    [Key(0)] public int TotalCustomers { get; set; }
-    [Key(1)] public int BlockedCustomers { get; set; }
-    [Key(2)] public int DidNotComeCustomers { get; set; }
-    
-    [Key(3)] public List<CustomerReportItem>? TopCustomers { get; set; }
+    [Key(0)] public int CustomerId { get; set; }
+    [Key(1)] public string CustomerName { get; set; }
+    [Key(2)] public int TotalQueues { get; set; }
+    [Key(3)] public int CompletedQueues { get; set; }
+    [Key(4)] public int PendingQueues { get; set; }
+    [Key(5)] public int CancelledQueues { get; set; }
+    [Key(6)] public int DidNotComeQueues { get; set; }
+    [Key(7)] public double AverageReviewGrade { get; set; }
+    [Key(8)] public int TotalReviews { get; set; }
+    [Key(9)] public int TotalComplaints { get; set; }
+    [Key(10)] public int PendingComplaints { get; set; }
+    [Key(11)] public int ResolvedComplaints { get; set; }
+    [Key(12)] public List<QueueReportItem>? RecentQueues { get; set; }
 }

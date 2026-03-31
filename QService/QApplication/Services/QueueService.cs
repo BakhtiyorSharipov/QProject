@@ -214,6 +214,7 @@ public class QueueService : ServiceBase<IQueueService>, IQueueService
             CompanyId = queue.CompanyId,
             BranchId = queue.BranchId,
             ServiceId = queue.ServiceId,
+            EmployeeId = queue.EmployeeId,
             CustomerId = queue.CustomerId,
             EmployeeName = queue.Employee.FirstName,
             CustomerName = queue.Customer.FirstName,
@@ -489,7 +490,7 @@ public class QueueService : ServiceBase<IQueueService>, IQueueService
 
         var response = customers.Select(customer => new CustomerInfo
         {
-            CustomerId = customer.Id,
+            CustomerId = customer.CustomerId,
             FirstName = customer.Customer.FirstName,
             LastName = customer.Customer.LastName,
             CreatedAt = customer.CreatedAt
