@@ -1,12 +1,10 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using QApplication.Responses;
 using QBranchService.Application.Interfaces.Data;
 using QBranchService.Application.Response;
-using QBranchService.Application.UseCases.CompanyServices.Queries.GetAllServices;
 
-namespace QApplication.UseCases.Services.Queries.GetAllServices;
+namespace QBranchService.Application.UseCases.CompanyServices.Queries.GetAllServices;
 
 public class GetAllServicesQueryHandler: IRequestHandler<GetAllServicesQuery, PagedResponse<CompanyServiceResponseModel>>
 {

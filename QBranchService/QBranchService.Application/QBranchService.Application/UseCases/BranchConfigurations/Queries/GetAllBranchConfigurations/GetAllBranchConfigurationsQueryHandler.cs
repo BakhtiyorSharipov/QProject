@@ -1,7 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using QApplication.Responses;
 using QBranchService.Application.Interfaces.Data;
 using QBranchService.Application.Response;
 
