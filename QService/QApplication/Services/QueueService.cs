@@ -291,11 +291,52 @@ public class QueueService : ServiceBase<IQueueService>, IQueueService
         {
             Id = queueReview.Id,
             QueueId = queueReview.QueueId,
+            EmployeeId = queueReview.Queue.EmployeeId,
             CustomerId = queueReview.CustomerId,
             Grade = queueReview.Grade,
             ReviewText = queueReview.ReviewText,
             CreatedAt = queueReview.CreatedAt
         };
+
+        return response;
+    }
+
+    public async UnaryResult<List<ReviewInfo>> GetEmployeeReviewsAsync(int employeeId)
+    {
+        _logger.LogInformation("Getting reviews for employee Id: {employeeId}", employeeId);
+
+        var employee = await _dbContext.Employees
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Id == employeeId);
+
+        if (employee == null)
+        {
+            _logger.LogWarning("Employee with Id {employeeId} not found", employeeId);
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, $"Employee with Id {employeeId} not found");
+        }
+
+        var employeeReviews = await _dbContext.Reviews
+            .AsNoTracking()
+            .Include(s => s.Queue)
+            .Where(s => s.Queue.EmployeeId == employeeId)
+            .ToListAsync();
+
+        if (!employeeReviews.Any())
+        {
+            _logger.LogWarning("Not found any review for this customer");
+            return [];
+        }
+
+        var response = employeeReviews.Select(review => new ReviewInfo()
+        {
+            Id = review.Id,
+            QueueId = review.QueueId,
+            EmployeeId = review.Queue.EmployeeId,
+            CustomerId = review.CustomerId,
+            Grade = review.Grade,
+            ReviewText = review.ReviewText,
+            CreatedAt = review.CreatedAt
+        }).ToList();
 
         return response;
     }
@@ -330,6 +371,7 @@ public class QueueService : ServiceBase<IQueueService>, IQueueService
         {
             Id = review.Id,
             QueueId = review.QueueId,
+            EmployeeId = review.Queue.EmployeeId,
             CustomerId = review.CustomerId,
             Grade = review.Grade,
             ReviewText = review.ReviewText,
@@ -359,6 +401,7 @@ public class QueueService : ServiceBase<IQueueService>, IQueueService
         {
             Id = review.Id,
             QueueId = review.QueueId,
+            EmployeeId = review.Queue.EmployeeId,
             CustomerId = review.CustomerId,
             Grade = review.Grade,
             ReviewText = review.ReviewText,
@@ -395,12 +438,54 @@ public class QueueService : ServiceBase<IQueueService>, IQueueService
         {
             Id = queueComplaint.Id,
             QueueId = queueComplaint.QueueId,
+            EmployeeId = queueComplaint.Queue.EmployeeId,
             CustomerId = queueComplaint.CustomerId,
             ComplaintText = queueComplaint.ComplaintText,
             ResponseText = queueComplaint.ResponseText,
             Status = (CurrentComplaintStatus)queueComplaint.ComplaintStatus,
             CreatedAt = queueComplaint.CreatdAt
         };
+
+        return response;
+    }
+
+    public async UnaryResult<List<ComplaintInfo>> GetEmployeeComplaintsAsync(int employeeId)
+    {
+        _logger.LogInformation("Getting complaints for employee Id: {employeeId}", employeeId);
+
+        var employee = await _dbContext.Employees
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Id == employeeId);
+
+        if (employee == null)
+        {
+            _logger.LogWarning("Employee with Id {employeeId} not found", employeeId);
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, $"Employee with Id {employeeId} not found");
+        }
+
+        var employeeComplaints = await _dbContext.Complaints
+            .AsNoTracking()
+            .Include(s => s.Queue)
+            .Where(s => s.Queue.EmployeeId == employeeId)
+            .ToListAsync();
+
+        if (!employeeComplaints.Any())
+        {
+            _logger.LogWarning("Not found any customer complaints");
+            return [];
+        }
+
+        var response = employeeComplaints.Select(complaint => new ComplaintInfo()
+        {
+            Id = complaint.Id,
+            QueueId = complaint.QueueId,
+            EmployeeId = complaint.Queue.EmployeeId,
+            CustomerId = complaint.CustomerId,
+            ComplaintText = complaint.ComplaintText,
+            ResponseText = complaint.ResponseText,
+            Status = (CurrentComplaintStatus)complaint.ComplaintStatus,
+            CreatedAt = complaint.CreatdAt
+        }).ToList();
 
         return response;
     }
@@ -435,6 +520,7 @@ public class QueueService : ServiceBase<IQueueService>, IQueueService
         {
             Id = complaint.Id,
             QueueId = complaint.QueueId,
+            EmployeeId = complaint.Queue.EmployeeId,
             CustomerId = complaint.CustomerId,
             ComplaintText = complaint.ComplaintText,
             ResponseText = complaint.ResponseText,
@@ -465,6 +551,7 @@ public class QueueService : ServiceBase<IQueueService>, IQueueService
         {
             Id = complaint.Id,
             QueueId = complaint.QueueId,
+            EmployeeId = complaint.Queue.EmployeeId,
             CustomerId = complaint.CustomerId,
             ComplaintText = complaint.ComplaintText,
             ResponseText = complaint.ResponseText,
@@ -545,6 +632,30 @@ public class QueueService : ServiceBase<IQueueService>, IQueueService
             BannedUntil = blockedCustomer.BannedUntil,
             DoesBanForever = blockedCustomer.DoesBanForever,
             CreatedAt = blockedCustomer.CreatedAt
+        }).ToList();
+
+        return response;
+    }
+
+    public async UnaryResult<List<EmployeeInfo>> GetAllEmployees()
+    {
+        var employees = await _dbContext.Employees.ToListAsync();
+        if (!employees.Any())
+        {
+            _logger.LogWarning("Not found any employees");
+            return [];
+        }
+
+        var response = employees.Select(employee => new EmployeeInfo
+        {
+            CompanyId = employee.CompanyId,
+            BranchId = employee.BranchId,
+            CompanyServiceId = employee.ServiceId,
+            EmployeeId = employee.Id,
+            FirstName = employee.FirstName,
+            LastName = employee.LastName,
+            Position = employee.Position,
+            CreatedAt = employee.CreatedAt
         }).ToList();
 
         return response;

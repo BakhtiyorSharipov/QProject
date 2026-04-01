@@ -29,6 +29,16 @@ public class ReportController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("employee-report")]
+    public async Task<ActionResult<EmployeeReportResponse>> GetEmployeeReport([FromQuery] EmployeeReportRequest request)
+    {
+        _logger.LogInformation("Getting employee report - EmployeeId: {EmployeeId}", request.EmployeeId);
+    
+        var result = await _service.GetEmployeeReport(request);
+        
+        return Ok(result);
+    }
+
 
 
 }

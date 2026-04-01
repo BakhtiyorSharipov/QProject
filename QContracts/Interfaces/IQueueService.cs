@@ -14,14 +14,20 @@ public interface IQueueService : IService<IQueueService>
     UnaryResult<List<QueueInfo>> GetServiceQueuesAsync(int serviceId);
     
     UnaryResult<ReviewInfo> GetQueueReviewAsync(int queueId);  
+    UnaryResult<List<ReviewInfo>> GetEmployeeReviewsAsync(int employeeId);
+    
+    
     UnaryResult<List<ReviewInfo>> GetCustomerReviewsAsync(int customerId); 
     UnaryResult<List<ReviewInfo>> GetCompanyReviewsAsync(int companyId);  
     
     
     UnaryResult<ComplaintInfo> GetQueueComplaintAsync(int queueId);  
+    UnaryResult<List<ComplaintInfo>> GetEmployeeComplaintsAsync(int employeeId);  
     UnaryResult<List<ComplaintInfo>> GetCustomerComplaintsAsync(int customerId); 
     UnaryResult<List<ComplaintInfo>> GetCompanyComplaintsAsync(int companyId);
     UnaryResult<List<CustomerInfo>> GetAllCompanyCustomers(int companyId);
     UnaryResult<List<EmployeeInfo>> GetAllCompanyEmployees(int companyId);
     UnaryResult<List<BlockedCustomerInfo>> GetAllCompanyBlockedCustomers(int companyId);
+    UnaryResult<List<EmployeeInfo>> GetAllEmployees();
+
 }

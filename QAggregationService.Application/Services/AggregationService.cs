@@ -8,6 +8,7 @@ using QBranchService.Contracts.Interfaces;
 using QBranchService.Contracts.Requests;
 using QContracts.Enums;
 using QContracts.Interfaces;
+using QContracts.Responses;
 
 namespace QAggregationService.Application.Services;
 
@@ -31,24 +32,24 @@ public class AggregationService : IAggregationService
         {
             throw new ArgumentException("Company is required");
         }
-    
+
         _logger.LogInformation("Fetching report for company Id {companyId}", request.CompanyId.Value);
-    
+
         var companyResult = await _branchService.CheckCompanyId(new CompanyRequest
         {
             RequestId = Guid.NewGuid(),
             CompanyId = request.CompanyId.Value,
             RequestedAt = DateTimeOffset.UtcNow
         });
-    
+
         if (!companyResult.IsValid)
         {
             _logger.LogInformation("Company with Id {CompanyId} not found", request.CompanyId.Value);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound,
                 companyResult.ErrorMessage ?? "Company not found");
         }
-    
-    
+
+
         string branchName = null;
         if (request.BranchId.HasValue)
         {
@@ -59,20 +60,20 @@ public class AggregationService : IAggregationService
                 BranchId = request.BranchId.Value,
                 RequestedAt = DateTimeOffset.UtcNow
             });
-    
+
             if (!branchResult.IsValid)
             {
                 _logger.LogInformation("Branch with Id {branchId} not found", request.BranchId.Value);
                 throw new HttpStatusCodeException(HttpStatusCode.NotFound,
                     companyResult.ErrorMessage ?? "Branch not found");
             }
-    
+
             if (branchResult.BranchName != null)
             {
                 branchName = branchResult.BranchName;
             }
         }
-    
+
         string serviceName = null;
         if (request.ServiceId.HasValue)
         {
@@ -83,74 +84,74 @@ public class AggregationService : IAggregationService
                 CompanyServiceId = request.ServiceId.Value,
                 RequestedAt = DateTimeOffset.UtcNow
             });
-    
+
             if (!companyServiceResult.IsValid)
             {
                 _logger.LogInformation("Company service with Id {serviceId} not found", request.ServiceId.Value);
                 throw new HttpStatusCodeException(HttpStatusCode.NotFound,
                     companyResult.ErrorMessage ?? "Company service not found");
             }
-    
+
             if (companyServiceResult.CompanyServiceName != null)
             {
                 serviceName = companyServiceResult.CompanyServiceName;
             }
         }
-    
+
         var companyQueues = await _queueService.GetCompanyQueuesAsync(request.CompanyId.Value);
         var companyReviews = await _queueService.GetCompanyReviewsAsync(request.CompanyId.Value);
         var companyComplaints = await _queueService.GetCompanyComplaintsAsync(request.CompanyId.Value);
         var customers = await _queueService.GetAllCompanyCustomers(request.CompanyId.Value);
         var blockedCustomers = await _queueService.GetAllCompanyBlockedCustomers(request.CompanyId.Value);
         var employees = await _queueService.GetAllCompanyEmployees(request.CompanyId.Value);
-    
+
         var filteredQueues = companyQueues.AsEnumerable();
         if (request.BranchId.HasValue)
         {
             filteredQueues = filteredQueues.Where(s => s.BranchId == request.BranchId.Value);
         }
-    
+
         if (request.ServiceId.HasValue)
         {
             filteredQueues = filteredQueues.Where(s => s.ServiceId == request.ServiceId.Value);
         }
-    
+
         if (request.FromDate.HasValue)
             filteredQueues = filteredQueues.Where(s => s.StartTime >= request.FromDate.Value);
-    
+
         if (request.ToDate.HasValue)
             filteredQueues =
                 filteredQueues.Where(s => (s.EndTime ?? s.StartTime.AddMinutes(30)) <= request.ToDate.Value);
-    
+
         if (request.QueueStatus.HasValue)
             filteredQueues = filteredQueues.Where(s => s.CurrentQueueStatus == request.QueueStatus.Value);
-    
+
         var filteredQueuesList = filteredQueues.ToList();
         var totalRecords = filteredQueuesList.Count;
-    
+
         var pagedQueues = filteredQueuesList
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
             .ToList();
-    
-    
+
+
         var filteredQueuesId = filteredQueuesList.Select(q => q.Id).ToList();
-    
+
         var filteredReviews = companyReviews
             .Where(r => filteredQueuesId.Contains(r.QueueId))
             .ToList();
-    
+
         var filteringComplaints = companyComplaints
             .Where(c => filteredQueuesId.Contains(c.QueueId))
             .AsEnumerable();
-    
+
         if (request.ComplaintStatus.HasValue)
         {
             filteringComplaints = filteringComplaints.Where(s => s.Status == request.ComplaintStatus);
         }
-    
+
         var filteredComplaints = filteringComplaints.ToList();
-    
+
         var totalQueues = filteredQueuesId.Count;
         var completedQueues = filteredQueuesList.Count(s => s.CurrentQueueStatus == CurrentQueueStatus.Completed);
         var pendingQueues = filteredQueuesList.Count(s => s.CurrentQueueStatus == CurrentQueueStatus.Pending);
@@ -160,7 +161,7 @@ public class AggregationService : IAggregationService
             || s.CurrentQueueStatus == CurrentQueueStatus.CancelledByEmployee
             || s.CurrentQueueStatus == CurrentQueueStatus.CanceledByAdmin);
         var didNotCome = filteredQueuesList.Count(s => s.CurrentQueueStatus == CurrentQueueStatus.DidNotCome);
-    
+
         var averageRating = filteredReviews.Any() ? filteredReviews.Average(r => r.Grade) : 0;
         var totalReviews = filteredReviews.Count;
         var fiveStarReviews = filteredReviews.Count(s => s.Grade == 5);
@@ -168,16 +169,16 @@ public class AggregationService : IAggregationService
         var threeStarReviews = filteredReviews.Count(s => s.Grade == 3);
         var twoStarReviews = filteredReviews.Count(s => s.Grade == 2);
         var oneStarReviews = filteredReviews.Count(s => s.Grade == 1);
-    
+
         var totalComplaints = filteredComplaints.Count;
         var pendingComplaints = filteredComplaints.Count(s => s.Status == CurrentComplaintStatus.Pending);
         var reviewedComplaints = filteredComplaints.Count(s => s.Status == CurrentComplaintStatus.Reviewed);
         var resolvedComplaints = filteredComplaints.Count(s => s.Status == CurrentComplaintStatus.Resolved);
-    
+
         var totalCustomers = customers.Count;
         var totalEmployees = employees.Count;
         var totalBlockedCustomers = blockedCustomers.Count;
-    
+
         var response = new CompanyReportResponse
         {
             CompanyId = request.CompanyId.Value,
@@ -208,7 +209,7 @@ public class AggregationService : IAggregationService
             TotalRecords = totalRecords,
             TotalPages = (int)Math.Ceiling((double)totalRecords / request.PageSize)
         };
-    
+
         response.Queues = pagedQueues.Select(q => new QueueReportItem
         {
             Id = q.Id,
@@ -218,22 +219,21 @@ public class AggregationService : IAggregationService
             StartTime = q.StartTime,
             EndTime = q.EndTime
         }).ToList();
-    
+
         return response;
     }
 
     public async Task<DashboardResponse> GetCompanyDashboard(int companyId)
     {
-        
         _logger.LogInformation("Fetching dashboard for company Id {companyId}", companyId);
-    
+
         var companyResult = await _branchService.CheckCompanyId(new CompanyRequest
         {
             RequestId = Guid.NewGuid(),
             CompanyId = companyId,
             RequestedAt = DateTimeOffset.UtcNow
         });
-    
+
         if (!companyResult.IsValid)
         {
             _logger.LogInformation("Company with Id {CompanyId} not found", companyId);
@@ -275,11 +275,11 @@ public class AggregationService : IAggregationService
             .GroupBy(s => s.ServiceId)
             .OrderByDescending(s => s.Count())
             .FirstOrDefault();
-        
+
 
         int? topServiceId = groupedByService?.Key;
         int topServiceQueueCount = groupedByService?.Count() ?? 0;
-        string topServiceName ="Unknown";
+        string topServiceName = "Unknown";
         if (topServiceId.HasValue)
         {
             var topService = companyServices.FirstOrDefault(s => s.CompanyServiceId == topServiceId);
@@ -300,7 +300,7 @@ public class AggregationService : IAggregationService
         if (topBranchId.HasValue)
         {
             var topBranch = companyBranches.FirstOrDefault(s => s.BranchId == topBranchId);
-            if (topBranch !=null)
+            if (topBranch != null)
             {
                 topBranchName = topBranch.BranchName;
             }
@@ -318,7 +318,7 @@ public class AggregationService : IAggregationService
         if (topEmployeeId.HasValue)
         {
             var topEmployee = companyEmployees.FirstOrDefault(s => s.EmployeeId == topEmployeeId);
-            if (topEmployee!=null)
+            if (topEmployee != null)
             {
                 topEmployeeName = topEmployee.FirstName;
             }
@@ -336,17 +336,17 @@ public class AggregationService : IAggregationService
         if (topCustomerId.HasValue)
         {
             var topCustomer = companyCustomers.FirstOrDefault(s => s.CustomerId == topCustomerId);
-            if (topCustomer!= null)
+            if (topCustomer != null)
             {
                 topCustomerName = topCustomer.FirstName;
             }
         }
-        
+
         var recentQueues = companyQueues
             .OrderByDescending(q => q.CreatedAt)
             .Take(5)
             .ToList();
-        
+
         var recentQueueItems = recentQueues.Select(q => new QueueReportItem
         {
             Id = q.Id,
@@ -391,9 +391,99 @@ public class AggregationService : IAggregationService
         return response;
     }
 
-    public Task<EmployeeReportResponse> GetEmployeeReport(EmployeeReportRequest request)
+    public async Task<EmployeeReportResponse> GetEmployeeReport(EmployeeReportRequest request)
     {
-        throw new NotImplementedException();
+        var employees = await _queueService.GetAllEmployees();
+        if (!employees.Any())
+        {
+            _logger.LogWarning("Not found any employee");
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, "Not found any employee");
+        }
+
+        var employeeId = employees.FirstOrDefault(s => s.EmployeeId == request.EmployeeId);
+        if (employeeId == null)
+        {
+            _logger.LogWarning("Not found employee with Id {employeeId}", request.EmployeeId);
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound,
+                $"Not found employee with Id {request.EmployeeId}");
+        }
+
+        var totalEmployeeQueues = await _queueService.GetEmployeeQueuesAsync(request.EmployeeId);
+        var totalEmployeeReviews = await _queueService.GetEmployeeReviewsAsync(request.EmployeeId);
+        var totalEmployeeComplaints = await _queueService.GetEmployeeComplaintsAsync(request.EmployeeId);
+
+        var filteredQueues = totalEmployeeQueues.AsEnumerable();
+        var filteredReviews = totalEmployeeReviews.AsEnumerable();
+        var filteredComplaints = totalEmployeeComplaints.AsEnumerable();
+        if (request.FromDate.HasValue)
+        {
+            filteredQueues = filteredQueues.Where(s => s.StartTime >= request.FromDate.Value);
+            filteredReviews = filteredReviews.Where(s => s.CreatedAt >= request.FromDate.Value);
+            filteredComplaints = filteredComplaints.Where(s => s.CreatedAt >= request.FromDate.Value);
+        }
+
+        if (request.ToDate.HasValue)
+        {
+            filteredQueues =
+                filteredQueues.Where(s => (s.EndTime ?? s.StartTime.AddMinutes(30)) <= request.ToDate.Value);
+            filteredReviews = filteredReviews.Where(s => s.CreatedAt <= request.ToDate.Value);
+            filteredComplaints = filteredComplaints.Where(s => s.CreatedAt <= request.ToDate.Value);
+        }
+
+        var filteredQueuesList = filteredQueues.ToList();
+        var filteredReviewList = filteredReviews.ToList();
+        var filteredComplaintList = filteredComplaints.ToList();
+        var totalQueues = filteredQueuesList.Count;
+        var completedQueues = filteredQueuesList.Count(s => s.CurrentQueueStatus == CurrentQueueStatus.Completed);
+        var pendingQueues = filteredQueuesList.Count(s => s.CurrentQueueStatus == CurrentQueueStatus.Pending);
+        var cancelledQueues = filteredQueuesList.Count(s => s.CurrentQueueStatus == CurrentQueueStatus.CanceledByAdmin
+                                                            || s.CurrentQueueStatus ==
+                                                            CurrentQueueStatus.CancelledByCustomer
+                                                            || s.CurrentQueueStatus ==
+                                                            CurrentQueueStatus.CancelledByEmployee);
+        var didNotComeQueues = filteredQueuesList.Count(s => s.CurrentQueueStatus == CurrentQueueStatus.DidNotCome);
+
+        var averageEmployeeReviewGrade = filteredReviewList.Average(s => s.Grade);
+        var totalReviews = filteredReviewList.Count();
+        var totalComplaints = filteredComplaintList.Count();
+        var pendingComplaints = filteredComplaintList.Count(s => s.Status == CurrentComplaintStatus.Pending);
+        var reviewedComplaints = filteredComplaintList.Count(s => s.Status == CurrentComplaintStatus.Reviewed);
+        var resolvedComplaints = filteredComplaintList.Count(s => s.Status == CurrentComplaintStatus.Resolved);
+
+        var recentQueues = filteredQueuesList
+            .OrderByDescending(s => s.CreatedAt)
+            .Take(5)
+            .ToList();
+
+        var recentQueueItem = recentQueues.Select(q => new QueueReportItem()
+        {
+            Id = q.Id,
+            CustomerName = q.CustomerName,
+            EmployeeName = q.EmployeeName,
+            Status = q.CurrentQueueStatus.ToString(),
+            StartTime = q.StartTime,
+            EndTime = q.EndTime
+        }).ToList();
+
+        var response = new EmployeeReportResponse
+        {
+            EmployeeId = employeeId.EmployeeId,
+            EmployeeName = employeeId.FirstName,
+            TotalQueues = totalQueues,
+            CompletedQueues = completedQueues,
+            PendingQueues = pendingQueues,
+            CancelledQueues = cancelledQueues,
+            DidNotComeQueues = didNotComeQueues,
+            AverageReviewGrade = averageEmployeeReviewGrade,
+            TotalReviewsReceived = totalReviews,
+            TotalComplaintsReceived = totalComplaints,
+            PendingComplaints = pendingComplaints,
+            ReviewedComplaints = reviewedComplaints,
+            ResolvedComplaints = resolvedComplaints,
+            RecentQueues = recentQueueItem
+        };
+
+        return response;
     }
 
     public Task<CustomerReportResponse> GetCustomerReport(CustomerReportRequest request)
