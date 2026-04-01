@@ -660,4 +660,24 @@ public class QueueService : ServiceBase<IQueueService>, IQueueService
 
         return response;
     }
+
+    public async UnaryResult<List<CustomerInfo>> GetAllCustomers()
+    {
+        var customers = await _dbContext.Customers.ToListAsync();
+        if (!customers.Any())
+        {
+            _logger.LogWarning("Not found any customer");
+            return [];
+        }
+
+        var response = customers.Select(customer => new CustomerInfo()
+        {
+            CustomerId = customer.Id,
+            FirstName = customer.FirstName,
+            LastName = customer.LastName,
+            CreatedAt = customer.CreatedAt
+        }).ToList();
+
+        return response;
+    }
 }

@@ -16,6 +16,7 @@ public class CustomerReportResponse
     [Key(8)] public int TotalReviews { get; set; }
     [Key(9)] public int TotalComplaints { get; set; }
     [Key(10)] public int PendingComplaints { get; set; }
-    [Key(11)] public int ResolvedComplaints { get; set; }
-    [Key(12)] public List<QueueReportItem>? RecentQueues { get; set; }
+    [Key(11)] public int ReviewedComplaints { get; set; }
+    [Key(12)] public int ResolvedComplaints { get; set; }
+    [Key(13)] public List<QueueReportItem>? RecentQueues { get; set; }
 }

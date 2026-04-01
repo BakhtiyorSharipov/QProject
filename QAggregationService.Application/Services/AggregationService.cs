@@ -486,8 +486,102 @@ public class AggregationService : IAggregationService
         return response;
     }
 
-    public Task<CustomerReportResponse> GetCustomerReport(CustomerReportRequest request)
+    public async Task<CustomerReportResponse> GetCustomerReport(CustomerReportRequest request)
     {
-        throw new NotImplementedException();
+        var customers = await _queueService.GetAllCustomers();
+        if (!customers.Any())
+        {
+            _logger.LogWarning("Not found any employee");
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, "Not found any employee");
+        }
+
+        var customer = customers.FirstOrDefault(s => s.CustomerId == request.CustomerId);
+        if (customer == null)
+        {
+            _logger.LogWarning("Not found customer with Id {employeeId}", request.CustomerId);
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound,
+                $"Not found customer with Id {request.CustomerId}");
+        }
+
+        var totalCustomerQueues = await _queueService.GetCustomerQueuesAsync(request.CustomerId);
+        var totalCustomerReviews = await _queueService.GetCustomerReviewsAsync(request.CustomerId);
+        var totalCustomerComplaints = await _queueService.GetCustomerComplaintsAsync(request.CustomerId);
+
+        var filteredQueues = totalCustomerQueues.AsEnumerable();
+        var filteredReviews = totalCustomerReviews.AsEnumerable();
+        var filteredComplaints = totalCustomerComplaints.AsEnumerable();
+        if (request.FromDate.HasValue)
+        {
+            filteredQueues = filteredQueues.Where(s => s.StartTime >= request.FromDate.Value);
+            filteredReviews = filteredReviews.Where(s => s.CreatedAt >= request.FromDate.Value);
+            filteredComplaints = filteredComplaints.Where(s => s.CreatedAt >= request.FromDate.Value);
+        }
+
+        if (request.ToDate.HasValue)
+        {
+            filteredQueues =
+                filteredQueues.Where(s => (s.EndTime ?? s.StartTime.AddMinutes(30)) <= request.ToDate.Value);
+            filteredReviews = filteredReviews.Where(s => s.CreatedAt <= request.ToDate.Value);
+            filteredComplaints = filteredComplaints.Where(s => s.CreatedAt <= request.ToDate.Value);
+        }
+
+        var filteredQueuesList = filteredQueues.ToList();
+        var filteredReviewList = filteredReviews.ToList();
+        var filteredComplaintList = filteredComplaints.ToList();
+        var totalQueues = filteredQueuesList.Count;
+        var completedQueues = filteredQueuesList.Count(s => s.CurrentQueueStatus == CurrentQueueStatus.Completed);
+        var pendingQueues = filteredQueuesList.Count(s => s.CurrentQueueStatus == CurrentQueueStatus.Pending);
+        var cancelledQueues = filteredQueuesList.Count(s => s.CurrentQueueStatus == CurrentQueueStatus.CanceledByAdmin
+                                                            || s.CurrentQueueStatus ==
+                                                            CurrentQueueStatus.CancelledByCustomer
+                                                            || s.CurrentQueueStatus ==
+                                                            CurrentQueueStatus.CancelledByEmployee);
+        var didNotComeQueues = filteredQueuesList.Count(s => s.CurrentQueueStatus == CurrentQueueStatus.DidNotCome);
+
+        double averageCustomerReviewGrade =0;
+        if (filteredReviewList.Any())
+        {
+            averageCustomerReviewGrade = filteredReviewList.Average(s => s.Grade);
+        }
+        var totalReviews = filteredReviewList.Count();
+        var totalComplaints = filteredComplaintList.Count();
+        var pendingComplaints = filteredComplaintList.Count(s => s.Status == CurrentComplaintStatus.Pending);
+        var reviewedComplaints = filteredComplaintList.Count(s => s.Status == CurrentComplaintStatus.Reviewed);
+        var resolvedComplaints = filteredComplaintList.Count(s => s.Status == CurrentComplaintStatus.Resolved);
+
+        var recentQueues = filteredQueuesList
+            .OrderByDescending(s => s.CreatedAt)
+            .Take(5)
+            .ToList();
+
+        var recentQueueItem = recentQueues.Select(q => new QueueReportItem()
+        {
+            Id = q.Id,
+            CustomerName = q.CustomerName,
+            EmployeeName = q.EmployeeName,
+            Status = q.CurrentQueueStatus.ToString(),
+            StartTime = q.StartTime,
+            EndTime = q.EndTime
+        }).ToList();
+
+        var response = new CustomerReportResponse()
+        {
+            CustomerId = customer.CustomerId,
+            CustomerName = customer.FirstName,
+            TotalQueues = totalQueues,
+            CompletedQueues = completedQueues,
+            PendingQueues = pendingQueues,
+            CancelledQueues = cancelledQueues,
+            DidNotComeQueues = didNotComeQueues,
+            AverageReviewGrade = averageCustomerReviewGrade,
+            TotalReviews = totalReviews,
+            TotalComplaints = totalComplaints,
+            PendingComplaints = pendingComplaints,
+            ReviewedComplaints = reviewedComplaints,
+            ResolvedComplaints = resolvedComplaints,
+            RecentQueues = recentQueueItem
+        };
+
+        return response;
     }
 }

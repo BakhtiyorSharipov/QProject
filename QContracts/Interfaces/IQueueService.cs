@@ -29,5 +29,6 @@ public interface IQueueService : IService<IQueueService>
     UnaryResult<List<EmployeeInfo>> GetAllCompanyEmployees(int companyId);
     UnaryResult<List<BlockedCustomerInfo>> GetAllCompanyBlockedCustomers(int companyId);
     UnaryResult<List<EmployeeInfo>> GetAllEmployees();
+    UnaryResult<List<CustomerInfo>> GetAllCustomers();
 
 }
