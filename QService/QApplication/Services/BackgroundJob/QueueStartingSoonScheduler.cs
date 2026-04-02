@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using QApplication.Interfaces.Data;
+using QContracts.Events;
 using QContracts.QueueEvents;
 using QContracts.QueueEvents.Enums;
 using QDomain.Enums;

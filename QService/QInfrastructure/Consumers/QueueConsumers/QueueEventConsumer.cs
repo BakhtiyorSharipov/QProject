@@ -2,6 +2,7 @@ using System.Collections.Frozen;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using QApplication.Caching;
+using QContracts.Events;
 using QContracts.QueueEvents;
 using QContracts.QueueEvents.Enums;
 using QInfrastructure.Extensions;

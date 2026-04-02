@@ -5,8 +5,10 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using QAggregationService.Application.Services;
 using QAggregationService.Contracts.Interfaces;
 using Grpc.Net.Client;
+using QAggregationService.Application.Caching;
 using QContracts.Interfaces;
 using QBranchService.Contracts.Interfaces;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -74,6 +76,15 @@ builder.Services.AddSingleton<IBranchService>(provider =>
 
     return MagicOnionClient.Create<IBranchService>(channel);
 });
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>()
+        .GetValue<string>("Redis:ConnectionString");
+
+    return ConnectionMultiplexer.Connect(configuration);
+});
+builder.Services.AddSingleton<ICacheService, CacheService>();
 
 builder.Services.AddScoped<IAggregationService, AggregationService>();
 

@@ -6,6 +6,7 @@ using QApplication.Exceptions;
 using QApplication.Interfaces;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
+using QContracts.Events;
 using QContracts.QueueEvents;
 using QContracts.QueueEvents.Enums;
 using QDomain.Enums;

@@ -10,6 +10,7 @@ using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QBranchService.Contracts.Interfaces;
 using QBranchService.Contracts.Requests;
+using QContracts.Events;
 using QContracts.QueueEvents;
 using QContracts.QueueEvents.Enums;
 using QDomain.Enums;

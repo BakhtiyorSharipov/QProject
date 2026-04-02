@@ -1,6 +1,6 @@
 using QContracts.QueueEvents.Enums;
 
-namespace QContracts.QueueEvents;
+namespace QContracts.Events;
 
 public class QueueEvent
 {
