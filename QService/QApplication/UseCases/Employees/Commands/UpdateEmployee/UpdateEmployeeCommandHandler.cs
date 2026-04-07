@@ -1,10 +1,12 @@
 using System.Net;
+using MassTransit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
+using QContracts.Events.EmployeeEvent;
 using QDomain.Models;
 
 namespace QApplication.UseCases.Employees.Commands.UpdateEmployee;
@@ -13,11 +15,13 @@ public class UpdateEmployeeCommandHandler : IRequestHandler<UpdateEmployeeComman
 {
     private readonly ILogger<UpdateEmployeeCommand> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
+    private readonly IPublishEndpoint _publishEndpoint;
 
-    public UpdateEmployeeCommandHandler(ILogger<UpdateEmployeeCommand> logger, IQueueApplicationDbContext dbContext)
+    public UpdateEmployeeCommandHandler(ILogger<UpdateEmployeeCommand> logger, IQueueApplicationDbContext dbContext, IPublishEndpoint publishEndpoint)
     {
         _logger = logger;
         _dbContext = dbContext;
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task<EmployeeResponseModel> Handle(UpdateEmployeeCommand request, CancellationToken cancellationToken)
@@ -39,6 +43,19 @@ public class UpdateEmployeeCommandHandler : IRequestHandler<UpdateEmployeeComman
         await _dbContext.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Employee with Id {dbEmployee.Id} updated successfully.", dbEmployee.Id);
 
+        await _publishEndpoint.Publish(new EmployeeUpdatedEvent
+        {
+            OccurredAt = DateTimeOffset.UtcNow,
+            CompanyId = dbEmployee.CompanyId,
+            BranchId = dbEmployee.BranchId,
+            ServiceId = dbEmployee.ServiceId,
+            EmployeeId = dbEmployee.Id,
+            FirstName = dbEmployee.FirstName,
+            LastName = dbEmployee.LastName,
+            Position = dbEmployee.Position,
+            PhoneNumber = dbEmployee.PhoneNumber
+        }, cancellationToken);
+        
         var response = new EmployeeResponseModel()
         {
             Id = dbEmployee.Id,

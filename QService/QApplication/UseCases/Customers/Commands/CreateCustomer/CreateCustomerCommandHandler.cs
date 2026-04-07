@@ -1,10 +1,12 @@
 using System.Net;
+using MassTransit;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
 using QApplication.Requests.CustomerRequest;
 using QApplication.Responses;
+using QContracts.Events.CustomerEvent;
 using QDomain.Models;
 
 namespace QApplication.UseCases.Customers.Commands.CreateCustomer;
@@ -13,11 +15,13 @@ public class CreateCustomerCommandHandler: IRequestHandler<CreateCustomerCommand
 {
     private readonly ILogger<CreateCustomerCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
+    private readonly IPublishEndpoint _publishEndpoint;
 
-    public CreateCustomerCommandHandler(ILogger<CreateCustomerCommandHandler> logger, IQueueApplicationDbContext dbContext)
+    public CreateCustomerCommandHandler(ILogger<CreateCustomerCommandHandler> logger, IQueueApplicationDbContext dbContext, IPublishEndpoint publishEndpoint)
     {
         _logger = logger;
         _dbContext = dbContext;
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task<CustomerResponseModel> Handle(CreateCustomerCommand request, CancellationToken cancellationToken)
@@ -37,6 +41,16 @@ public class CreateCustomerCommandHandler: IRequestHandler<CreateCustomerCommand
 
         _logger.LogInformation("Customer {customer.FirstName} added successfully with Id {customer.Id}",
             customer.FirstName, customer.Id);
+
+        await _publishEndpoint.Publish(new CustomerCreatedEvent
+        {
+            OccuredAt = DateTimeOffset.UtcNow,
+            CustomerId = customer.Id,
+            FirstName = customer.FirstName,
+            LastName = customer.LastName,
+            PhoneNumber = customer.PhoneNumber
+        }, cancellationToken);
+        
         var response = new CustomerResponseModel()
         {
             Id = customer.Id,

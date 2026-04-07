@@ -8,6 +8,7 @@ using QBranchService.Infrastructure.Persistence.DataBase;
 using QBranchService.Application.Services;
 using QBranchService.Contracts.Interfaces;
 using FluentValidation.AspNetCore;
+using MassTransit;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,7 +28,32 @@ builder.Services.AddFluentValidation(fv =>
 
 builder.Services.AddMagicOnion();
 
+
+builder.Services.AddMassTransit(x =>
+{
+    
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        var configuration = context.GetService<IConfiguration>();
+        
+        var host = configuration?["RabbitMQ:Host"] ?? "localhost";
+        var port = configuration?.GetValue<ushort?>("RabbitMQ:Port") ?? 5672;
+        var username = configuration?["RabbitMQ:Username"] ?? "guest";
+        var password = configuration?["RabbitMQ:Password"] ?? "guest";
+        
+        cfg.Host(host, port, "/", h =>
+        {
+            h.Username(username);
+            h.Password(password);
+        });
+        
+        cfg.ConfigureEndpoints(context);
+        
+    });
+});
+
 builder.Services.AddApplicationService();
+
 
 
 builder.Services.AddControllers()

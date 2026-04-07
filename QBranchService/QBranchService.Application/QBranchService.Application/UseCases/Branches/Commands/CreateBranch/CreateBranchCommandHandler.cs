@@ -1,10 +1,12 @@
 using System.Net;
+using MassTransit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QBranchService.Application.Exceptions;
 using QBranchService.Application.Interfaces.Data;
 using QBranchService.Application.Response;
+using QBranchService.Contracts.Events.BranchEvents;
 using QBranchService.Domain.Models;
 
 namespace QBranchService.Application.UseCases.Branches.Commands.CreateBranch;
@@ -13,12 +15,14 @@ public class CreateBranchCommandHandler : IRequestHandler<CreateBranchCommand, B
 {
     private readonly ILogger<CreateBranchCommandHandler> _logger;
     private readonly IBranchServiceApplicationDbContext _dbContext;
+    private readonly IPublishEndpoint _publishEndpoint;
 
     public CreateBranchCommandHandler(ILogger<CreateBranchCommandHandler> logger,
-        IBranchServiceApplicationDbContext dbContext)
+        IBranchServiceApplicationDbContext dbContext, IPublishEndpoint publishEndpoint)
     {
         _logger = logger;
         _dbContext = dbContext;
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task<BranchResponseModel> Handle(CreateBranchCommand request, CancellationToken cancellationToken)
@@ -49,6 +53,19 @@ public class CreateBranchCommandHandler : IRequestHandler<CreateBranchCommand, B
         await _dbContext.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Branch {branchName} added successfully with Id {branchId}", branch.BranchName,
             branch.Id);
+
+        await _publishEndpoint.Publish(new BranchCreatedEvent
+        {
+            OccuredAt = DateTimeOffset.UtcNow,
+            BranchId = branch.Id,
+            CompanyId = branch.CompanyId,
+            BranchName = branch.BranchName,
+            City = branch.City,
+            Address = branch.Address,
+            EmailAddress = branch.EmailAddress,
+            PhoneNumber = branch.PhoneNumber,
+            IsActive = branch.IsActive
+        }, cancellationToken);
         
         
         var response = new BranchResponseModel

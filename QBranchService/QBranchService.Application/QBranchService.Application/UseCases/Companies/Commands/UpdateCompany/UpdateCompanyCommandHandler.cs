@@ -1,10 +1,12 @@
 using System.Net;
+using MassTransit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QBranchService.Application.Exceptions;
 using QBranchService.Application.Interfaces.Data;
 using QBranchService.Application.Response;
+using QBranchService.Contracts.Events.CompanyEvents;
 using QBranchService.Domain.Models;
 
 namespace QBranchService.Application.UseCases.Companies.Commands.UpdateCompany;
@@ -13,11 +15,13 @@ public class UpdateCompanyCommandHandler: IRequestHandler<UpdateCompanyCommand, 
 {
     private readonly ILogger<UpdateCompanyCommandHandler> _logger;
     private readonly IBranchServiceApplicationDbContext _dbContext;
+    private readonly IPublishEndpoint _publishEndpoint;
 
-    public UpdateCompanyCommandHandler(ILogger<UpdateCompanyCommandHandler> logger, IBranchServiceApplicationDbContext dbContext)
+    public UpdateCompanyCommandHandler(ILogger<UpdateCompanyCommandHandler> logger, IBranchServiceApplicationDbContext dbContext, IPublishEndpoint publishEndpoint)
     {
         _logger = logger;
         _dbContext = dbContext;
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task<CompanyResponseModel> Handle(UpdateCompanyCommand request, CancellationToken cancellationToken)
@@ -37,6 +41,16 @@ public class UpdateCompanyCommandHandler: IRequestHandler<UpdateCompanyCommand, 
         
         await _dbContext.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Company with Id {companyId} updated successfully", request.Id);
+
+        await _publishEndpoint.Publish(new CompanyUpdatedEvent
+        {
+            OccuredAt = DateTimeOffset.UtcNow,
+            CompanyId = dbCompany.Id,
+            CompanyName = dbCompany.CompanyName,
+            Address = dbCompany.Address,
+            EmailAddress = dbCompany.EmailAddress,
+            PhoneNumber = dbCompany.PhoneNumber
+        }, cancellationToken);
 
         var response = new CompanyResponseModel()
         {

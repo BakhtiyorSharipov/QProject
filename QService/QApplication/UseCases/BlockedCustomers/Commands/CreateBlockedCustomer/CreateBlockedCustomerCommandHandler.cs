@@ -11,6 +11,7 @@ using QApplication.Responses;
 using QBranchService.Contracts.Interfaces;
 using QBranchService.Contracts.Requests;
 using QBranchService.Contracts.Responses;
+using QContracts.Events.BlockedCustomerEvent;
 using QDomain.Models;
 
 namespace QApplication.UseCases.BlockedCustomers.Commands.CreateBlockedCustomer;
@@ -22,14 +23,16 @@ public class CreateBlockedCustomerCommandHandler: IRequestHandler<CreateBlockedC
     private readonly IBranchService _branchService;
     private readonly IRequestClient<CompanyRequest> _validationClient;
     private readonly IHttpContextAccessor _contextAccessor;
+    private readonly IPublishEndpoint _publishEndpoint;
 
-    public CreateBlockedCustomerCommandHandler(ILogger<CreateBlockedCustomerCommandHandler> logger, IQueueApplicationDbContext dbContext, IRequestClient<CompanyRequest> validationClient, IHttpContextAccessor contextAccessor, IBranchService branchService)
+    public CreateBlockedCustomerCommandHandler(ILogger<CreateBlockedCustomerCommandHandler> logger, IQueueApplicationDbContext dbContext, IRequestClient<CompanyRequest> validationClient, IHttpContextAccessor contextAccessor, IBranchService branchService, IPublishEndpoint publishEndpoint)
     {
         _logger = logger;
         _dbContext = dbContext;
         _validationClient = validationClient;
         _contextAccessor = contextAccessor;
         _branchService = branchService;
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task<BlockedCustomerResponseModel> Handle(CreateBlockedCustomerCommand request, CancellationToken cancellationToken)
@@ -93,6 +96,17 @@ public class CreateBlockedCustomerCommandHandler: IRequestHandler<CreateBlockedC
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Customer with Id {request.CustomerId} blocked successfully.", request.CustomerId);
+
+        await _publishEndpoint.Publish(new BlockedCustomerCreatedEvent
+        {
+            OccuredAt = DateTimeOffset.UtcNow,
+            CompanyId = blockedCustomer.CompanyId,
+            CustomerId = blockedCustomer.CustomerId,
+            BlockedCustomerId = blockedCustomer.Id,
+            Reason = blockedCustomer.Reason,
+            BannedUntil = blockedCustomer.BannedUntil,
+            DoesBanForever = blockedCustomer.DoesBanForever
+        }, cancellationToken);
 
         var response = new BlockedCustomerResponseModel()
         {

@@ -1,7 +1,9 @@
+using MassTransit;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
+using QContracts.Events.EmployeeEvent;
 using QDomain.Models;
 
 namespace QApplication.UseCases.Employees.Commands.CreateEmployee;
@@ -10,11 +12,13 @@ public class CreateEmployeeCommandHandler: IRequestHandler<CreateEmployeeCommand
 {
     private readonly ILogger<CreateEmployeeCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
+    private readonly IPublishEndpoint _publishEndpoint;
 
-    public CreateEmployeeCommandHandler(ILogger<CreateEmployeeCommandHandler> logger, IQueueApplicationDbContext dbContext)
+    public CreateEmployeeCommandHandler(ILogger<CreateEmployeeCommandHandler> logger, IQueueApplicationDbContext dbContext, IPublishEndpoint publishEndpoint)
     {
         _logger = logger;
         _dbContext = dbContext;
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task<EmployeeResponseModel> Handle(CreateEmployeeCommand request, CancellationToken cancellationToken)
@@ -37,6 +41,19 @@ public class CreateEmployeeCommandHandler: IRequestHandler<CreateEmployeeCommand
 
         _logger.LogInformation("Employee {employeeName} added successfully with Id {employeeId}", employee.FirstName,
             employee.Id);
+
+        await _publishEndpoint.Publish(new EmployeeCreatedEvent
+        {
+            OccurredAt = DateTimeOffset.UtcNow,
+            CompanyId = employee.CompanyId,
+            BranchId = employee.BranchId,
+            EmployeeId = employee.Id,
+            ServiceId = employee.ServiceId,
+            FirstName = employee.FirstName,
+            LastName = employee.LastName,
+            Position = employee.Position,
+            PhoneNumber = employee.PhoneNumber
+        }, cancellationToken);
 
         var response = new EmployeeResponseModel()
         {

@@ -16,4 +16,5 @@ public interface ICacheService
     Task<T?> HashGetAsync<T>(string key, string field);
     Task HashSetAsync<T>(string key, string field, T value, TimeSpan? expiry = null);
     Task HashRemoveAsync(string key);
+    
 }

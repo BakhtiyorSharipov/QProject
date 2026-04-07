@@ -52,6 +52,7 @@ public class QueueCancellationService: IQueueCancellationService
 
         await _publishEndpoint.Publish(new QueueEvent
         {
+            CompanyId = queue.CompanyId,
             QueueId = queue.Id,
             CustomerId = queue.CustomerId,
             EmployeeId = queue.EmployeeId,

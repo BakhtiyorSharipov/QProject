@@ -230,6 +230,7 @@ public class UpdateQueueStatusCommandHandler : IRequestHandler<UpdateQueueStatus
     {
         return new QueueEvent
         {
+            CompanyId = dbQueue.CompanyId,
             QueueId = dbQueue.Id,
             CustomerId = dbQueue.CustomerId,
             EmployeeId = dbQueue.EmployeeId,

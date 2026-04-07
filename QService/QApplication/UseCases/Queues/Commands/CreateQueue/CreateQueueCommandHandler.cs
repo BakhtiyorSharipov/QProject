@@ -235,6 +235,7 @@ public class CreateQueueCommandHandler : IRequestHandler<CreateQueueCommand, Add
         await _publishEndpoint.Publish(new QueueEvent
         {
             QueueId = queue.Id,
+            CompanyId = queue.CompanyId,
             CustomerId = queue.CustomerId,
             EmployeeId = queue.EmployeeId,
             StartTime = queue.StartTime,

@@ -101,9 +101,6 @@ builder.Services.AddHostedService<QueueStartingSoonScheduler>();
 
 builder.Services.AddMassTransit(x =>
 {
-    // x.AddRequestClient<BranchIdsRequest>();
-    // x.AddRequestClient<CompanyRequest>();
-    // x.AddRequestClient<CompanyServiceRequest>();
     x.AddConsumer<CompanyCacheResetConsumer>();
     x.AddConsumer<QueueEventConsumer>();
     x.UsingRabbitMq((context, cfg) =>

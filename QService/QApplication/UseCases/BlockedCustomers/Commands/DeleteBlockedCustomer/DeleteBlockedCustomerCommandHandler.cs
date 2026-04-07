@@ -1,4 +1,5 @@
 using System.Net;
+using MassTransit;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,7 @@ using QApplication.Exceptions;
 using QApplication.Extensions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
+using QContracts.Events.BlockedCustomerEvent;
 using QDomain.Models;
 
 namespace QApplication.UseCases.BlockedCustomers.Commands.DeleteBlockedCustomer;
@@ -16,12 +18,14 @@ public class DeleteBlockedCustomerCommandHandler: IRequestHandler<DeleteBlockedC
     private readonly ILogger<DeleteBlockedCustomerCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly IHttpContextAccessor _contextAccessor;
+    private readonly IPublishEndpoint _publishEndpoint;
 
-    public DeleteBlockedCustomerCommandHandler(ILogger<DeleteBlockedCustomerCommandHandler> logger, IQueueApplicationDbContext dbContext, IHttpContextAccessor contextAccessor)
+    public DeleteBlockedCustomerCommandHandler(ILogger<DeleteBlockedCustomerCommandHandler> logger, IQueueApplicationDbContext dbContext, IHttpContextAccessor contextAccessor, IPublishEndpoint publishEndpoint)
     {
         _logger = logger;
         _dbContext = dbContext;
         _contextAccessor = contextAccessor;
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task<bool> Handle(DeleteBlockedCustomerCommand request, CancellationToken cancellationToken)
@@ -45,6 +49,17 @@ public class DeleteBlockedCustomerCommandHandler: IRequestHandler<DeleteBlockedC
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Blocked customer with Id {id} unblocked successfully.", request.Id);
+
+        await _publishEndpoint.Publish(new BlockedCustomerDeletedEvent
+        {
+            OccuredAt = DateTimeOffset.UtcNow,
+            CompanyId = dbBlockedCustomer.CompanyId,
+            CustomerId = dbBlockedCustomer.CustomerId,
+            BlockedCustomerId = dbBlockedCustomer.Id,
+            Reason = dbBlockedCustomer.Reason,
+            BannedUntil = dbBlockedCustomer.BannedUntil,
+            DoesBanForever = dbBlockedCustomer.DoesBanForever
+        }, cancellationToken);
 
         return true;
     }

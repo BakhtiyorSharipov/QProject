@@ -1,10 +1,12 @@
 using System.Net;
+using MassTransit;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
+using QContracts.Events.CustomerEvent;
 using QDomain.Enums;
 using QDomain.Models;
 
@@ -16,13 +18,15 @@ public class RegisterCustomerCommandHandler : IRequestHandler<RegisterCustomerCo
     private readonly ILogger<RegisterCustomerCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly IPasswordHasher<UserEntity> _passwordHasher;
+    private readonly IPublishEndpoint _publishEndpoint;
 
     public RegisterCustomerCommandHandler(ILogger<RegisterCustomerCommandHandler> logger,
-        IQueueApplicationDbContext dbContext, IPasswordHasher<UserEntity> passwordHasher)
+        IQueueApplicationDbContext dbContext, IPasswordHasher<UserEntity> passwordHasher, IPublishEndpoint publishEndpoint)
     {
         _logger = logger;
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task<UserEntity> Handle(RegisterCustomerCommand request, CancellationToken cancellationToken)
@@ -44,6 +48,15 @@ public class RegisterCustomerCommandHandler : IRequestHandler<RegisterCustomerCo
 
         await _dbContext.Customers.AddAsync(customer, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
+        
+        await _publishEndpoint.Publish(new CustomerCreatedEvent
+        {
+            OccuredAt = DateTimeOffset.UtcNow,
+            CustomerId = customer.Id,
+            FirstName = customer.FirstName,
+            LastName = customer.LastName,
+            PhoneNumber = customer.PhoneNumber
+        }, cancellationToken);
 
 
         var user = new UserEntity

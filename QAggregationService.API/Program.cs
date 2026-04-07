@@ -1,11 +1,18 @@
 using System.Net;
-using MagicOnion;
 using MagicOnion.Client;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using QAggregationService.Application.Services;
 using QAggregationService.Contracts.Interfaces;
 using Grpc.Net.Client;
+using MassTransit;
 using QAggregationService.Application.Caching;
+using QAggregationService.Application.Consumers.BlockedCustomerConsumers;
+using QAggregationService.Application.Consumers.BranchConsumers;
+using QAggregationService.Application.Consumers.CompanyConsumers;
+using QAggregationService.Application.Consumers.CompanyCustomersConsumer;
+using QAggregationService.Application.Consumers.CompanyServiceConsumers;
+using QAggregationService.Application.Consumers.CustomerConsumers;
+using QAggregationService.Application.Consumers.EmployeeConsumers;
 using QContracts.Interfaces;
 using QBranchService.Contracts.Interfaces;
 using StackExchange.Redis;
@@ -77,6 +84,9 @@ builder.Services.AddSingleton<IBranchService>(provider =>
     return MagicOnionClient.Create<IBranchService>(channel);
 });
 
+
+builder.Services.AddMemoryCache();
+
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 {
     var configuration = sp.GetRequiredService<IConfiguration>()
@@ -85,8 +95,49 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
     return ConnectionMultiplexer.Connect(configuration);
 });
 builder.Services.AddSingleton<ICacheService, CacheService>();
+builder.Services.AddSingleton<IMemoryCacheService, MemoryCacheService>();
 
 builder.Services.AddScoped<IAggregationService, AggregationService>();
+
+builder.Services.AddMassTransit(x =>
+{
+    x.AddConsumer<EmployeeCreatedConsumer>();
+    x.AddConsumer<EmployeeUpdatedConsumer>();
+    x.AddConsumer<EmployeeDeletedConsumer>();
+    x.AddConsumer<CustomerBelongedToCompanyConsumer>();
+    x.AddConsumer<CustomerCreatedConsumer>();
+    x.AddConsumer<CustomerDeletedConsumer>();
+    x.AddConsumer<CustomerUpdatedConsumer>();
+    x.AddConsumer<BlockedCustomerCreatedConsumer>();
+    x.AddConsumer<BlockedCustomerDeletedConsumer>();
+    x.AddConsumer<CompanyCreatedConsumer>();
+    x.AddConsumer<CompanyUpdatedConsumer>();
+    x.AddConsumer<CompanyDeletedConsumer>();
+    x.AddConsumer<BranchCreatedConsumer>();
+    x.AddConsumer<BranchUpdatedConsumer>();
+    x.AddConsumer<BranchDeletedConsumer>();
+    x.AddConsumer<CompanyServiceCreatedConsumer>();
+    x.AddConsumer<CompanyServiceUpdatedConsumer>();
+    x.AddConsumer<CompanyServiceDeletedConsumer>();
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        var configuration = context.GetService<IConfiguration>();
+        
+        var host = configuration?["RabbitMQ:Host"] ?? "localhost";
+        var port = configuration?.GetValue<ushort?>("RabbitMQ:Port") ?? 5672;
+        var username = configuration?["RabbitMQ:Username"] ?? "guest";
+        var password = configuration?["RabbitMQ:Password"] ?? "guest";
+        
+        cfg.Host(host, port, "/", h =>
+        {
+            h.Username(username);
+            h.Password(password);
+        });
+        
+        cfg.ConfigureEndpoints(context);
+        
+    });
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

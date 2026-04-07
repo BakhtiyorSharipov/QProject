@@ -1,5 +1,6 @@
 using System.Net;
 using Microsoft.Extensions.Logging;
+using QAggregationService.Application.Caching;
 using QAggregationService.Application.Exceptions;
 using QAggregationService.Contracts.Interfaces;
 using QAggregationService.Contracts.Requests;
@@ -8,7 +9,6 @@ using QBranchService.Contracts.Interfaces;
 using QBranchService.Contracts.Requests;
 using QContracts.Enums;
 using QContracts.Interfaces;
-using QContracts.Responses;
 
 namespace QAggregationService.Application.Services;
 
@@ -17,13 +17,17 @@ public class AggregationService : IAggregationService
     private readonly IQueueService _queueService;
     private readonly IBranchService _branchService;
     private readonly ILogger<AggregationService> _logger;
+    private readonly ICacheService _cacheService;
+    private readonly IMemoryCacheService _memoryCacheService;
 
     public AggregationService(IQueueService queueService, IBranchService branchService,
-        ILogger<AggregationService> logger)
+        ILogger<AggregationService> logger, ICacheService cacheService, IMemoryCacheService memoryCacheService)
     {
         _queueService = queueService;
         _branchService = branchService;
         _logger = logger;
+        _cacheService = cacheService;
+        _memoryCacheService = memoryCacheService;
     }
 
     public async Task<CompanyReportResponse> GetReportAsync(ReportRequest request)
@@ -50,7 +54,6 @@ public class AggregationService : IAggregationService
         }
 
 
-        string branchName = null;
         if (request.BranchId.HasValue)
         {
             var branchResult = await _branchService.CheckBranchId(new BranchRequest
@@ -68,13 +71,9 @@ public class AggregationService : IAggregationService
                     companyResult.ErrorMessage ?? "Branch not found");
             }
 
-            if (branchResult.BranchName != null)
-            {
-                branchName = branchResult.BranchName;
-            }
+           
         }
 
-        string serviceName = null;
         if (request.ServiceId.HasValue)
         {
             var companyServiceResult = await _branchService.CheckCompanyServiceId(new CompanyServiceRequest
@@ -92,18 +91,43 @@ public class AggregationService : IAggregationService
                     companyResult.ErrorMessage ?? "Company service not found");
             }
 
-            if (companyServiceResult.CompanyServiceName != null)
-            {
-                serviceName = companyServiceResult.CompanyServiceName;
-            }
+            
         }
 
         var companyQueues = await _queueService.GetCompanyQueuesAsync(request.CompanyId.Value);
         var companyReviews = await _queueService.GetCompanyReviewsAsync(request.CompanyId.Value);
         var companyComplaints = await _queueService.GetCompanyComplaintsAsync(request.CompanyId.Value);
-        var customers = await _queueService.GetAllCompanyCustomers(request.CompanyId.Value);
-        var blockedCustomers = await _queueService.GetAllCompanyBlockedCustomers(request.CompanyId.Value);
-        var employees = await _queueService.GetAllCompanyEmployees(request.CompanyId.Value);
+
+        var customers = await _cacheService.GetOrCreateAsync(
+            CacheKeys.CompanyCustomers(request.CompanyId.Value),
+            async () =>
+            {
+                _logger.LogInformation("Cache miss for CompanyCustomers {CompanyId}, calling QService",
+                    request.CompanyId.Value);
+                return await _queueService.GetAllCompanyCustomers(request.CompanyId.Value);
+            }, TimeSpan.FromMinutes(10)
+        );
+
+
+        var blockedCustomers = await _cacheService.GetOrCreateAsync(
+            CacheKeys.CompanyBlockedCustomers(request.CompanyId.Value),
+            async () =>
+            {
+                _logger.LogInformation("Cache miss for CompanyBlockedCustomers {CompanyId}, calling QService",
+                    request.CompanyId.Value);
+                return await _queueService.GetAllCompanyBlockedCustomers(request.CompanyId.Value);
+            }, TimeSpan.FromMinutes(10));
+
+        var employees = await _cacheService.GetOrCreateAsync(
+            CacheKeys.CompanyEmployees(request.CompanyId.Value),
+            async () =>
+            {
+                _logger.LogInformation("Cache miss for CompanyEmployees {CompanyId}, calling QService",
+                    request.CompanyId.Value);
+                return await _queueService.GetAllCompanyEmployees(request.CompanyId.Value);
+            },
+            TimeSpan.FromMinutes(10)
+        );
 
         var filteredQueues = companyQueues.AsEnumerable();
         if (request.BranchId.HasValue)
@@ -175,9 +199,9 @@ public class AggregationService : IAggregationService
         var reviewedComplaints = filteredComplaints.Count(s => s.Status == CurrentComplaintStatus.Reviewed);
         var resolvedComplaints = filteredComplaints.Count(s => s.Status == CurrentComplaintStatus.Resolved);
 
-        var totalCustomers = customers.Count;
-        var totalEmployees = employees.Count;
-        var totalBlockedCustomers = blockedCustomers.Count;
+        var totalCustomers = customers?.Count ?? 0;
+        var totalEmployees = employees?.Count ?? 0;
+        var totalBlockedCustomers = blockedCustomers?.Count ?? 0;
 
         var response = new CompanyReportResponse
         {
@@ -241,20 +265,60 @@ public class AggregationService : IAggregationService
                 companyResult.ErrorMessage ?? "Company not found");
         }
 
-        var companyBranches = await _branchService.GetCompanyBranches(companyId);
-        var companyServices = await _branchService.GetCompanyServices(companyId);
-        var companyCustomers = await _queueService.GetAllCompanyCustomers(companyId);
-        var companyBlockedCustomers = await _queueService.GetAllCompanyBlockedCustomers(companyId);
-        var companyEmployees = await _queueService.GetAllCompanyEmployees(companyId);
+        var companyBranches = await _memoryCacheService.GetOrCreateAsync(
+            CacheKeys.CompanyBranches(companyId),
+            async () =>
+            {
+                _logger.LogInformation("Cache miss for CompanyBranches {CompanyId}, calling QBranchService", companyId);
+                return await _branchService.GetCompanyBranches(companyId);
+            }, TimeSpan.FromMinutes(10));
+
+
+        var companyServices = await _memoryCacheService.GetOrCreateAsync(
+            CacheKeys.CompanyServices(companyId),
+            async () =>
+            {
+                _logger.LogInformation("Cache miss for CompanyServices {CompanyId}, calling QBranchService", companyId);
+                return await _branchService.GetCompanyServices(companyId);
+            }, TimeSpan.FromMinutes(10));
+
+        var companyCustomers = await _cacheService.GetOrCreateAsync(
+            CacheKeys.CompanyCustomers(companyId),
+            async () =>
+            {
+                _logger.LogInformation("Cache miss for CompanyCustomers {CompanyId}, calling QService", companyId);
+                return await _queueService.GetAllCompanyCustomers(companyId);
+            }, TimeSpan.FromMinutes(10)
+        );
+
+
+        var companyBlockedCustomers = await _cacheService.GetOrCreateAsync(
+            CacheKeys.CompanyBlockedCustomers(companyId),
+            async () =>
+            {
+                _logger.LogInformation("Cache miss for CompanyBlockedCustomers {CompanyId}, calling QService",
+                    companyId);
+                return await _queueService.GetAllCompanyBlockedCustomers(companyId);
+            }, TimeSpan.FromMinutes(10));
+
+        var companyEmployees = await _cacheService.GetOrCreateAsync(
+            CacheKeys.CompanyEmployees(companyId),
+            async () =>
+            {
+                _logger.LogInformation("Cache miss for CompanyEmployees {CompanyId}, calling QService", companyId);
+                return await _queueService.GetAllCompanyEmployees(companyId);
+            },
+            TimeSpan.FromMinutes(10)
+        );
         var companyQueues = await _queueService.GetCompanyQueuesAsync(companyId);
         var companyReviews = await _queueService.GetCompanyReviewsAsync(companyId);
         var companyComplaints = await _queueService.GetCompanyComplaintsAsync(companyId);
 
-        var totalBranches = companyBranches.Count;
-        var totalServices = companyServices.Count;
-        var totalCustomers = companyCustomers.Count;
-        var totalBlockedCustomers = companyBlockedCustomers.Count;
-        var totalEmployees = companyEmployees.Count;
+        var totalBranches = companyBranches?.Count ?? 0;
+        var totalServices = companyServices?.Count ?? 0;
+        var totalCustomers = companyCustomers?.Count ?? 0;
+        var totalBlockedCustomers = companyBlockedCustomers?.Count ?? 0;
+        var totalEmployees = companyEmployees?.Count ?? 0;
         var totalQueues = companyQueues.Count;
         var totalCompletedQueues = companyQueues.Count(s => s.CurrentQueueStatus == CurrentQueueStatus.Completed);
         var totalPendingQueues = companyQueues.Count(s => s.CurrentQueueStatus == CurrentQueueStatus.Pending);
@@ -279,10 +343,10 @@ public class AggregationService : IAggregationService
 
         int? topServiceId = groupedByService?.Key;
         int topServiceQueueCount = groupedByService?.Count() ?? 0;
-        string topServiceName = "Unknown";
+        string? topServiceName = "Unknown";
         if (topServiceId.HasValue)
         {
-            var topService = companyServices.FirstOrDefault(s => s.CompanyServiceId == topServiceId);
+            var topService = companyServices?.FirstOrDefault(s => s.CompanyServiceId == topServiceId);
             if (topService != null)
             {
                 topServiceName = topService.CompanyServiceName;
@@ -296,10 +360,10 @@ public class AggregationService : IAggregationService
 
         int? topBranchId = groupedByBranch?.Key;
         int topBranchQueueCount = groupedByBranch?.Count() ?? 0;
-        string topBranchName = "Unknown";
+        string? topBranchName = "Unknown";
         if (topBranchId.HasValue)
         {
-            var topBranch = companyBranches.FirstOrDefault(s => s.BranchId == topBranchId);
+            var topBranch = companyBranches?.FirstOrDefault(s => s.BranchId == topBranchId);
             if (topBranch != null)
             {
                 topBranchName = topBranch.BranchName;
@@ -317,7 +381,7 @@ public class AggregationService : IAggregationService
         string topEmployeeName = "Unknown";
         if (topEmployeeId.HasValue)
         {
-            var topEmployee = companyEmployees.FirstOrDefault(s => s.EmployeeId == topEmployeeId);
+            var topEmployee = companyEmployees?.FirstOrDefault(s => s.EmployeeId == topEmployeeId);
             if (topEmployee != null)
             {
                 topEmployeeName = topEmployee.FirstName;
@@ -335,7 +399,7 @@ public class AggregationService : IAggregationService
         string topCustomerName = "Unknown";
         if (topCustomerId.HasValue)
         {
-            var topCustomer = companyCustomers.FirstOrDefault(s => s.CustomerId == topCustomerId);
+            var topCustomer = companyCustomers?.FirstOrDefault(s => s.CustomerId == topCustomerId);
             if (topCustomer != null)
             {
                 topCustomerName = topCustomer.FirstName;
@@ -393,14 +457,21 @@ public class AggregationService : IAggregationService
 
     public async Task<EmployeeReportResponse> GetEmployeeReport(EmployeeReportRequest request)
     {
-        var employees = await _queueService.GetAllEmployees();
-        if (!employees.Any())
+        var employees= await _cacheService.GetOrCreateAsync(
+            CacheKeys.AllEmployees(),
+            async () =>
+            {
+                _logger.LogInformation("Cache miss for AllEmployees, calling QService");
+                return await _queueService.GetAllEmployees();
+            }, TimeSpan.FromMinutes(10));
+        
+        if (employees != null && !employees.Any())
         {
             _logger.LogWarning("Not found any employee");
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, "Not found any employee");
         }
 
-        var employeeId = employees.FirstOrDefault(s => s.EmployeeId == request.EmployeeId);
+        var employeeId = employees?.FirstOrDefault(s => s.EmployeeId == request.EmployeeId);
         if (employeeId == null)
         {
             _logger.LogWarning("Not found employee with Id {employeeId}", request.EmployeeId);
@@ -488,14 +559,21 @@ public class AggregationService : IAggregationService
 
     public async Task<CustomerReportResponse> GetCustomerReport(CustomerReportRequest request)
     {
-        var customers = await _queueService.GetAllCustomers();
-        if (!customers.Any())
+
+        var customers = await _cacheService.GetOrCreateAsync(
+            CacheKeys.AllCustomers(),
+            async () =>
+            {
+                _logger.LogInformation("Cache miss for AllCustomers, calling QService");
+                return await _queueService.GetAllCustomers();
+            }, TimeSpan.FromMinutes(10));
+        if (customers != null && !customers.Any())
         {
             _logger.LogWarning("Not found any employee");
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, "Not found any employee");
         }
 
-        var customer = customers.FirstOrDefault(s => s.CustomerId == request.CustomerId);
+        var customer = customers?.FirstOrDefault(s => s.CustomerId == request.CustomerId);
         if (customer == null)
         {
             _logger.LogWarning("Not found customer with Id {employeeId}", request.CustomerId);
@@ -538,11 +616,12 @@ public class AggregationService : IAggregationService
                                                             CurrentQueueStatus.CancelledByEmployee);
         var didNotComeQueues = filteredQueuesList.Count(s => s.CurrentQueueStatus == CurrentQueueStatus.DidNotCome);
 
-        double averageCustomerReviewGrade =0;
+        double averageCustomerReviewGrade = 0;
         if (filteredReviewList.Any())
         {
             averageCustomerReviewGrade = filteredReviewList.Average(s => s.Grade);
         }
+
         var totalReviews = filteredReviewList.Count();
         var totalComplaints = filteredComplaintList.Count();
         var pendingComplaints = filteredComplaintList.Count(s => s.Status == CurrentComplaintStatus.Pending);
