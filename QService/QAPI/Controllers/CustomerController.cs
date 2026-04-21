@@ -4,11 +4,14 @@ using Microsoft.AspNetCore.Mvc;
 using QApplication.Interfaces;
 using QApplication.Requests.CustomerRequest;
 using QApplication.Responses;
+using QApplication.Responses.ReportResponse;
 using QApplication.UseCases.Customers.Commands.CreateCustomer;
 using QApplication.UseCases.Customers.Commands.DeleteCustomer;
 using QApplication.UseCases.Customers.Commands.UpdateCustomer;
+using QApplication.UseCases.Customers.Commands.UpdateCustomerProfile;
 using QApplication.UseCases.Customers.Queries.GetAllCustomers;
 using QApplication.UseCases.Customers.Queries.GetCustomerById;
+using QApplication.UseCases.Customers.Queries.GetCustomerProfile;
 using QDomain.Enums;
 
 namespace QAPI.Controllers;
@@ -50,6 +53,17 @@ public class CustomerController : ControllerBase
         return Ok(customer);
     }
 
+    [Authorize(Roles = nameof(UserRoles.Customer))]
+    [HttpGet("get-customer-profile")]
+    public async Task<ActionResult<CustomerProfileResponse>> GetCustomerProfile()
+    {
+        _logger.LogInformation("Received request to get customer profile");
+        var query = new GetCustomerProfileQuery();
+        var customer = await _mediator.Send(query);
+        _logger.LogInformation("Successfully returned customer profile");
+        return Ok(customer);
+    }
+
     [Authorize(Roles = nameof(UserRoles.SystemAdmin) + "," + nameof(UserRoles.CompanyAdmin))]
     [HttpPost]
     public async Task<IActionResult> PostAsync([FromBody] CreateCustomerCommand request)
@@ -70,6 +84,17 @@ public class CustomerController : ControllerBase
         var command = new UpdateCustomerCommand(id, request.FirstName, request.LastName, request.PhoneNumber);
         var update = await _mediator.Send(command);
         _logger.LogInformation("Successfully updated customer with Id: {customerId}", id);
+        return Ok(update);
+    }
+
+    [Authorize(Roles = nameof(UserRoles.Customer))]
+    [HttpPut("customer-profile-update")]
+    public async Task<IActionResult> ProfileUpdate([FromBody] UpdateCustomerProfileCommand request)
+    {
+        _logger.LogInformation("Received request to update customer profile");
+        
+        var update = await _mediator.Send(request);
+        _logger.LogInformation("Successfully updated customer profile");
         return Ok(update);
     }
 

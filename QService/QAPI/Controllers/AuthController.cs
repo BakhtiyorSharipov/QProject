@@ -1,11 +1,15 @@
+using System.Net;
 using MediatR;
-using Microsoft.AspNetCore.Identity.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using QApplication.Interfaces;
+using QApplication.Exceptions;
 using QApplication.Requests;
+using QApplication.UseCases.Auth.Commands.DeleteCustomerAccount;
 using QApplication.UseCases.Auth.Commands.Logout;
 using QApplication.UseCases.Auth.Commands.RegisterCustomer;
+using QApplication.UseCases.Auth.Commands.UpdateUserPassword;
 using QApplication.UseCases.Auth.Queries.Login;
+using QDomain.Enums;
 
 namespace QAPI.Controllers;
 
@@ -14,10 +18,12 @@ namespace QAPI.Controllers;
 public class AuthController: ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly ILogger<AuthController> _logger;
 
-    public AuthController( IMediator mediator)
+    public AuthController( IMediator mediator, ILogger<AuthController> logger)
     {
         _mediator = mediator;
+        _logger = logger;
     }
 
     [HttpPost("login")]
@@ -39,6 +45,30 @@ public class AuthController: ControllerBase
     {
         var user = await _mediator.Send(request);
         return CreatedAtAction(null, new { id = user.Id }, new { user.Id, user.EmailAddress, Role = user.Roles.ToString() });
+    }
+
+    [Authorize(Roles = nameof(UserRoles.Customer))]
+    [HttpPut("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        _logger.LogInformation("Received request to change customer password" );
+        var command = new UpdateUserPasswordCommand(request.OldPassword, request.NewPassword);
+        await _mediator.Send(command);
+       
+        _logger.LogInformation("Successfully updated customer password");
+        
+        return Ok("Password updated successfully");
+    }
+
+    [Authorize(Roles = nameof(UserRoles.Customer))]
+    [HttpDelete("delete-customer-account")]
+    public async Task<IActionResult> DeleteCustomerAccount()
+    {
+        _logger.LogInformation("Received request to delete customer account" );
+        var command = new DeleteCustomerAccountCommand();
+        await _mediator.Send(command);
+        _logger.LogInformation("Successfully deleted customer account");
+        return NoContent();
     }
     
 }

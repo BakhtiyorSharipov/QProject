@@ -34,6 +34,8 @@ public class GetAllEmployeesQueryHandler: IRequestHandler<GetAllEmployeesQuery, 
         var response = dbEmployees.Select(employee => new EmployeeResponseModel
         {
             Id = employee.Id,
+            CompanyId = employee.CompanyId,
+            BranchId = employee.BranchId,
             ServiceId = employee.ServiceId ?? 0,
             FirstName = employee.FirstName,
             LastName = employee.LastName,

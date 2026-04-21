@@ -18,10 +18,10 @@ public class LogoutCommandHandler : IRequestHandler<LogoutCommand>
 
     public async Task Handle(LogoutCommand request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Logout with {token} refresh token", request.refreshToken);
+        _logger.LogInformation("Logout with {token} refresh token", request.RefreshToken);
         var stored = await _dbContext.RefreshTokens
             .Include(s => s.UserEntity)
-            .FirstOrDefaultAsync(s => s.Token == request.refreshToken, cancellationToken);
+            .FirstOrDefaultAsync(s => s.Token == request.RefreshToken, cancellationToken);
         if (stored == null)
         {
             _logger.LogWarning("Token was not found");
