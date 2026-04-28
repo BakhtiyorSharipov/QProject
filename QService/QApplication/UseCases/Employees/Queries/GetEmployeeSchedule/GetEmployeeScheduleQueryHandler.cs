@@ -2,11 +2,11 @@ using System.Net;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using QApplication.Caching;
 using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses.AvailabilityResponse;
 using QDomain.Enums;
-using QDomain.Models;
 
 namespace QApplication.UseCases.Employees.Queries.GetEmployeeSchedule;
 
@@ -15,12 +15,14 @@ public class
 {
     private readonly ILogger<GetEmployeeScheduleQueryHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
+    private readonly ICacheService _cache;
 
     public GetEmployeeScheduleQueryHandler(ILogger<GetEmployeeScheduleQueryHandler> logger,
-        IQueueApplicationDbContext dbContext)
+        IQueueApplicationDbContext dbContext, ICacheService cache)
     {
         _logger = logger;
         _dbContext = dbContext;
+        _cache = cache;
     }
 
     public async Task<GetEmployeeAvailabilityResponse> Handle(GetEmployeeScheduleQuery request,
@@ -36,110 +38,94 @@ public class
                 $"Employee with Id {request.EmployeeId} not found");
         }
 
-
         var date = request.Date.Date;
         var nextDay = date.AddDays(1);
 
-        var employeeSchedules = await _dbContext.AvailabilitySchedules
-            .Where(s => s.EmployeeId == request.EmployeeId)
-            .ToListAsync(cancellationToken);
-
-        if (!employeeSchedules.Any())
+        
+        var baseSchedule = await _cache.GetBaseSchedule(request.EmployeeId, date);
+        if (baseSchedule == null)
         {
-            _logger.LogWarning("Not found any schedule for this employee");
-            throw new HttpStatusCodeException(HttpStatusCode.NotFound, "Not found any schedule for this employee");
-        }
+            _logger.LogInformation("Base schedule cache MISS");
+            var schedules = await _dbContext.AvailabilitySchedules
+                .Where(s => s.EmployeeId == request.EmployeeId)
+                .ToListAsync(cancellationToken);
+            baseSchedule = new List<TimelineBlockResponse>();
 
-        var employeeQueues = await _dbContext.Queues
-            .Where(s => s.EmployeeId == request.EmployeeId)
-            .ToListAsync(cancellationToken);
-
-        var dayQueues = new List<TimeIntervalResponse>();
-
-        foreach (var queue in employeeQueues)
-        {
-            var qEnd = queue.EndTime ?? queue.StartTime.AddMinutes(30);
-            if (queue.StartTime < nextDay && qEnd > date)
+            foreach (var schedule in schedules)
             {
-                dayQueues.Add(new TimeIntervalResponse
+                foreach (var slot in schedule.AvailableSlots)
                 {
-                    Start = queue.StartTime,
-                    End = qEnd
-                });
-            }
-        }
-
-
-        var timeline = new List<TimelineBlockResponse>();
-
-        foreach (var schedule in employeeSchedules)
-        {
-            foreach (var slot in schedule.AvailableSlots)
-            {
-                if (slot.From >= nextDay || slot.To <= date)
-                {
-                    continue;
-                }
-
-                var scheduleStart = slot.From < date ? date : slot.From;
-                var scheduleEnd = slot.To > nextDay ? nextDay : slot.To;
-
-                var current = scheduleStart;
-
-                foreach (var queue in dayQueues)
-                {
-                    if (queue.End <= scheduleStart || queue.Start >= scheduleEnd)
-                    {
+                    if (slot.From >= nextDay || slot.To <= date)
                         continue;
-                    }
 
-                    if (current < queue.Start)
+                    var start = slot.From < date ? date : slot.From;
+                    var end = slot.To > nextDay ? nextDay : slot.To;
+
+                    baseSchedule.Add(new TimelineBlockResponse
                     {
-                        timeline.Add(new TimelineBlockResponse
-                        {
-                            Start = current,
-                            End = queue.Start,
-                            Type = SlotType.Available
-                        });
-                    }
-
-                    var bookedStart = queue.Start < scheduleStart ? scheduleStart : queue.Start;
-                    var bookedEnd = queue.End > scheduleEnd ? scheduleEnd : queue.End;
-
-                    timeline.Add(new TimelineBlockResponse
-                    {
-                        Start = bookedStart,
-                        End = bookedEnd,
-                        Type = SlotType.Booked
-                    });
-
-                    current = bookedEnd;
-                }
-
-                if (current < scheduleEnd)
-                {
-                    timeline.Add(new TimelineBlockResponse()
-                    {
-                        Start = current,
-                        End = scheduleEnd,
+                        Start = start,
+                        End = end,
                         Type = SlotType.Available
                     });
                 }
             }
-        }
 
-        timeline = timeline.OrderBy(t => t.Start).ToList();
+            await _cache.SetBaseSchedule(request.EmployeeId, date, baseSchedule);
+        }
+        var queues = await _cache.GetQueuesFromSchedule(request.EmployeeId, date);
+        var timeline = new List<TimelineBlockResponse>();
+        
+        foreach (var slot in baseSchedule)
+        {
+            var current = slot.Start;
+
+            foreach (var queue in queues.OrderBy(q => q.Start))
+            {
+                if (queue.End <= slot.Start || queue.Start >= slot.End)
+                    continue;
+
+                if (current < queue.Start)
+                {
+                    timeline.Add(new TimelineBlockResponse
+                    {
+                        Start = current,
+                        End = queue.Start,
+                        Type = SlotType.Available
+                    });
+                }
+
+                timeline.Add(new TimelineBlockResponse
+                {
+                    Start = queue.Start,
+                    End = queue.End,
+                    Type = SlotType.Booked
+                });
+
+                current = queue.End;
+            }
+
+            if (current < slot.End)
+            {
+                timeline.Add(new TimelineBlockResponse
+                {
+                    Start = current,
+                    End = slot.End,
+                    Type = SlotType.Available
+                });
+            }
+        }
 
         return new GetEmployeeAvailabilityResponse
         {
             Days = new List<AvailabilityDayResponse>
             {
-                new AvailabilityDayResponse()
+                new()
                 {
                     Date = date,
-                    Timeline = timeline
+                    Timeline = timeline.OrderBy(t => t.Start).ToList()
                 }
             }
         };
+        
     }
 }

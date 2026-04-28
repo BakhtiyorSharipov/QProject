@@ -11,7 +11,6 @@ using QApplication.Responses;
 using QBranchService.Contracts.Interfaces;
 using QBranchService.Contracts.Requests;
 using QContracts.Events;
-using QContracts.QueueEvents;
 using QContracts.QueueEvents.Enums;
 using QDomain.Enums;
 using QDomain.Models;
@@ -239,6 +238,7 @@ public class CreateQueueCommandHandler : IRequestHandler<CreateQueueCommand, Add
             CustomerId = queue.CustomerId,
             EmployeeId = queue.EmployeeId,
             StartTime = queue.StartTime,
+            EndTime = queue.EndTime,
             EventType = QueueEventType.Created,
         }, cancellationToken);
 

@@ -235,6 +235,7 @@ public class UpdateQueueStatusCommandHandler : IRequestHandler<UpdateQueueStatus
             CustomerId = dbQueue.CustomerId,
             EmployeeId = dbQueue.EmployeeId,
             StartTime = dbQueue.StartTime,
+            EndTime = dbQueue.EndTime,
             EventType = QueueEventType.Updated,
             CancelReason = dbQueue.CancelReason,
             Status = newStatus == QueueStatus.Confirmed

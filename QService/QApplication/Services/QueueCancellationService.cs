@@ -57,6 +57,7 @@ public class QueueCancellationService: IQueueCancellationService
             CustomerId = queue.CustomerId,
             EmployeeId = queue.EmployeeId,
             StartTime = queue.StartTime,
+            EndTime = queue.EndTime,
             EventType = QueueEventType.Updated,
             Status = eventStatus,
             CancelReason = cancelReason
