@@ -7,7 +7,6 @@ using QApplication.Interfaces;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QContracts.Events;
-using QContracts.QueueEvents;
 using QContracts.QueueEvents.Enums;
 using QDomain.Enums;
 using QDomain.Models;
@@ -43,6 +42,15 @@ public class QueueCancellationService: IQueueCancellationService
     public async Task<QueueResponseModel> ProcessCancellation(QueueEntity queue, QueueStatus newStatus, string? cancelReason, UpdatedQueueStatus eventStatus,
         CancellationToken cancellationToken)
     {
+
+        var user = await _dbContext.Users.FirstOrDefaultAsync(s => s.CustomerId == queue.CustomerId, cancellationToken);
+        if (user==null)
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound,
+                $"Customer with Id {queue.CustomerId} not found");
+        }
+
+        var userEmail = user.EmailAddress;
         queue.Status = newStatus;
         queue.CancelReason = cancelReason;
         _logger.LogDebug("Saving cancellation changes to db");
@@ -52,6 +60,7 @@ public class QueueCancellationService: IQueueCancellationService
 
         await _publishEndpoint.Publish(new QueueEvent
         {
+            Email = userEmail,
             CompanyId = queue.CompanyId,
             QueueId = queue.Id,
             CustomerId = queue.CustomerId,

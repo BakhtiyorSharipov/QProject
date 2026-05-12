@@ -8,6 +8,7 @@ using QApplication.Exceptions;
 using QApplication.Interfaces;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
+using QDomain.Enums;
 using QDomain.Models;
 
 namespace QApplication.UseCases.Auth.Queries.Login;
@@ -33,6 +34,7 @@ public class LoginQueryHandler: IRequestHandler<LoginQuery, AuthResponse>
     public async Task<AuthResponse> Handle(LoginQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Starting login with {email} email address", request.EmailAddress);
+        
         var user = await _dbContext.Users.FirstOrDefaultAsync(s => s.EmailAddress == request.EmailAddress,
             cancellationToken);
         if (user == null)
@@ -40,6 +42,8 @@ public class LoginQueryHandler: IRequestHandler<LoginQuery, AuthResponse>
             _logger.LogWarning("UserEntity with {email} email address not found", request.EmailAddress);
             throw new HttpStatusCodeException(HttpStatusCode.Unauthorized, "UserEntity not found");
         }
+        
+        
 
         _logger.LogDebug("Verifying password");
         var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
@@ -49,6 +53,11 @@ public class LoginQueryHandler: IRequestHandler<LoginQuery, AuthResponse>
             throw new HttpStatusCodeException(HttpStatusCode.Unauthorized, "Invalid password");
         }
 
+        
+        if (!user.IsEmailVerified && user.Roles != UserRoles.SystemAdmin)
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.Unauthorized, "Email not verified");
+        }
         _logger.LogDebug("Generating access and refresh tokens");
         var accessExpires = DateTime.UtcNow.AddMinutes(int.Parse(_config["Jwt:AccessTokenMinutes"] ?? "60"));
         var accessToken =

@@ -231,7 +231,8 @@ using (var scope = app.Services.CreateScope())
         {
             EmailAddress = "systemAdmin@gmail.com",
             Roles = QDomain.Enums.UserRoles.SystemAdmin,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            
         };
         sysUser.PasswordHash = hasher.HashPassword(sysUser, "B.sh.3242");
         await db.AddAsync(sysUser);

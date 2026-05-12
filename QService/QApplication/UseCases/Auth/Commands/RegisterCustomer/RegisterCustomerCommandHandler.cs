@@ -9,6 +9,7 @@ using QApplication.Interfaces.Data;
 using QContracts.Events.CustomerEvent;
 using QDomain.Enums;
 using QDomain.Models;
+using QNotificationService.Contracts.NotificationEvents;
 
 
 namespace QApplication.UseCases.Auth.Commands.RegisterCustomer;
@@ -21,7 +22,8 @@ public class RegisterCustomerCommandHandler : IRequestHandler<RegisterCustomerCo
     private readonly IPublishEndpoint _publishEndpoint;
 
     public RegisterCustomerCommandHandler(ILogger<RegisterCustomerCommandHandler> logger,
-        IQueueApplicationDbContext dbContext, IPasswordHasher<UserEntity> passwordHasher, IPublishEndpoint publishEndpoint)
+        IQueueApplicationDbContext dbContext, IPasswordHasher<UserEntity> passwordHasher,
+        IPublishEndpoint publishEndpoint)
     {
         _logger = logger;
         _dbContext = dbContext;
@@ -32,7 +34,8 @@ public class RegisterCustomerCommandHandler : IRequestHandler<RegisterCustomerCo
     public async Task<UserEntity> Handle(RegisterCustomerCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Registering customer with {email} email address", request.EmailAddress);
-        if (await _dbContext.Users.FirstOrDefaultAsync(s => s.EmailAddress == request.EmailAddress, cancellationToken) != null)
+        if (await _dbContext.Users.FirstOrDefaultAsync(s => s.EmailAddress == request.EmailAddress,
+                cancellationToken) != null)
         {
             _logger.LogWarning("Customer with {email} email address already exists", request.EmailAddress);
             throw new HttpStatusCodeException(HttpStatusCode.BadRequest, "Email address already exists");
@@ -48,7 +51,7 @@ public class RegisterCustomerCommandHandler : IRequestHandler<RegisterCustomerCo
 
         await _dbContext.Customers.AddAsync(customer, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
-        
+
         await _publishEndpoint.Publish(new CustomerCreatedEvent
         {
             OccuredAt = DateTimeOffset.UtcNow,
@@ -70,9 +73,33 @@ public class RegisterCustomerCommandHandler : IRequestHandler<RegisterCustomerCo
         _logger.LogDebug("Hashing password");
         user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
 
+        var code = GenerateVerificationCode();
+        user.EmailVerificationCode = code;
+        user.EmailVerificationCodeExpires = DateTime.UtcNow.AddMinutes(10);
+
         await _dbContext.Users.AddAsync(user, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+
+        await _publishEndpoint.Publish(new SendNotificationEvent
+        {
+            Email = user.EmailAddress,
+            Message = $@"
+                Welcome to Queue System!
+
+                Your verification code is: {code}
+
+                This code will expire in 10 minutes.
+                ",
+            UserId = user.Id
+        }, cancellationToken);
         _logger.LogInformation("Customer registered successfully");
         return user;
+    }
+
+    private string GenerateVerificationCode()
+    {
+        var random = new Random();
+        return random.Next(100000, 999999).ToString();
     }
 }
