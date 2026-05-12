@@ -7,6 +7,11 @@ using QNotificationService.Infrastructure.Consumers;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddEnvironmentVariables();
+#if DEBUG
+builder.Configuration.AddUserSecrets<Program>();
+#endif
 
 builder.Services.Configure<MailgunSettings>(
     builder.Configuration.GetSection("Mailgun"));
