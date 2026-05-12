@@ -200,7 +200,7 @@ public class UpdateQueueStatusCommandHandler : IRequestHandler<UpdateQueueStatus
         await _dbContext.SaveChangesAsync(cancellationToken);
 
 
-        if (dbQueue.Status == QueueStatus.Confirmed || dbQueue.Status == QueueStatus.Completed)
+        if (dbQueue.Status == QueueStatus.Confirmed || dbQueue.Status == QueueStatus.Completed || dbQueue.Status== QueueStatus.DidNotCome)
         {
             var queueUpdatedEvent = CreateQueueUpdatedEvent(dbQueue, request.newStatus);
             await _publishEndpoint.Publish(queueUpdatedEvent, cancellationToken);
@@ -228,8 +228,17 @@ public class UpdateQueueStatusCommandHandler : IRequestHandler<UpdateQueueStatus
 
     private QueueEvent CreateQueueUpdatedEvent(QueueEntity dbQueue, QueueStatus newStatus)
     {
+        var user = _dbContext.Users.FirstOrDefault(s => s.CustomerId == dbQueue.CustomerId);
+        if (user==null)
+        {
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound,
+                $"Customer with Id {dbQueue.CustomerId} not found");
+        }
+        var userEmail = user.EmailAddress;
+        
         return new QueueEvent
         {
+            Email = userEmail,
             CompanyId = dbQueue.CompanyId,
             QueueId = dbQueue.Id,
             CustomerId = dbQueue.CustomerId,

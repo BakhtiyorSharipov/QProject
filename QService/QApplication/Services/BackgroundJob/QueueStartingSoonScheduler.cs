@@ -44,8 +44,12 @@ public class QueueStartingSoonScheduler : BackgroundService
 
             foreach (var queue in queuesStartingSoon)
             {
+                var user =await dbContext.Users.FirstOrDefaultAsync(s => s.CustomerId == queue.CustomerId, stoppingToken);
+                var userEmail = user?.EmailAddress;
+                
                 var eventMessage = new QueueEvent
                 {
+                    Email = userEmail ?? "test@gmail.com",
                     QueueId = queue.Id,
                     CustomerId = queue.CustomerId,
                     EmployeeId = queue.EmployeeId,

@@ -9,6 +9,7 @@
     <ItemGroup>
       <ProjectReference Include="..\..\QBranchService\QBranchService.Contracts\QBranchService.Contracts\QBranchService.Contracts.csproj" />
       <ProjectReference Include="..\..\QContracts\QContracts.csproj" />
+      <ProjectReference Include="..\..\QNotificationService\QNotificationService.Contracts\QNotificationService.Contracts.csproj" />
       <ProjectReference Include="..\QDomain\QDomain.csproj" />
     </ItemGroup>
 

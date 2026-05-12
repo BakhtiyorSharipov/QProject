@@ -1,4 +1,5 @@
 using System.Net;
+using MassTransit;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +10,7 @@ using QBranchService.Contracts.Interfaces;
 using QBranchService.Contracts.Requests;
 using QDomain.Enums;
 using QDomain.Models;
+using QNotificationService.Contracts.NotificationEvents;
 
 namespace QApplication.UseCases.Auth.Commands.CreateCompanyAdmin;
 
@@ -18,15 +20,17 @@ public class CreateCompanyAdminCommandHandler: IRequestHandler<CreateCompanyAdmi
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly IPasswordHasher<UserEntity> _passwordHasher;
     private readonly IBranchService _branchService;
+    private readonly IPublishEndpoint _publishEndpoint;
 
     public CreateCompanyAdminCommandHandler(ILogger<CreateCompanyAdminCommandHandler> logger, 
         IQueueApplicationDbContext dbContext, 
-        IPasswordHasher<UserEntity> passwordHasher, IBranchService branchService)
+        IPasswordHasher<UserEntity> passwordHasher, IBranchService branchService, IPublishEndpoint publishEndpoint)
     {
         _logger = logger;
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
         _branchService = branchService;
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task<UserEntity> Handle(CreateCompanyAdminCommand request, CancellationToken cancellationToken)
@@ -96,8 +100,26 @@ public class CreateCompanyAdminCommandHandler: IRequestHandler<CreateCompanyAdmi
         _logger.LogDebug("Hashing password");
         user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
 
+        var code = new Random().Next(10000,999999).ToString();
+        user.EmailVerificationCode = code;
+        user.EmailVerificationCodeExpires = DateTime.UtcNow.AddMinutes(10);
+        
         await _dbContext.Users.AddAsync(user, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
+        
+        await _publishEndpoint.Publish(new SendNotificationEvent
+        {
+            Email = user.EmailAddress,
+            Message = $@"
+                Welcome to Queue System!
+
+                Your verification code is: {code}
+
+                This code will expire in 10 minutes.
+                ",
+            UserId = user.Id
+        }, cancellationToken);
+        
         _logger.LogInformation("Employee with {email} email address registered successfully", request.EmailAddress);
         return user;
     }

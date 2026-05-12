@@ -5,6 +5,7 @@ namespace QContracts.Events;
 public class QueueEvent
 {
     public DateTimeOffset OccurredAt { get; set; } = DateTimeOffset.UtcNow;
+    public string Email { get; set; }
     public int CompanyId { get; set; }
     public int QueueId { get; set; }
     public int CustomerId { get; set; }
