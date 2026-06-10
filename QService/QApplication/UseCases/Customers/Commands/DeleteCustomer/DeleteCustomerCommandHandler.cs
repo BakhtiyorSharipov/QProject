@@ -1,9 +1,11 @@
 using System.Net;
+using MassTransit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
 using QApplication.Interfaces.Data;
+using QContracts.Events.CustomerEvent;
 using QDomain.Models;
 
 namespace QApplication.UseCases.Customers.Commands.DeleteCustomer;
@@ -12,7 +14,15 @@ public class DeleteCustomerCommandHandler: IRequestHandler<DeleteCustomerCommand
 {
     private readonly ILogger<DeleteCustomerCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
-    
+    private readonly IPublishEndpoint _publishEndpoint;
+
+    public DeleteCustomerCommandHandler(ILogger<DeleteCustomerCommandHandler> logger, IQueueApplicationDbContext dbContext, IPublishEndpoint publishEndpoint)
+    {
+        _logger = logger;
+        _dbContext = dbContext;
+        _publishEndpoint = publishEndpoint;
+    }
+
     public async Task<bool> Handle(DeleteCustomerCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Deleting customer with Id {id}", request.Id);
@@ -25,9 +35,18 @@ public class DeleteCustomerCommandHandler: IRequestHandler<DeleteCustomerCommand
 
         _dbContext.Customers.Remove(dbCustomer);
         await _dbContext.SaveChangesAsync(cancellationToken);
-
+        
         _logger.LogInformation("Customer with Id {id} deleted successfully.", request.Id);
 
+        await _publishEndpoint.Publish(new CustomerDeletedEvent
+        {
+            OccuredAt = DateTimeOffset.UtcNow,
+            CustomerId = dbCustomer.Id,
+            FirstName = dbCustomer.FirstName,
+            LastName = dbCustomer.LastName,
+            PhoneNumber = dbCustomer.PhoneNumber
+        }, cancellationToken);
+        
         return true;
     }
 }

@@ -1,10 +1,11 @@
 using QContracts.QueueEvents.Enums;
 
-namespace QContracts.QueueEvents;
+namespace QContracts.Events;
 
 public class QueueEvent
 {
     public DateTimeOffset OccurredAt { get; set; } = DateTimeOffset.UtcNow;
+    public int CompanyId { get; set; }
     public int QueueId { get; set; }
     public int CustomerId { get; set; }
     public int EmployeeId { get; set; }

@@ -1,4 +1,5 @@
 using System.Net;
+using MassTransit;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -9,6 +10,7 @@ using QApplication.Extensions;
 using QApplication.Interfaces.Data;
 using QBranchService.Contracts.Interfaces;
 using QBranchService.Contracts.Requests;
+using QContracts.Events.EmployeeEvent;
 using QDomain.Enums;
 using QDomain.Models;
 
@@ -21,17 +23,19 @@ public class CreateEmployeeRoleCommandHandler : IRequestHandler<CreateEmployeeRo
     private readonly IPasswordHasher<UserEntity> _passwordHasher;
     private readonly IBranchService _branchService;
     private readonly IHttpContextAccessor _contextAccessor;
+    private readonly IPublishEndpoint _publishEndpoint;
 
     public CreateEmployeeRoleCommandHandler(ILogger<CreateEmployeeRoleCommandHandler> logger,
         IQueueApplicationDbContext dbContext, IPasswordHasher<UserEntity> passwordHasher,
         IHttpContextAccessor contextAccessor,
-        IBranchService branchService)
+        IBranchService branchService, IPublishEndpoint publishEndpoint)
     {
         _logger = logger;
         _dbContext = dbContext;
         _passwordHasher = passwordHasher;
         _contextAccessor = contextAccessor;
         _branchService = branchService;
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task<UserEntity> Handle(CreateEmployeeRoleCommand request, CancellationToken cancellationToken)
@@ -132,6 +136,19 @@ public class CreateEmployeeRoleCommandHandler : IRequestHandler<CreateEmployeeRo
 
         await _dbContext.Employees.AddAsync(employee, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
+        
+        await _publishEndpoint.Publish(new EmployeeCreatedEvent
+        {
+            OccurredAt = DateTimeOffset.UtcNow,
+            CompanyId = employee.CompanyId,
+            BranchId = employee.BranchId,
+            EmployeeId = employee.Id,
+            ServiceId = employee.ServiceId,
+            FirstName = employee.FirstName,
+            LastName = employee.LastName,
+            Position = employee.Position,
+            PhoneNumber = employee.PhoneNumber
+        }, cancellationToken);
 
         var user = new UserEntity
         {

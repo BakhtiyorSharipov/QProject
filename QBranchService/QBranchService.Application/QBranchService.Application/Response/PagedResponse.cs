@@ -1,4 +1,4 @@
-namespace QApplication.Responses;
+namespace QBranchService.Application.Response;
 
 public class PagedResponse<T>
 {

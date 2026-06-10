@@ -30,7 +30,7 @@ public static class CacheKeys
         => $"{pageNumber}";
     
     public static string EmployeeQueuesHashKey(int employeeId)
-        => $"customer:{employeeId}:queues";
+        => $"employee:{employeeId}:queues";
     
     public static string EmployeeQueuesField(int pageNumber)
         => $"{pageNumber}";

@@ -6,6 +6,7 @@ using QApplication.Exceptions;
 using QApplication.Interfaces;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
+using QContracts.Events;
 using QContracts.QueueEvents;
 using QContracts.QueueEvents.Enums;
 using QDomain.Enums;
@@ -51,6 +52,7 @@ public class QueueCancellationService: IQueueCancellationService
 
         await _publishEndpoint.Publish(new QueueEvent
         {
+            CompanyId = queue.CompanyId,
             QueueId = queue.Id,
             CustomerId = queue.CustomerId,
             EmployeeId = queue.EmployeeId,

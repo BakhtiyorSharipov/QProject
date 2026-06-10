@@ -200,4 +200,55 @@ public async UnaryResult<QueueCreationValidationResponse> ValidateQueueCreationA
 
     return response;
 }
+
+public async UnaryResult<List<BranchResponse>> GetCompanyBranches(int companyId)
+{
+    var branches = await _dbContext.Branches
+        .Where(s => s.CompanyId == companyId)
+        .ToListAsync();
+
+    if (!branches.Any())
+    {
+        _logger.LogWarning("Not found any branch for company Id: {companyId}", companyId);
+        return [];
+    }
+
+    var response = branches.Select(s => new BranchResponse
+    {
+        RequestId = Guid.NewGuid(),
+        BranchId = s.Id,
+        BranchName = s.BranchName,
+        CompanyId = s.CompanyId,
+        IsValid = true,
+        ErrorMessage = null
+
+    }).ToList();
+
+    return response;
+}
+
+public async UnaryResult<List<CompanyServiceResponse>> GetCompanyServices(int companyId)
+{
+    var companyServices = await _dbContext.CompanyServices
+        .Where(s => s.CompanyId == companyId)
+        .ToListAsync();
+
+    if (!companyServices.Any())
+    {
+        _logger.LogWarning("Not found any  service for company Id: {companyId}", companyId);
+        return [];
+    }
+
+    var response = companyServices.Select(s => new CompanyServiceResponse
+    {
+        RequestId = Guid.NewGuid(),
+        CompanyId = s.CompanyId,
+        CompanyServiceId = s.Id,
+        CompanyServiceName = s.ServiceName,
+        IsValid = true,
+        ErrorMessage = null
+    }).ToList();
+
+    return response;
+}
 }

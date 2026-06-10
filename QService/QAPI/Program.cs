@@ -6,6 +6,7 @@ using MagicOnion.Client;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -18,6 +19,7 @@ using QApplication.Services;
 using QApplication.Services.BackgroundJob;
 using QApplication.Validators.AuthValidators;
 using QBranchService.Contracts.Interfaces;
+using QContracts.Interfaces;
 using QDomain.Models;
 using QInfrastructure.Consumers.Cache;
 using QInfrastructure.Consumers.QueueConsumers;
@@ -29,6 +31,18 @@ using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenLocalhost(5001, listenOptions => 
+    { 
+        listenOptions.Protocols = HttpProtocols.Http2;
+    });
+
+    options.ListenLocalhost(5003, listenOptions => 
+    { 
+        listenOptions.Protocols = HttpProtocols.Http1;
+    });
+});
 
 builder.Services.AddSingleton(provider =>
 {
@@ -58,6 +72,7 @@ builder.Services.AddSingleton<IBranchService>(provider =>
     return MagicOnionClient.Create<IBranchService>(channel);
 });
 
+builder.Services.AddMagicOnion();
 
 
 builder.Services.AddApplicationService();
@@ -86,9 +101,6 @@ builder.Services.AddHostedService<QueueStartingSoonScheduler>();
 
 builder.Services.AddMassTransit(x =>
 {
-    // x.AddRequestClient<BranchIdsRequest>();
-    // x.AddRequestClient<CompanyRequest>();
-    // x.AddRequestClient<CompanyServiceRequest>();
     x.AddConsumer<CompanyCacheResetConsumer>();
     x.AddConsumer<QueueEventConsumer>();
     x.UsingRabbitMq((context, cfg) =>
@@ -196,6 +208,7 @@ if (app.Environment.IsDevelopment())
 
 
 app.UseHttpsRedirection();
+app.MapMagicOnionService<QueueService>();
 
 app.UseAuthentication();
 app.UseAuthorization();

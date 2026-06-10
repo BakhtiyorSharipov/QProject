@@ -1,9 +1,11 @@
 using System.Net;
+using MassTransit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QBranchService.Application.Exceptions;
 using QBranchService.Application.Interfaces.Data;
+using QBranchService.Contracts.Events.CompanyServiceEvents;
 using QBranchService.Domain.Models;
 
 namespace QBranchService.Application.UseCases.CompanyServices.Commands.DeleteService;
@@ -12,11 +14,13 @@ public class DeleteServiceCommandHandler: IRequestHandler<DeleteServiceCommand, 
 {
     private readonly ILogger<DeleteServiceCommandHandler> _logger;
     private readonly IBranchServiceApplicationDbContext _dbContext;
+    private readonly IPublishEndpoint _publishEndpoint;
 
-    public DeleteServiceCommandHandler(ILogger<DeleteServiceCommandHandler> logger, IBranchServiceApplicationDbContext dbContext)
+    public DeleteServiceCommandHandler(ILogger<DeleteServiceCommandHandler> logger, IBranchServiceApplicationDbContext dbContext, IPublishEndpoint publishEndpoint)
     {
         _logger = logger;
         _dbContext = dbContext;
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task<bool> Handle(DeleteServiceCommand request, CancellationToken cancellationToken)
@@ -31,9 +35,18 @@ public class DeleteServiceCommandHandler: IRequestHandler<DeleteServiceCommand, 
 
         _dbContext.CompanyServices.Remove(dbService);
         await _dbContext.SaveChangesAsync(cancellationToken);
-
+        
         _logger.LogInformation("Service with Id {id} deleted successfully.", request.Id);
 
+        await _publishEndpoint.Publish(new CompanyServiceDeletedEvent
+        {
+            OccuredAt = DateTimeOffset.UtcNow,
+            CompanyServiceId = dbService.Id,
+            CompanyId = dbService.CompanyId,
+            ServiceDescription = dbService.ServiceDescription,
+            ServiceName = dbService.ServiceName
+        }, cancellationToken);
+        
         return true;
     }
 }

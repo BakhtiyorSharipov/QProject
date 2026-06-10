@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="MagicOnion.Abstractions" Version="7.10.0" />
+      <PackageReference Include="MagicOnion.Client" Version="7.10.0" />
+      <PackageReference Include="MagicOnion.Server" Version="7.10.0" />
+      <PackageReference Include="MessagePack.Annotations" Version="3.1.4" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\QContracts\QContracts.csproj" />
+    </ItemGroup>
+
+</Project>
