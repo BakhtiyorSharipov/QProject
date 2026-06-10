@@ -15,7 +15,7 @@ public class SendNotificationConsumer : IConsumer<SendNotificationEvent>
 
     public async Task Consume(ConsumeContext<SendNotificationEvent> context)
     {
-        await _notificationService.SendAsync(context.Message.UserId, context.Message.Message,
+        await _notificationService.SendAsync(context.Message.Email,context.Message.UserId, context.Message.Message,
             context.CancellationToken);
     }
 }

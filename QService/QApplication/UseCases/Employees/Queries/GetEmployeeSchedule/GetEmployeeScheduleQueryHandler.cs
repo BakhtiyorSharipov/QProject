@@ -10,8 +10,7 @@ using QDomain.Enums;
 
 namespace QApplication.UseCases.Employees.Queries.GetEmployeeSchedule;
 
-public class
-    GetEmployeeScheduleQueryHandler : IRequestHandler<GetEmployeeScheduleQuery, GetEmployeeAvailabilityResponse>
+public class GetEmployeeScheduleQueryHandler : IRequestHandler<GetEmployeeScheduleQuery, GetEmployeeAvailabilityResponse>
 {
     private readonly ILogger<GetEmployeeScheduleQueryHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;

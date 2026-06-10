@@ -83,6 +83,7 @@ public class QueueEventConsumer : IConsumer<QueueEvent>
         var notification = _publishEndpoint.Publish(new SendNotificationEvent()
         {
             UserId = evt.CustomerId,
+            Email = evt.Email,
             Message =
                 $"You have successfully booked a queue with Employee {evt.EmployeeId} at {evt.StartTime}. "
         });
@@ -101,6 +102,7 @@ public class QueueEventConsumer : IConsumer<QueueEvent>
         await _publishEndpoint.Publish(new SendNotificationEvent
         {
             UserId = evt.CustomerId,
+            Email = evt.Email,
             Message = $"Reminder: your queue with Employee {evt.EmployeeId} starts in 5 minutes."
         });
 
@@ -149,6 +151,7 @@ public class QueueEventConsumer : IConsumer<QueueEvent>
             notificationTask = _publishEndpoint.Publish(new SendNotificationEvent
             {
                 UserId = evt.CustomerId,
+                Email = evt.Email,
                 Message = message
             });
         }
@@ -160,7 +163,7 @@ public class QueueEventConsumer : IConsumer<QueueEvent>
         }
         else
         {
-            await Task.WhenAll(cacheReset);
+            await cacheReset;
             _logger.LogDebug("No notification sent for status {Status}", evt.Status);
         }
 

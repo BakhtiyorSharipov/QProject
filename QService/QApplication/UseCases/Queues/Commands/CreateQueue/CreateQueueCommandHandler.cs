@@ -41,6 +41,8 @@ public class CreateQueueCommandHandler : IRequestHandler<CreateQueueCommand, Add
     {
         var currentCustomer = await _contextAccessor.CurrentCustomer(_dbContext, cancellationToken);
         var customerId = currentCustomer.Id;
+        var currentUser = await _contextAccessor.CurrentUser(_dbContext, cancellationToken);
+        var userEmail = currentUser.EmailAddress;
 
         _logger.LogInformation("Adding new queue for EmployeeId {id}", request.EmployeeId);
 
@@ -233,6 +235,7 @@ public class CreateQueueCommandHandler : IRequestHandler<CreateQueueCommand, Add
 
         await _publishEndpoint.Publish(new QueueEvent
         {
+            Email = userEmail,
             QueueId = queue.Id,
             CompanyId = queue.CompanyId,
             CustomerId = queue.CustomerId,

@@ -1,13 +1,15 @@
-using System.Net;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using QApplication.Exceptions;
 using QApplication.Requests;
 using QApplication.UseCases.Auth.Commands.DeleteCustomerAccount;
+using QApplication.UseCases.Auth.Commands.ForgotPassword;
 using QApplication.UseCases.Auth.Commands.Logout;
 using QApplication.UseCases.Auth.Commands.RegisterCustomer;
+using QApplication.UseCases.Auth.Commands.ResendCode;
+using QApplication.UseCases.Auth.Commands.ResetPassword;
 using QApplication.UseCases.Auth.Commands.UpdateUserPassword;
+using QApplication.UseCases.Auth.Commands.VerifyAccount;
 using QApplication.UseCases.Auth.Queries.Login;
 using QDomain.Enums;
 
@@ -47,6 +49,20 @@ public class AuthController: ControllerBase
         return CreatedAtAction(null, new { id = user.Id }, new { user.Id, user.EmailAddress, Role = user.Roles.ToString() });
     }
 
+    [HttpPost("verify-email")]
+    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request)
+    {
+        await _mediator.Send(new VerifyEmailCommand(request.EmailAddress, request.Code));
+        return Ok("Email verified successfully");
+    }
+    
+    [HttpPost("resend-code")]
+    public async Task<IActionResult> ResendCode([FromBody] ResendCodeRequest request)
+    {
+        await _mediator.Send(new ResendVerificationCodeCommand(request.EmailAddress));
+        return Ok("Code resent");
+    }
+    
     [Authorize(Roles = nameof(UserRoles.Customer))]
     [HttpPut("change-password")]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
@@ -58,6 +74,20 @@ public class AuthController: ControllerBase
         _logger.LogInformation("Successfully updated customer password");
         
         return Ok("Password updated successfully");
+    }
+    
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        await _mediator.Send(new ForgotPasswordCommand(request.EmailAddress));
+        return Ok("If email exists, code sent");
+    }
+    
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody]ResetPasswordCommand command)
+    {
+        await _mediator.Send(command);
+        return Ok("Password updated");
     }
 
     [Authorize(Roles = nameof(UserRoles.Customer))]

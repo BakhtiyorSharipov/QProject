@@ -42,6 +42,25 @@ public static class AuthEndpoints
             return Results.Content(content, "application/json", Encoding.UTF8, (int)response.StatusCode);
         }).RequireAuthorization();
 
+        authGroup.MapPost("/verify-email",
+            async (HttpClient client, VerifyEmailRequest request) =>
+            {
+                var response = await client.PostAsJsonAsync(
+                    "http://localhost:5003/api/Auth/verify-email", request);
+
+                var content = await response.Content.ReadAsStringAsync();
+                return Results.Content(content, "application/json", Encoding.UTF8, (int)response.StatusCode);
+            });
+
+        authGroup.MapPost("/resend-code", async (HttpClient client, ResendCodeRequest request) =>
+        {
+            var response = await client.PostAsJsonAsync(
+                "http://localhost:5003/api/Auth/resend-code", request);
+
+            var content = await response.Content.ReadAsStringAsync();
+            return Results.Content(content, "application/json", Encoding.UTF8, (int)response.StatusCode);
+        });
+
         authGroup.MapPut("/change-password",
             async (HttpClient client, HttpRequest httpRequest, UpdatePasswordRequest updatePasswordRequest) =>
             {
@@ -56,6 +75,24 @@ public static class AuthEndpoints
                 var content = await response.Content.ReadAsStringAsync();
                 return Results.Content(content, "application/json", Encoding.UTF8, (int)response.StatusCode);
             });
+
+        authGroup.MapPost("/forgot-password", async (HttpClient client, ForgotPasswordRequest request) =>
+        {
+            var response = await client.PostAsJsonAsync(
+                "http://localhost:5003/api/Auth/forgot-password", request);
+
+            var content = await response.Content.ReadAsStringAsync();
+            return Results.Content(content, "application/json", Encoding.UTF8, (int)response.StatusCode);
+        });
+
+        authGroup.MapPost("/reset-password", async (HttpClient client, ResetPasswordRequest request) =>
+        {
+            var response = await client.PostAsJsonAsync(
+                "http://localhost:5003/api/Auth/reset-password", request);
+
+            var content = await response.Content.ReadAsStringAsync();
+            return Results.Content(content, "application/json", Encoding.UTF8, (int)response.StatusCode);
+        });
 
         authGroup.MapDelete("/delete-customer-account", async (HttpClient client, HttpRequest httpRequest) =>
         {
