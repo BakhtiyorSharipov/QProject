@@ -10,6 +10,7 @@ public class QueueEvent
     public int CustomerId { get; set; }
     public int EmployeeId { get; set; }
     public DateTimeOffset StartTime { get; set; }
+    public DateTimeOffset? EndTime { get; set; }
     public QueueEventType EventType { get; set; }
     public UpdatedQueueStatus? Status { get; set; } 
     public string? CancelReason { get; set; }   

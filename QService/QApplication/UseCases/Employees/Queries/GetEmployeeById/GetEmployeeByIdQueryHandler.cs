@@ -35,7 +35,9 @@ public class GetEmployeeByIdQueryHandler: IRequestHandler<GetEmployeeByIdQuery, 
         var response = new EmployeeResponseModel
         {
             Id = dbEmployee.Id,
-            ServiceId = dbEmployee.ServiceId.HasValue? dbEmployee.ServiceId.Value :0,
+            CompanyId = dbEmployee.CompanyId,
+            BranchId = dbEmployee.BranchId,
+            ServiceId = dbEmployee.ServiceId?? 0,
             FirstName = dbEmployee.FirstName,
             LastName = dbEmployee.LastName,
             Position = dbEmployee.Position,

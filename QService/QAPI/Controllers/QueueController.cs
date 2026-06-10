@@ -38,8 +38,7 @@ public class QueueController : ControllerBase
         return Ok(queues);
     }
 
-    [Authorize(Roles =
-        nameof(UserRoles.Employee) + "," + nameof(UserRoles.CompanyAdmin) + "," + nameof(UserRoles.SystemAdmin))]
+    [Authorize]
     [HttpGet("{id}")]
     public async Task<ActionResult<QueueResponseModel>> GetByIdAsync([FromRoute] int id)
     {
@@ -67,7 +66,7 @@ public class QueueController : ControllerBase
     {
         _logger.LogInformation("Received request to cancel queue with Id {queueId} by customer.", request.QueueId);
         var cancel = await _mediator.Send(request);
-        _logger.LogInformation("Successfully canceled queue with Id: {queueId} by customer.");
+        _logger.LogInformation("Successfully canceled queue with Id: {queueId} by customer.", request.QueueId);
         return Ok(cancel);
     }
 

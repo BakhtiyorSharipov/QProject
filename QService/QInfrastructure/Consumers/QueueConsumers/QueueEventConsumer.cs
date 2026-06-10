@@ -2,8 +2,8 @@ using System.Collections.Frozen;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using QApplication.Caching;
+using QApplication.Responses.AvailabilityResponse;
 using QContracts.Events;
-using QContracts.QueueEvents;
 using QContracts.QueueEvents.Enums;
 using QInfrastructure.Extensions;
 using QNotificationService.Contracts.NotificationEvents;
@@ -61,9 +61,22 @@ public class QueueEventConsumer : IConsumer<QueueEvent>
     {
         _logger.LogInformation("Processing cache reset for QueueId {QueueId}", evt.QueueId);
 
+        
+        var date = evt.StartTime.Date;
+
+        await _cacheService.AddQueueToSchedule(evt.EmployeeId, date, evt.QueueId,
+            new TimeIntervalResponse
+            {
+                Start = evt.StartTime,
+                End = evt.EndTime ?? evt.StartTime.AddMinutes(30)
+            });
+
+        
+        
         var cacheRest =
             _cacheService.ResetCacheAsync(evt.QueueId, evt.CustomerId, evt.EmployeeId);
 
+        
 
         _logger.LogInformation("Publishing notification event for QueueId {QueueId}", evt.QueueId);
 
@@ -98,8 +111,32 @@ public class QueueEventConsumer : IConsumer<QueueEvent>
     {
         _logger.LogInformation("Processing cache reset for QueueId {QueueId}", evt.QueueId);
 
-        var cacheReset = _cacheService.ResetCacheAsync(evt.QueueId, evt.CustomerId, evt.EmployeeId);
+        
+        var date = evt.StartTime.Date;
+        if (evt.Status== UpdatedQueueStatus.CanceledByCustomer
+            || evt.Status== UpdatedQueueStatus.CanceledByEmployee
+            || evt.Status == UpdatedQueueStatus.CanceledByAdmin)
+        {
+            await _cacheService.RemoveQueueFromSchedule(evt.EmployeeId, date, evt.QueueId);
+        }
 
+        if (evt.Status== UpdatedQueueStatus.Confirmed)
+        {
+            await _cacheService.RemoveQueueFromSchedule(evt.EmployeeId, date, evt.QueueId);
+            await _cacheService.AddQueueToSchedule(evt.EmployeeId, date,evt.QueueId ,new TimeIntervalResponse
+            {
+                Start = evt.StartTime,
+                End = evt.EndTime ?? evt.StartTime.AddMinutes(30)
+            });
+        }
+        
+        
+        
+        var cacheReset = _cacheService.ResetCacheAsync(evt.QueueId, evt.CustomerId, evt.EmployeeId);
+        
+
+        
+        
         Task? notificationTask = null;
 
         if (evt.Status.HasValue && StatusMessage.TryGetValue(evt.Status.Value, out var template))
@@ -123,10 +160,12 @@ public class QueueEventConsumer : IConsumer<QueueEvent>
         }
         else
         {
-            await cacheReset;
+            await Task.WhenAll(cacheReset);
             _logger.LogDebug("No notification sent for status {Status}", evt.Status);
         }
 
         _logger.LogInformation("Successfully processed Updated event for QueueId {QueueId}", evt.QueueId);
     }
+    
+   
 }

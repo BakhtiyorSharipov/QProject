@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QBranchService.Application.Requests;
 using QBranchService.Application.Response;
@@ -7,6 +8,7 @@ using QBranchService.Application.UseCases.Companies.Commands.DeleteCompany;
 using QBranchService.Application.UseCases.Companies.Commands.UpdateCompany;
 using QBranchService.Application.UseCases.Companies.Queries.GetAllCompanies;
 using QBranchService.Application.UseCases.Companies.Queries.GetCompanyById;
+using QBranchService.Application.UseCases.Companies.Queries.GetCompanyInfoById;
 
 namespace QBranchService.API.Controllers;
 
@@ -23,7 +25,8 @@ public class CompanyController : ControllerBase
         _mediator = mediator;
     }
     
-    [HttpGet]
+    [HttpGet("get-all-companies")]
+    [Authorize]
     public async Task<ActionResult<PagedResponse<CompanyResponseModel>>> GetAllAsync([FromQuery]int pageNumber=1)
     {
         _logger.LogInformation("Received request to get all companies. PageNumber: {PageNumber}, PageSize: 15",
@@ -42,6 +45,18 @@ public class CompanyController : ControllerBase
         var company = await _mediator.Send(query);
         _logger.LogInformation("Successfully returned company with Id: {companyId}", id);
 
+        return Ok(company);
+    }
+
+
+    [HttpGet("company-info-by-id/{id}")]
+    [Authorize]
+    public async Task<ActionResult<CompanyByIdResponseModel>> GetCompanyInfoById([FromRoute] int id)
+    {
+        _logger.LogInformation("Received request to get company info by Id: {companyId}", id);
+        var query = new GetCompanyInfoByIdQuery(id);
+        var company = await _mediator.Send(query);
+        _logger.LogInformation("Successfully returned company info with Id: {companyId}", id);
         return Ok(company);
     }
 

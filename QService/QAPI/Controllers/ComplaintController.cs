@@ -6,6 +6,7 @@ using QApplication.Responses;
 using QApplication.UseCases.Complaints.Commands.CreateComplaint;
 using QApplication.UseCases.Complaints.Commands.UpdateComplaintStatus;
 using QApplication.UseCases.Complaints.Queries.GetAllComplaints;
+using QApplication.UseCases.Complaints.Queries.GetAllCustomerComplints;
 using QApplication.UseCases.Complaints.Queries.GetComplaintById;
 using QDomain.Enums;
 
@@ -47,7 +48,7 @@ public class ComplaintController: ControllerBase
     }
 
     [Authorize(Roles = nameof(UserRoles.Customer))]
-    [HttpPost]
+    [HttpPost("create-complaint")]
     public async Task<IActionResult> AddComplaintAsync([FromBody]CreateComplaintCommand request)
     {
         _logger.LogInformation("Received request to create complaint to queueId: {id}", request.QueueId);
@@ -65,5 +66,16 @@ public class ComplaintController: ControllerBase
         var complaint = await _mediator.Send(command);
         _logger.LogInformation("Successfully updated complaint with Id: {complaintId}", id);
         return Ok(complaint);
+    }
+    
+    [Authorize(Roles = nameof(UserRoles.Customer))]
+    [HttpGet("complaint-history/customer/")]
+    public async Task<ActionResult<PagedResponse<QueueResponseModel>>> GetQueuesByCustomerAsync([FromQuery] int pageNumber=1)
+    {
+        _logger.LogInformation("Received request to get customer complaint history with PageNumber: {pageNumber}", pageNumber);
+        var query = new GetComplaintsByCustomerQuery(pageNumber);
+        var queue = await _mediator.Send(query);
+        _logger.LogInformation("Successfully returned complaints.");
+        return Ok(queue);
     }
 }

@@ -58,6 +58,8 @@ public class CreateEmployeeCommandHandler: IRequestHandler<CreateEmployeeCommand
         var response = new EmployeeResponseModel()
         {
             Id = employee.Id,
+            CompanyId = employee.CompanyId,
+            BranchId = employee.BranchId,
             ServiceId = employee.ServiceId.Value,
             FirstName = employee.FirstName,
             LastName = employee.LastName,

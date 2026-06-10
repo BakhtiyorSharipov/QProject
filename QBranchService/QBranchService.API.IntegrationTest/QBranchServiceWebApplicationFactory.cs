@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using QBranchService.Infrastructure.Persistence.DataBase;
 using Testcontainers.PostgreSql;
+using Testcontainers.RabbitMq;
 
 namespace QBranchService.API.IntegrationTest;
 
@@ -17,7 +18,14 @@ public class QBranchServiceWebApplicationFactory: WebApplicationFactory<Program>
         .WithPassword("postgres")
         .Build();
     
+    private readonly RabbitMqContainer _rabbitMqContainer = new RabbitMqBuilder()
+        .WithImage("rabbitmq:3-management")
+        .WithUsername("guest")
+        .WithPassword("guest")
+        .Build();
+    
     private string? _postgresConnectionString;
+    
 
     protected override IHost CreateHost(IHostBuilder builder)
     {
@@ -27,6 +35,11 @@ public class QBranchServiceWebApplicationFactory: WebApplicationFactory<Program>
             var settings = new Dictionary<string, string?>
             {
                 ["ConnectionStrings:DefaultConnection"] = _postgresConnectionString,
+                
+                ["RabbitMQ:Host"] = _rabbitMqContainer.Hostname,
+                ["RabbitMQ:Port"] = _rabbitMqContainer.GetMappedPublicPort(5672).ToString(),
+                ["RabbitMQ:Username"] = "guest",
+                ["RabbitMQ:Password"] = "guest",
             };
 
             config.AddInMemoryCollection(settings);
@@ -47,14 +60,21 @@ public class QBranchServiceWebApplicationFactory: WebApplicationFactory<Program>
 
     public async Task InitializeAsync()
     {
-        await _postgresContainer.StartAsync();
+        await Task.WhenAll(
+            _postgresContainer.StartAsync(),
+            _rabbitMqContainer.StartAsync()
+        );
+        
         _postgresConnectionString = _postgresContainer.GetConnectionString();
 
     }
 
     public async Task DisposeAsync()
     {
-        await _postgresContainer.DisposeAsync().AsTask();
+        await Task.WhenAll(
+            _postgresContainer.DisposeAsync().AsTask(),
+            _rabbitMqContainer.DisposeAsync().AsTask()
+        );
 
     }
     

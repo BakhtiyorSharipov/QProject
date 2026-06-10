@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QAggregationService.Contracts.Interfaces;
 using QAggregationService.Contracts.Requests;
@@ -18,6 +19,7 @@ public class ReportController : ControllerBase
         _logger = logger;
     }
 
+    [Authorize(Roles = "CompanyAdmin")]
     [HttpGet("company-report")] 
     public async Task<ActionResult<CompanyReportResponse>> GetCompanyReport([FromQuery] ReportRequest request)
     {
@@ -29,6 +31,7 @@ public class ReportController : ControllerBase
         return Ok(result);
     }
 
+    [Authorize(Roles = "Employee")]
     [HttpGet("employee-report")]
     public async Task<ActionResult<EmployeeReportResponse>> GetEmployeeReport([FromQuery] EmployeeReportRequest request)
     {
@@ -39,6 +42,7 @@ public class ReportController : ControllerBase
         return Ok(result);
     }
 
+    [Authorize(Roles = "Customer")]
     [HttpGet("customer-report")]
     public async Task<ActionResult<CustomerReportResponse>> GetCustomerReport([FromQuery] CustomerReportRequest request)
     {

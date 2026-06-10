@@ -19,7 +19,6 @@ using QApplication.Services;
 using QApplication.Services.BackgroundJob;
 using QApplication.Validators.AuthValidators;
 using QBranchService.Contracts.Interfaces;
-using QContracts.Interfaces;
 using QDomain.Models;
 using QInfrastructure.Consumers.Cache;
 using QInfrastructure.Consumers.QueueConsumers;
@@ -130,6 +129,8 @@ builder.Host.UseSerilog((context, services, configuration) =>
         .ReadFrom.Services(services)
         .Enrich.FromLogContext();
 });
+
+
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();

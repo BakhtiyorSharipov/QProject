@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QApplication.Responses;
 using QApplication.UseCases.Reviews.Commands.CreateReview;
+using QApplication.UseCases.Reviews.Queries.GetAllCustomerReviews;
 using QApplication.UseCases.Reviews.Queries.GetAllReviews;
 using QApplication.UseCases.Reviews.Queries.GetReviewById;
 using QDomain.Enums;
@@ -45,12 +46,23 @@ public class ReviewController : ControllerBase
     }
 
     [Authorize(Roles = nameof(UserRoles.Customer))]
-    [HttpPost]
+    [HttpPost("create-review")]
     public async Task<IActionResult> PostAsync([FromBody] CreateReviewCommand request)
     {
         _logger.LogInformation("Received request to create review to queue with Id: {queueId}", request.QueueId);
         var review = await _mediator.Send(request);
         _logger.LogInformation("Successfully created review with Id: {reviewId}", review.Id);
         return Ok(review);
+    }
+    
+    [Authorize(Roles = nameof(UserRoles.Customer))]
+    [HttpGet("review-history/customer/")]
+    public async Task<ActionResult<PagedResponse<QueueResponseModel>>> GetQueuesByCustomerAsync([FromQuery] int pageNumber=1)
+    {
+        _logger.LogInformation("Received request to get customer review history with PageNumber: {pageNumber}", pageNumber);
+        var query = new GetReviewsByCustomerQuery(pageNumber);
+        var queue = await _mediator.Send(query);
+        _logger.LogInformation("Successfully returned reviews.");
+        return Ok(queue);
     }
 }

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QAggregationService.Contracts.Interfaces;
 using QAggregationService.Contracts.Responses;
@@ -17,6 +18,7 @@ public class DashboardController: ControllerBase
         _logger = logger;
     }
 
+    [Authorize(Roles = "CompanyAdmin")]
     [HttpGet("{companyId}")]
     public async Task<ActionResult<DashboardResponse>> GetCompanyDashboard([FromRoute] int companyId)
     {

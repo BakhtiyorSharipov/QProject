@@ -3,13 +3,18 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QApplication.Interfaces;
+using QApplication.Requests;
 using QApplication.Requests.EmployeeRequest;
 using QApplication.Responses;
+using QApplication.Responses.AvailabilityResponse;
 using QApplication.UseCases.Employees.Commands.CreateEmployee;
 using QApplication.UseCases.Employees.Commands.DeleteEmployee;
 using QApplication.UseCases.Employees.Commands.UpdateEmployee;
 using QApplication.UseCases.Employees.Queries.GetAllEmployees;
+using QApplication.UseCases.Employees.Queries.GetBranchEmployees;
 using QApplication.UseCases.Employees.Queries.GetEmployeeById;
+using QApplication.UseCases.Employees.Queries.GetEmployeeSchedule;
+using QApplication.UseCases.Employees.Queries.GetServiceEmployees;
 using QDomain.Enums;
 using QDomain.Models;
 
@@ -30,7 +35,7 @@ public class EmployeeController : ControllerBase
 
     [Authorize(Roles = nameof(UserRoles.SystemAdmin) + "," + nameof(UserRoles.CompanyAdmin))]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<EmployeeResponseModel>>> GetAllAsync([FromQuery] int pageNumber=1)
+    public async Task<ActionResult<PagedResponse<EmployeeResponseModel>>> GetAllAsync([FromQuery] int pageNumber=1)
     {
         _logger.LogInformation("Received request to get all employees. PageNumber: {PageNUmber}, PageSize: 15",
             pageNumber);
@@ -51,6 +56,33 @@ public class EmployeeController : ControllerBase
         return Ok(employee);
     }
 
+    [HttpGet("get-branch-employees")]
+    [Authorize]
+    public async Task<ActionResult<PagedResponse<EmployeeResponseModel>>> GetBranchEmployees([FromQuery]int companyId,
+       [FromQuery] int branchId, [FromQuery] int pageNumber = 1)
+    {
+        _logger.LogInformation("Received request to get all employees. PageNumber: {PageNumber}, PageSize: 15",
+            pageNumber);
+        var query = new GetBranchEmployeesQuery(companyId,branchId,pageNumber);
+        var employees = await _mediator.Send(query);
+
+        return Ok(employees);
+    }
+    
+    
+    [HttpGet("get-service-employees")]
+    [Authorize]
+    public async Task<ActionResult<PagedResponse<EmployeeResponseModel>>> GetServiceEmployees([FromQuery]int companyId,
+        [FromQuery] int serviceId, [FromQuery] int pageNumber = 1)
+    {
+        _logger.LogInformation("Received request to get all employees. PageNumber: {PageNumber}, PageSize: 15",
+            pageNumber);
+        var query = new GetServiceEmployeesQuery(companyId,serviceId,pageNumber);
+        var employees = await _mediator.Send(query);
+
+        return Ok(employees);
+    }
+    
     [Authorize(Roles = nameof(UserRoles.SystemAdmin) + "," + nameof(UserRoles.CompanyAdmin))]
     [HttpPost]
     public async Task<IActionResult> PostAsync([FromBody] CreateEmployeeCommand request)
@@ -82,5 +114,17 @@ public class EmployeeController : ControllerBase
         await _mediator.Send(command);
         _logger.LogInformation("Successfully deleted employee with Id: {employeeId}", id);
         return NoContent();
+    }
+
+    [Authorize(Roles = nameof(UserRoles.Customer))]
+    [HttpGet("get-employee-availability-schedule")]
+    public async Task<ActionResult<GetEmployeeAvailabilityResponse>> GetEmployeeSchedules(
+       [FromQuery] GetEmployeeAvailabilityRequest request)
+    {
+        _logger.LogInformation("Received request to get employee schedules");
+        var query = new GetEmployeeScheduleQuery(request.EmployeeId, request.Date);
+        var employeeSchedule = await _mediator.Send(query);
+        _logger.LogInformation("Successfully returned employee schedules");
+        return Ok(employeeSchedule);
     }
 }

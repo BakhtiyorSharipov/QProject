@@ -9,6 +9,5 @@ public class BranchConfigurationResponseModel
     public TimeOnly CloseTime { get; set; }
     public TimeOnly? BreakStartTime { get; set; }
     public TimeOnly? BreakEndTime { get; set; }
-    public bool IsOpenToday { get; set; }
     public DateTimeOffset CreatedAt { get; set; } 
 }

@@ -31,7 +31,6 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
         .Build();
     private string? _postgresConnectionString;
     private string? _redisConnectionString;
-    private string? _rabbitMqConnectionString;
 
     public IBranchService BranchServiceMock { get; set; } = null!;
     
@@ -94,7 +93,6 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
         
         _postgresConnectionString = _postgresContainer.GetConnectionString();
         _redisConnectionString = _redisContainer.GetConnectionString();
-        _rabbitMqConnectionString = _redisContainer.GetConnectionString();
     }
 
     public async Task DisposeAsync()
