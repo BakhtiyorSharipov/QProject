@@ -70,7 +70,7 @@ public class ComplaintController: ControllerBase
     
     [Authorize(Roles = nameof(UserRoles.Customer))]
     [HttpGet("complaint-history/customer/")]
-    public async Task<ActionResult<PagedResponse<QueueResponseModel>>> GetQueuesByCustomerAsync([FromQuery] int pageNumber=1)
+    public async Task<ActionResult<PagedResponse<ComplaintResponseModel>>> GetComplaintsByCustomerAsync([FromQuery] int pageNumber=1)
     {
         _logger.LogInformation("Received request to get customer complaint history with PageNumber: {pageNumber}", pageNumber);
         var query = new GetComplaintsByCustomerQuery(pageNumber);

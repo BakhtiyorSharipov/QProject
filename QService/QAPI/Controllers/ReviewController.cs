@@ -57,7 +57,7 @@ public class ReviewController : ControllerBase
     
     [Authorize(Roles = nameof(UserRoles.Customer))]
     [HttpGet("review-history/customer/")]
-    public async Task<ActionResult<PagedResponse<QueueResponseModel>>> GetQueuesByCustomerAsync([FromQuery] int pageNumber=1)
+    public async Task<ActionResult<PagedResponse<ReviewResponseModel>>> GetReviewsByCustomer([FromQuery] int pageNumber=1)
     {
         _logger.LogInformation("Received request to get customer review history with PageNumber: {pageNumber}", pageNumber);
         var query = new GetReviewsByCustomerQuery(pageNumber);

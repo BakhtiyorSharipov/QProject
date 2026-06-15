@@ -94,7 +94,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "QAggregationService.Contrac
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QAggregationService.Contracts", "QAggregationService.Contracts\QAggregationService.Contracts.csproj", "{3CF0C9B4-EF50-494B-A2BA-F3F5ED75DFF3}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "QAuthService", "QAuthService", "{9FF3CF2E-790A-4CEA-85C3-B371BD9FC680}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "QUserService", "QUserService", "{9FF3CF2E-790A-4CEA-85C3-B371BD9FC680}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "QAuthService.API", "QAuthService.API", "{DA38D154-B7F0-40F6-8020-7D0485395D18}"
 EndProject
