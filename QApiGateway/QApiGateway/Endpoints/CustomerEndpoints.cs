@@ -15,7 +15,7 @@ public static class CustomerEndpoints
         {
             var token = httpRequest.Headers["Authorization"].ToString();
             var request = new HttpRequestMessage(HttpMethod.Get,
-                $"http://localhost:5003/api/Customer/get-customer-profile");
+                $"http://localhost:5008/api/Customer/get-customer-profile");
             request.Headers.Add("Authorization", token);
 
             var response = await client.SendAsync(request);
@@ -29,7 +29,7 @@ public static class CustomerEndpoints
             {
                 var token = httpRequest.Headers["Authorization"].ToString();
                 var request = new HttpRequestMessage(
-                    HttpMethod.Put, $"http://localhost:5003/api/Customer/customer-profile-update");
+                    HttpMethod.Put, $"http://localhost:5008/api/Customer/customer-profile-update");
                 request.Headers.Add("Authorization", token);
                 request.Content = new StringContent(JsonSerializer.Serialize(updateProfileRequest), Encoding.UTF8,
                     "application/json");

@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
-using QApplication.Extensions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QBranchService.Contracts.Interfaces;
@@ -14,6 +13,10 @@ using QContracts.Events;
 using QContracts.QueueEvents.Enums;
 using QDomain.Enums;
 using QDomain.Models;
+using QUserService.Contracts.Interfaces;
+using QUserService.Contracts.Requests.CustomerRequests;
+using QUserService.Contracts.Requests.EmployeeRequests;
+using QUserService.Contracts.Requests.UserRequests;
 
 namespace QApplication.UseCases.Queues.Commands.CreateQueue;
 
@@ -24,24 +27,47 @@ public class CreateQueueCommandHandler : IRequestHandler<CreateQueueCommand, Add
     private readonly IPublishEndpoint _publishEndpoint;
     private readonly IHttpContextAccessor _contextAccessor;
     private readonly IBranchService _branchService;
+    private readonly IUserService _userService;
 
     public CreateQueueCommandHandler(ILogger<CreateQueueCommandHandler> logger, IQueueApplicationDbContext dbContext,
         IPublishEndpoint publishEndpoint,
         IHttpContextAccessor contextAccessor,
-        IBranchService branchService)
+        IBranchService branchService, IUserService userService)
     {
         _logger = logger;
         _dbContext = dbContext;
         _publishEndpoint = publishEndpoint;
         _contextAccessor = contextAccessor;
         _branchService = branchService;
+        _userService = userService;
     }
 
     public async Task<AddQueueResponseModel> Handle(CreateQueueCommand request, CancellationToken cancellationToken)
     {
-        var currentCustomer = await _contextAccessor.CurrentCustomer(_dbContext, cancellationToken);
-        var customerId = currentCustomer.Id;
-        var currentUser = await _contextAccessor.CurrentUser(_dbContext, cancellationToken);
+        
+        
+        var userIdClaim = _contextAccessor.HttpContext!.User.FindFirst("id");
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+        {
+            _logger.LogWarning("User not authenticated");
+            throw new UnauthorizedAccessException("User not authenticated");
+        }
+
+        var currentCustomer = await _userService.GetCurrentCustomer(new CurrentUserRequest
+        {
+            RequestId = Guid.NewGuid(),
+            UserId = userId,
+        });
+        
+        var customerId = currentCustomer.CustomerId;
+
+        var currentUser = await _userService.GetUserEmailByCustomerId(new GetUserEmailByCustomerIdRequest
+        {
+            RequestId = Guid.NewGuid(),
+            CustomerId = customerId,
+        });
+        
+      
         var userEmail = currentUser.EmailAddress;
 
         _logger.LogInformation("Adding new queue for EmployeeId {id}", request.EmployeeId);
@@ -126,13 +152,23 @@ public class CreateQueueCommandHandler : IRequestHandler<CreateQueueCommand, Add
                 companyResult.ErrorMessage ?? "CompanyService not found");
         }
 
-        var schedule = await _dbContext.AvailabilitySchedules.Where(s => s.EmployeeId == request.EmployeeId)
-            .ToListAsync(cancellationToken);
-        if (!schedule.Any())
+
+
+        var scheduleResponse = await _userService.CheckEmployeeAvailability(new EmployeeAvailabilityRequest
         {
-            _logger.LogWarning("Employee with Id {id} not found in schedule entities for adding new queue",
-                request.EmployeeId);
-            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(EmployeeEntity));
+            RequestId = Guid.NewGuid(),
+            EmployeeId = request.EmployeeId,
+            StartTime = request.StartTime,
+            DurationMinutes = 30
+        });
+        
+        if (!scheduleResponse.IsAvailable)
+        {
+            _logger.LogWarning("Employee {EmployeeId} is not available at {StartTime}. Message: {ErrorMessage}", 
+                request.EmployeeId, request.StartTime, scheduleResponse.ErrorMessage);
+            
+            throw new Exception(scheduleResponse.ErrorMessage ?? 
+                                "The selected time slot is not available. Please choose a different time.");
         }
 
         _logger.LogInformation(
@@ -140,40 +176,41 @@ public class CreateQueueCommandHandler : IRequestHandler<CreateQueueCommand, Add
             request.CompanyId, request.BranchId, request.ServiceId);
 
 
-        var customer =
-            await _dbContext.Customers.FirstOrDefaultAsync(s => s.Id == customerId, cancellationToken);
-        if (customer == null)
+
+        var customer = await _userService.GetCustomerById(new CustomerByIdRequest
+        {
+            RequestId = Guid.NewGuid(),
+            CustomerId = customerId
+        });
+
+        if (!customer.IsValid)
         {
             _logger.LogWarning("Customer with Id {id} not found for adding new queue ", customerId);
-            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(CustomerEntity));
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, $"Customer with Id {customerId} not found for adding new queue");
         }
 
-        var employee = await _dbContext.Employees
-            .Where(s => s.CompanyId == request.CompanyId)
-            .FirstOrDefaultAsync(s => s.Id == request.EmployeeId, cancellationToken);
-        if (employee == null)
+        var companyId = companyResult.CompanyId;
+        
+        var employee = await _userService.GetEmployeeById(new EmployeeByIdRequest
+        {
+            RequestId = Guid.NewGuid(),
+            EmployeeId = request.EmployeeId
+        });
+
+        if (!employee.IsValid)
+        {
+            _logger.LogWarning("Employee with Id {EmployeeId} not found", request.EmployeeId);
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound,
+                employee.ErrorMessage ?? $"Employee with Id {request.EmployeeId} not found");
+        }
+
+        if (employee.CompanyId != companyId)
         {
             _logger.LogWarning("Employee with Id {EmployeeId} not found for this company ", request.EmployeeId);
-            throw new HttpStatusCodeException(HttpStatusCode.NotFound,
+            throw new HttpStatusCodeException(HttpStatusCode.BadRequest,
                 $"Employee with Id {request.EmployeeId} not found for this company");
         }
-
-
-        _logger.LogDebug("Checking if time slot {startTime} is available for 30- minute booking",
-            request.StartTime);
-        var slotExists = schedule.Any(s => s.AvailableSlots.Any(slot =>
-            request.StartTime >= slot.From && request.StartTime.AddMinutes(30) <= slot.To
-        ));
-
-        if (!slotExists)
-        {
-            _logger.LogWarning("Time slot {startTime} not available for EmployeeId: {id}", request.StartTime,
-                request.EmployeeId);
-            throw new Exception(
-                "The selected time slot is not available for a 30-minute booking. Please choose a start time that fits within the employee's working hours.");
-        }
-
-
+        
         _logger.LogDebug("Checking for overlapping queues for EmployeeId: {employeeId}", request.EmployeeId);
 
         var allQueuesByEmployee = await _dbContext.Queues.Where(s => s.EmployeeId == request.EmployeeId)
@@ -201,18 +238,20 @@ public class CreateQueueCommandHandler : IRequestHandler<CreateQueueCommand, Add
 
 
         _logger.LogDebug("Checking if is customer blocked for CompanyId: {id}", request.CompanyId);
-        var blocked =
-            await _dbContext.BlockedCustomers.FirstOrDefaultAsync(s => s.CustomerId == customerId,
-                cancellationToken);
-        if (blocked != null &&
-            blocked.DoesBanForever &&
-            request.CompanyId == blocked.CompanyId)
+
+        var blocked = await _userService.IsCustomerBlockedForCompany(new IsCustomerBlockedRequest
+        {
+            RequestId = Guid.NewGuid(),
+            CompanyId = companyId,
+            CustomerId = customerId
+        });
+
+        if (blocked.IsBlocked)
         {
             _logger.LogWarning("Customer {id} is blocked from Company {companyId}", customerId,
                 request.CompanyId);
             throw new Exception("You are blocked by this company!");
         }
-
 
         _logger.LogInformation("Creating new queue entity");
         var queue = new QueueEntity()

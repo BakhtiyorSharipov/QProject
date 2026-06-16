@@ -10,6 +10,8 @@ using QContracts.Events;
 using QContracts.QueueEvents.Enums;
 using QDomain.Enums;
 using QDomain.Models;
+using QUserService.Contracts.Interfaces;
+using QUserService.Contracts.Requests.UserRequests;
 
 namespace QApplication.Services;
 
@@ -18,12 +20,14 @@ public class QueueCancellationService: IQueueCancellationService
     private readonly ILogger<QueueCancellationService> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly IPublishEndpoint _publishEndpoint;
+    private readonly IUserService _userService;
 
-    public QueueCancellationService(ILogger<QueueCancellationService> logger, IQueueApplicationDbContext dbContext, IPublishEndpoint publishEndpoint)
+    public QueueCancellationService(ILogger<QueueCancellationService> logger, IQueueApplicationDbContext dbContext, IPublishEndpoint publishEndpoint, IUserService userService)
     {
         _logger = logger;
         _dbContext = dbContext;
         _publishEndpoint = publishEndpoint;
+        _userService = userService;
     }
     
 
@@ -43,12 +47,25 @@ public class QueueCancellationService: IQueueCancellationService
         CancellationToken cancellationToken)
     {
 
-        var user = await _dbContext.Users.FirstOrDefaultAsync(s => s.CustomerId == queue.CustomerId, cancellationToken);
-        if (user==null)
+        var user = await _userService.GetUserByCustomerId(new GetUserByCustomerIdRequest
+        {
+            RequestId = Guid.NewGuid(),
+            CustomerId = queue.CustomerId
+        });
+
+        if (!user.IsValid)
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound,
                 $"Customer with Id {queue.CustomerId} not found");
         }
+        
+        
+        // var user = await _dbContext.Users.FirstOrDefaultAsync(s => s.CustomerId == queue.CustomerId, cancellationToken);
+        // if (user==null)
+        // {
+        //     throw new HttpStatusCodeException(HttpStatusCode.NotFound,
+        //         $"Customer with Id {queue.CustomerId} not found");
+        // }
 
         var userEmail = user.EmailAddress;
         queue.Status = newStatus;

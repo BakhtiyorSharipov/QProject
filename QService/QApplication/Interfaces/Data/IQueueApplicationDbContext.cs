@@ -5,15 +5,12 @@ namespace QApplication.Interfaces.Data;
 
 public interface IQueueApplicationDbContext
 { 
-    DbSet<CustomerEntity> Customers { get; set; }
-    DbSet<EmployeeEntity> Employees { get; set; }
-    DbSet<AvailabilityScheduleEntity> AvailabilitySchedules { get; set; }
-    DbSet<BlockedCustomerEntity> BlockedCustomers { get; set; }
+   
     DbSet<ComplaintEntity> Complaints { get; set; }
     DbSet<QueueEntity> Queues { get; set; }
-    DbSet<RefreshTokenEntity> RefreshTokens { get; set; }
+  
     DbSet<ReviewEntity> Reviews { get; set; }
-    DbSet<UserEntity> Users { get; set; }
+   
     
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);

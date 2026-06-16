@@ -5,10 +5,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Caching;
 using QApplication.Exceptions;
-using QApplication.Extensions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QDomain.Models;
+using QUserService.Contracts.Interfaces;
+using QUserService.Contracts.Requests.UserRequests;
 
 namespace QApplication.UseCases.Queues.Queries.GetQueueById;
 
@@ -18,31 +19,55 @@ public class GetQueueByIdQueryHandler: IRequestHandler<GetQueueByIdQuery, QueueR
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly ICacheService _cache;
     private readonly IHttpContextAccessor _contextAccessor;
+    private readonly IUserService _userService;
 
-    public GetQueueByIdQueryHandler(ILogger<GetQueueByIdQueryHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache, IHttpContextAccessor contextAccessor)
+    public GetQueueByIdQueryHandler(ILogger<GetQueueByIdQueryHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache, IHttpContextAccessor contextAccessor, IUserService userService)
     {
         _logger = logger;
         _dbContext = dbContext;
         _cache = cache;
         _contextAccessor = contextAccessor;
+        _userService = userService;
     }
 
     public async Task<QueueResponseModel> Handle(GetQueueByIdQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Getting queue by Id {id}", request.Id);
 
-        var isUserEmployee = await _contextAccessor.IsEmployee(_dbContext, cancellationToken);
-        int customerId = 0;
-        int employeeId = 0;
-        if (isUserEmployee)
+        var userIdClaim = _contextAccessor.HttpContext!.User.FindFirst("id");
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
         {
-            var currentEmployee = await _contextAccessor.CurrentEmployee(_dbContext, cancellationToken);
-            employeeId = currentEmployee.Id;
+            _logger.LogWarning("User not authenticated");
+            throw new UnauthorizedAccessException("User not authenticated");
+        }
+
+        var isUserEmployee = await _userService.IsCurrentUserEmployee(new CurrentUserRequest
+        {
+            RequestId = Guid.NewGuid(),
+            UserId = userId
+        });
+        
+        
+
+        int employeeId = 0;
+        int customerId = 0;
+        if (isUserEmployee.IsEmployee)
+        {
+            var currentEmployee = await _userService.GetCurrentEmployee(new CurrentUserRequest
+            {
+                RequestId = Guid.NewGuid(),
+                UserId = userId
+            });
+            employeeId = currentEmployee.EmployeeId;
         }
         else
         {
-            var currentCustomer = await _contextAccessor.CurrentCustomer(_dbContext, cancellationToken);
-            customerId = currentCustomer.Id;
+            var currentCustomer = await _userService.GetCurrentCustomer(new CurrentUserRequest
+            {
+                RequestId = Guid.NewGuid(),
+                UserId = userId
+            });
+            customerId = currentCustomer.CustomerId;
         }
         
         
@@ -51,7 +76,7 @@ public class GetQueueByIdQueryHandler: IRequestHandler<GetQueueByIdQuery, QueueR
         {
             _logger.LogInformation($"Cache miss for QueueId: {request.Id}");
             var dbQueue = await _dbContext.Queues
-                .Where(s=>isUserEmployee
+                .Where(s=>isUserEmployee.IsEmployee
                 ? s.EmployeeId== employeeId
                 : s.CustomerId== customerId)
                 .FirstOrDefaultAsync(s => s.Id == request.Id, cancellationToken);

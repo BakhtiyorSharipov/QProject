@@ -8,7 +8,7 @@ public class QueueContextFactory:IDesignTimeDbContextFactory<QueueDbContext>
     public QueueDbContext CreateDbContext(string[] args)
     {
         var optionBuilder = new DbContextOptionsBuilder<QueueDbContext>();
-        optionBuilder.UseNpgsql("Host=localhost;Port=5432;Database=QProject;Username=postgres;Password=b.sh.3242");
+        optionBuilder.UseNpgsql("Host=localhost;Port=5432;Database=QueueService;Username=postgres;Password=b.sh.3242");
         return new QueueDbContext(optionBuilder.Options);
     }
 }

@@ -10,6 +10,7 @@
       <ProjectReference Include="..\..\QBranchService\QBranchService.Contracts\QBranchService.Contracts\QBranchService.Contracts.csproj" />
       <ProjectReference Include="..\..\QContracts\QContracts.csproj" />
       <ProjectReference Include="..\..\QNotificationService\QNotificationService.Contracts\QNotificationService.Contracts.csproj" />
+      <ProjectReference Include="..\..\QUserService\QUserService.Contracts\QUserService.Contracts.csproj" />
       <ProjectReference Include="..\QDomain\QDomain.csproj" />
     </ItemGroup>
 
@@ -28,10 +29,6 @@
       <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
       <PackageReference Include="StackExchange.Redis" Version="2.7.27" />
       <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="UseCases\Employees\Commands\" />
     </ItemGroup>
 
 </Project>

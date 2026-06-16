@@ -5,7 +5,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddGatewayServices(builder.Configuration);
 
-builder.Services.AddHttpClient("QService", client =>
+builder.Services.AddHttpClient("QueueService", client =>
 {
     client.BaseAddress = new Uri("http://localhost:5003/");
 });
@@ -13,6 +13,11 @@ builder.Services.AddHttpClient("QService", client =>
 builder.Services.AddHttpClient("AggregationService", client =>
 {
     client.BaseAddress = new Uri("http://localhost:5005/");
+});
+
+builder.Services.AddHttpClient("UserService", client =>
+{
+    client.BaseAddress = new Uri("http://localhost:5008/");
 });
 
 var app = builder.Build();

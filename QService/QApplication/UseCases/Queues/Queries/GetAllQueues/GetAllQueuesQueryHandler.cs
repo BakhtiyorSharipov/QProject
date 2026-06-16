@@ -3,9 +3,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Caching;
-using QApplication.Extensions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
+using QUserService.Contracts.Interfaces;
+using QUserService.Contracts.Requests.UserRequests;
 
 namespace QApplication.UseCases.Queues.Queries.GetAllQueues;
 
@@ -16,19 +17,33 @@ public class GetAllQueuesQueryHandler: IRequestHandler<GetAllQueuesQuery, PagedR
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly ICacheService _cache;
     private readonly IHttpContextAccessor _contextAccessor;
-    public GetAllQueuesQueryHandler(ILogger<GetAllQueuesQueryHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache, IHttpContextAccessor contextAccessor)
+    private readonly IUserService _userService;
+    public GetAllQueuesQueryHandler(ILogger<GetAllQueuesQueryHandler> logger, IQueueApplicationDbContext dbContext, ICacheService cache, IHttpContextAccessor contextAccessor, IUserService userService)
     {
         _logger = logger;
         _dbContext = dbContext;
         _cache = cache;
         _contextAccessor = contextAccessor;
+        _userService = userService;
     }
 
     public async Task<PagedResponse<QueueResponseModel>> Handle(GetAllQueuesQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Getting all queues. PageNumber: {pageNumber}, PageSize: {pageSize}", request.PageNumber, PageSize);
 
-        var currentEmployee = await _contextAccessor.CurrentEmployee(_dbContext, cancellationToken);
+        var userIdClaim = _contextAccessor.HttpContext!.User.FindFirst("id");
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+        {
+            _logger.LogWarning("User not authenticated");
+            throw new UnauthorizedAccessException("User not authenticated");
+        }
+        
+        
+        var currentEmployee = await _userService.GetCurrentEmployee(new CurrentUserRequest
+        {
+            RequestId = Guid.NewGuid(),
+            UserId = userId
+        });
         var companyId = currentEmployee.CompanyId;
         
         var hashKey = CacheKeys.AllQueuesHashKey;

@@ -2,10 +2,11 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using QApplication.Extensions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QDomain.Models;
+using QUserService.Contracts.Interfaces;
+using QUserService.Contracts.Requests.UserRequests;
 
 namespace QApplication.UseCases.Complaints.Queries.GetAllComplaints;
 
@@ -16,13 +17,15 @@ public class
     private readonly ILogger<GetAllComplaintsQueryHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly IHttpContextAccessor _contextAccessor;
+    private readonly IUserService _userService;
 
     public GetAllComplaintsQueryHandler(ILogger<GetAllComplaintsQueryHandler> logger,
-        IQueueApplicationDbContext dbContext, IHttpContextAccessor contextAccessor)
+        IQueueApplicationDbContext dbContext, IHttpContextAccessor contextAccessor, IUserService userService)
     {
         _logger = logger;
         _dbContext = dbContext;
         _contextAccessor = contextAccessor;
+        _userService = userService;
     }
 
     public async Task<PagedResponse<ComplaintResponseModel>> Handle(GetAllComplaintsQuery request,
@@ -32,31 +35,54 @@ public class
             request.PageNumber,
             PageSize);
 
+        
+        
+        var userIdClaim = _contextAccessor.HttpContext!.User.FindFirst("id");
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+        {
+            _logger.LogWarning("User not authenticated");
+            throw new UnauthorizedAccessException("User not authenticated");
+        }
 
-        var isUserEmployee = await _contextAccessor.IsEmployee(_dbContext, cancellationToken);
+        var isUserEmployee = await _userService.IsCurrentUserEmployee(new CurrentUserRequest
+        {
+            RequestId = Guid.NewGuid(),
+            UserId = userId
+        });
+        
+        
+
         int employeeId = 0;
         int customerId = 0;
-        if (isUserEmployee)
+        if (isUserEmployee.IsEmployee)
         {
-            var currentEmployee = await _contextAccessor.CurrentEmployee(_dbContext, cancellationToken);
-            employeeId = currentEmployee.Id;
+            var currentEmployee = await _userService.GetCurrentEmployee(new CurrentUserRequest
+            {
+                RequestId = Guid.NewGuid(),
+                UserId = userId
+            });
+            employeeId = currentEmployee.EmployeeId;
         }
         else
         {
-            var currentCustomer = await _contextAccessor.CurrentCustomer(_dbContext, cancellationToken);
-            customerId = currentCustomer.Id;
+            var currentCustomer = await _userService.GetCurrentCustomer(new CurrentUserRequest
+            {
+                RequestId = Guid.NewGuid(),
+                UserId = userId
+            });
+            customerId = currentCustomer.CustomerId;
         }
 
 
         var totalCount = await _dbContext.Complaints
-            .Where(s => isUserEmployee
+            .Where(s => isUserEmployee.IsEmployee
                 ? s.Queue.EmployeeId == employeeId
                 : s.CustomerId == customerId)
             .CountAsync(cancellationToken);
 
         var dbComplaints = await _dbContext.Complaints
             .Include(s => s.Queue)
-            .Where(s => isUserEmployee
+            .Where(s => isUserEmployee.IsEmployee
                 ? s.Queue.EmployeeId == employeeId
                 : s.CustomerId == customerId)
             .OrderBy(s => s.Id)

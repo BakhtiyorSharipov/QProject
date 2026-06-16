@@ -1,14 +1,12 @@
-using System.Net;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Caching;
-using QApplication.Exceptions;
-using QApplication.Extensions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
-using QDomain.Models;
+using QUserService.Contracts.Interfaces;
+using QUserService.Contracts.Requests.UserRequests;
 
 namespace QApplication.UseCases.Queues.Queries.GetQueuesByEmployee;
 
@@ -19,19 +17,33 @@ public class GetQueuesByEmployeeQueryHandler: IRequestHandler<GetQueuesByEmploye
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly ICacheService _cacheService;
     private readonly IHttpContextAccessor _contextAccessor;
+    private readonly IUserService _userService;
 
-    public GetQueuesByEmployeeQueryHandler(ILogger<GetQueuesByEmployeeQueryHandler> logger, IQueueApplicationDbContext dbContext, IHttpContextAccessor contextAccessor, ICacheService cacheService)
+    public GetQueuesByEmployeeQueryHandler(ILogger<GetQueuesByEmployeeQueryHandler> logger, IQueueApplicationDbContext dbContext, IHttpContextAccessor contextAccessor, ICacheService cacheService, IUserService userService)
     {
         _logger = logger;
         _dbContext = dbContext;
         _contextAccessor = contextAccessor;
         _cacheService = cacheService;
+        _userService = userService;
     }
 
     public async Task<PagedResponse<QueueResponseModel>> Handle(GetQueuesByEmployeeQuery request, CancellationToken cancellationToken)
     {
-        var currentEmployee = await _contextAccessor.CurrentEmployee(_dbContext, cancellationToken);
-        var employeeId = currentEmployee.Id;
+        
+        var userIdClaim = _contextAccessor.HttpContext!.User.FindFirst("id");
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+        {
+            _logger.LogWarning("User not authenticated");
+            throw new UnauthorizedAccessException("User not authenticated");
+        }
+        
+        var currentEmployee = await _userService.GetCurrentEmployee(new CurrentUserRequest
+        {
+            RequestId = Guid.NewGuid(),
+            UserId = userId
+        });
+        var employeeId = currentEmployee.EmployeeId;
         
         _logger.LogInformation("Getting all customer's queue. PageNumber: {pageNumber}, PageSize: {pageSize}",
             request.PageNumber, PageSize);

@@ -4,11 +4,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
-using QApplication.Extensions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QDomain.Enums;
 using QDomain.Models;
+using QUserService.Contracts.Interfaces;
+using QUserService.Contracts.Requests.CustomerRequests;
+using QUserService.Contracts.Requests.UserRequests;
 
 namespace QApplication.UseCases.Reviews.Commands.CreateReview;
 
@@ -17,20 +19,36 @@ public class CreateReviewCommandHandler: IRequestHandler<CreateReviewCommand, Re
     private readonly ILogger<CreateReviewCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly IHttpContextAccessor _contextAccessor;
+    private readonly IUserService _userService;
 
-    public CreateReviewCommandHandler(ILogger<CreateReviewCommandHandler> logger, IQueueApplicationDbContext dbContext, IHttpContextAccessor contextAccessor)
+    public CreateReviewCommandHandler(ILogger<CreateReviewCommandHandler> logger, IQueueApplicationDbContext dbContext, IHttpContextAccessor contextAccessor, IUserService userService)
     {
         _logger = logger;
         _dbContext = dbContext;
         _contextAccessor = contextAccessor;
+        _userService = userService;
     }
 
     public async Task<ReviewResponseModel> Handle(CreateReviewCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Adding new review to this queue Id {request.QueueId}", request.QueueId);
 
-        var currentCustomer = await _contextAccessor.CurrentCustomer(_dbContext, cancellationToken);
-        var customerId = currentCustomer.Id;
+        
+        var userIdClaim = _contextAccessor.HttpContext!.User.FindFirst("id");
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+        {
+            _logger.LogWarning("User not authenticated");
+            throw new UnauthorizedAccessException("User not authenticated");
+        }
+        
+        
+        
+        var currentCustomer = await _userService.GetCurrentCustomer(new CurrentUserRequest
+        {
+            RequestId = Guid.NewGuid(),
+            UserId = userId
+        });
+        var customerId = currentCustomer.CustomerId;
         
 
         var queue = await _dbContext.Queues
@@ -42,15 +60,22 @@ public class CreateReviewCommandHandler: IRequestHandler<CreateReviewCommand, Re
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, $"Queue with Id {request.QueueId} not found for this employee");
         }
 
-        var customer =
-            await _dbContext.Customers.FirstOrDefaultAsync(s => s.Id == customerId, cancellationToken);
-        if (customer == null)
+
+
+
+        var customer = await _userService.GetCustomerById(new CustomerByIdRequest
+        {
+            RequestId = Guid.NewGuid(),
+            CustomerId = customerId
+        });
+
+        if (!customer.IsValid)
         {
             _logger.LogWarning("Customer with Id {request.CustomerId} not found for adding new review.",
                 customerId);
-            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(CustomerEntity));
+            throw new HttpStatusCodeException(HttpStatusCode.NotFound, $"Customer with Id {customerId} not found for adding new review.");
         }
-
+        
         if (queue.Status != QueueStatus.Completed)
         {
             _logger.LogError("Invalid queue status while adding new review for this queue Id {queueId}",

@@ -4,11 +4,12 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
-using QApplication.Extensions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QDomain.Enums;
 using QDomain.Models;
+using QUserService.Contracts.Interfaces;
+using QUserService.Contracts.Requests.UserRequests;
 
 namespace QApplication.UseCases.Complaints.Commands.UpdateComplaintStatus;
 
@@ -17,23 +18,38 @@ public class UpdateComplaintStatusCommandHandler: IRequestHandler<UpdateComplain
     private readonly ILogger<UpdateComplaintStatusCommandHandler> _logger;
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly IHttpContextAccessor _contextAccessor;
+    private readonly IUserService _userService;
 
-    public UpdateComplaintStatusCommandHandler(ILogger<UpdateComplaintStatusCommandHandler> logger, IQueueApplicationDbContext dbContext, IHttpContextAccessor contextAccessor)
+    public UpdateComplaintStatusCommandHandler(ILogger<UpdateComplaintStatusCommandHandler> logger, IQueueApplicationDbContext dbContext, IHttpContextAccessor contextAccessor, IUserService userService)
     {
         _logger = logger;
         _dbContext = dbContext;
         _contextAccessor = contextAccessor;
+        _userService = userService;
     }
 
     public async Task<ComplaintResponseModel> Handle(UpdateComplaintStatusCommand request, CancellationToken cancellationToken)
     {
          _logger.LogInformation("Updating complaint status with Id {id}", request.Id);
 
-         var currentEmployee = await _contextAccessor.CurrentEmployee(_dbContext, cancellationToken);
+         var userIdClaim = _contextAccessor.HttpContext!.User.FindFirst("id");
+         if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+         {
+             _logger.LogWarning("User not authenticated");
+             throw new UnauthorizedAccessException("User not authenticated");
+         }
+         
+         
+         
+         var currentEmployee = await _userService.GetCurrentEmployee(new CurrentUserRequest
+         {
+             RequestId = Guid.NewGuid(),
+             UserId = userId
+         });
          var companyId = currentEmployee.CompanyId; 
          
          var dbComplaint = await _dbContext.Complaints
-             .Where(s=>s.Queue.CompanyId== companyId || s.Queue.EmployeeId== currentEmployee.Id)
+             .Where(s=>s.Queue.CompanyId== companyId || s.Queue.EmployeeId== currentEmployee.EmployeeId)
              .FirstOrDefaultAsync(s => s.Id == request.Id, cancellationToken);
         if (dbComplaint == null)
         {
