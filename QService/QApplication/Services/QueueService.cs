@@ -8,6 +8,9 @@ using QApplication.Interfaces.Data;
 using QContracts.Enums;
 using QContracts.Interfaces;
 using QContracts.Responses;
+using QUserService.Contracts.Interfaces;
+using QUserService.Contracts.Requests.CustomerRequests;
+using QUserService.Contracts.Requests.EmployeeRequests;
 
 namespace QApplication.Services;
 
@@ -15,68 +18,70 @@ public class QueueService : ServiceBase<IQueueService>, IQueueService
 {
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly ILogger<QueueService> _logger;
+    private readonly IUserService _userService;
 
-    public QueueService(IQueueApplicationDbContext dbContext, ILogger<QueueService> logger)
+    public QueueService(IQueueApplicationDbContext dbContext, ILogger<QueueService> logger, IUserService userService)
     {
         _dbContext = dbContext;
         _logger = logger;
+        _userService = userService;
     }
 
 
     public async UnaryResult<QueueInfo> GetQueueByIdAsync(int queueId)
     {
-        _logger.LogInformation("Getting queue with Id :{queueId}", queueId);
+        _logger.LogInformation("Getting queue with Id: {QueueId}", queueId);
 
         var queue = await _dbContext.Queues
             .AsNoTracking()
-            .Include(s => s.Customer)
-            .Include(s => s.Employee)
             .FirstOrDefaultAsync(s => s.Id == queueId);
 
         if (queue == null)
         {
-            _logger.LogWarning("Queue with Id: {queueId} not found", queueId);
+            _logger.LogWarning("Queue with Id: {QueueId} not found", queueId);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, $"Queue with Id {queueId} not found");
         }
 
-        var response = new QueueInfo
+        var customerName = await GetCustomerNameAsync(queue.CustomerId);
+        var employeeName = await GetEmployeeNameAsync(queue.EmployeeId);
+
+        return new QueueInfo
         {
             Id = queue.Id,
             CompanyId = queue.CompanyId,
             BranchId = queue.BranchId,
             ServiceId = queue.ServiceId,
             CustomerId = queue.CustomerId,
-            EmployeeName = queue.Employee.FirstName,
-            CustomerName = queue.Customer.FirstName,
+            EmployeeId = queue.EmployeeId,
+            CustomerName = customerName,
+            EmployeeName = employeeName,
             StartTime = queue.StartTime,
             EndTime = queue.EndTime,
             CurrentQueueStatus = (CurrentQueueStatus)queue.Status,
             CancelReason = queue.CancelReason,
             CreatedAt = queue.CreatedAt
         };
-
-        return response;
     }
 
     public async UnaryResult<List<QueueInfo>> GetCustomerQueuesAsync(int customerId)
     {
         _logger.LogInformation("Getting queues with customer Id: {customerId}", customerId);
 
-        var customer = await _dbContext.Customers
-            .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.Id == customerId);
-
-        if (customer == null)
+        var customer = await _userService.GetCustomerById(new CustomerByIdRequest
         {
-            _logger.LogWarning("Customer with Id {customerId} not found", customerId);
+            RequestId = Guid.NewGuid(),
+            CustomerId = customerId
+        });
+
+        if (!customer.IsValid)
+        {
+            _logger.LogWarning("Customer with Id {CustomerId} not found", customerId);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, $"Customer with Id {customerId} not found");
         }
 
 
         var customerQueues = await _dbContext.Queues
             .AsNoTracking()
-            .Include(s => s.Customer)
-            .Include(s => s.Employee)
             .Where(s => s.CustomerId == customerId)
             .ToListAsync();
 
@@ -86,21 +91,27 @@ public class QueueService : ServiceBase<IQueueService>, IQueueService
             return [];
         }
 
-        var response = customerQueues.Select(queue => new QueueInfo
+        var response = new List<QueueInfo>();
+        foreach (var queue in customerQueues)
         {
-            Id = queue.Id,
-            CompanyId = queue.CompanyId,
-            BranchId = queue.BranchId,
-            ServiceId = queue.ServiceId,
-            CustomerId = queue.CustomerId,
-            EmployeeName = queue.Employee.FirstName,
-            CustomerName = queue.Customer.FirstName,
-            StartTime = queue.StartTime,
-            EndTime = queue.EndTime,
-            CurrentQueueStatus = (CurrentQueueStatus)queue.Status,
-            CancelReason = queue.CancelReason,
-            CreatedAt = queue.CreatedAt
-        }).ToList();
+            var employeeName = await GetEmployeeNameAsync(queue.EmployeeId);
+            response.Add(new QueueInfo
+            {
+                Id = queue.Id,
+                CompanyId = queue.CompanyId,
+                BranchId = queue.BranchId,
+                ServiceId = queue.ServiceId,
+                CustomerId = queue.CustomerId,
+                EmployeeId = queue.EmployeeId,
+                CustomerName = $"{customer.FirstName} {customer.LastName}",
+                EmployeeName = employeeName,
+                StartTime = queue.StartTime,
+                EndTime = queue.EndTime,
+                CurrentQueueStatus = (CurrentQueueStatus)queue.Status,
+                CancelReason = queue.CancelReason,
+                CreatedAt = queue.CreatedAt
+            });
+        }
 
         return response;
     }
@@ -109,11 +120,14 @@ public class QueueService : ServiceBase<IQueueService>, IQueueService
     {
         _logger.LogInformation("Getting queues with employee Id: {employeeId}", employeeId);
 
-        var employee = await _dbContext.Employees
-            .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.Id == employeeId);
 
-        if (employee == null)
+        var employee = await _userService.GetEmployeeById(new EmployeeByIdRequest
+        {
+            RequestId = Guid.NewGuid(),
+            EmployeeId = employeeId,
+        });
+
+        if (!employee.IsValid)
         {
             _logger.LogWarning("Employee with Id {employeeId} not found", employeeId);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, $"Employee with Id {employeeId} not found");
@@ -122,8 +136,6 @@ public class QueueService : ServiceBase<IQueueService>, IQueueService
 
         var employeeQueues = await _dbContext.Queues
             .AsNoTracking()
-            .Include(s => s.Customer)
-            .Include(s => s.Employee)
             .Where(s => s.EmployeeId == employeeId)
             .ToListAsync();
 
@@ -132,134 +144,154 @@ public class QueueService : ServiceBase<IQueueService>, IQueueService
             _logger.LogWarning("Not found queues for this employee");
             return [];
         }
-        
 
-        var response = employeeQueues.Select(queue => new QueueInfo
+        var response = new List<QueueInfo>();
+        foreach (var queue in employeeQueues)
         {
-            Id = queue.Id,
-            CompanyId = queue.CompanyId,
-            BranchId = queue.BranchId,
-            ServiceId = queue.ServiceId,
-            CustomerId = queue.CustomerId,
-            EmployeeName = queue.Employee.FirstName,
-            CustomerName = queue.Customer.FirstName,
-            StartTime = queue.StartTime,
-            EndTime = queue.EndTime,
-            CurrentQueueStatus = (CurrentQueueStatus)queue.Status,
-            CancelReason = queue.CancelReason,
-            CreatedAt = queue.CreatedAt
-        }).ToList();
+            var customerName = await GetCustomerNameAsync(queue.EmployeeId);
+            response.Add(new QueueInfo
+            {
+                Id = queue.Id,
+                CompanyId = queue.CompanyId,
+                BranchId = queue.BranchId,
+                ServiceId = queue.ServiceId,
+                CustomerId = queue.CustomerId,
+                EmployeeName = employee.FirstName,
+                CustomerName = customerName,
+                StartTime = queue.StartTime,
+                EndTime = queue.EndTime,
+                CurrentQueueStatus = (CurrentQueueStatus)queue.Status,
+                CancelReason = queue.CancelReason,
+                CreatedAt = queue.CreatedAt
+            });
+        }
+
 
         return response;
     }
 
     public async UnaryResult<List<QueueInfo>> GetBranchQueuesAsync(int branchId)
     {
-        _logger.LogInformation("Getting queues with branch Id: {branchId}", branchId);
+        _logger.LogInformation("Getting queues for branch Id: {BranchId}", branchId);
 
         var branchQueues = await _dbContext.Queues
             .AsNoTracking()
             .Where(s => s.BranchId == branchId)
             .ToListAsync();
 
-
         if (!branchQueues.Any())
         {
-            _logger.LogWarning("Not found queues for this branch");
-            return [];
+            _logger.LogWarning("No queues found for branch {BranchId}", branchId);
+            return new List<QueueInfo>();
         }
-        
 
-        var response = branchQueues.Select(queue => new QueueInfo
+        var response = new List<QueueInfo>();
+        foreach (var queue in branchQueues)
         {
-            Id = queue.Id,
-            CompanyId = queue.CompanyId,
-            BranchId = queue.BranchId,
-            ServiceId = queue.ServiceId,
-            CustomerId = queue.CustomerId,
-            EmployeeName = queue.Employee.FirstName,
-            CustomerName = queue.Customer.FirstName,
-            StartTime = queue.StartTime,
-            EndTime = queue.EndTime,
-            CurrentQueueStatus = (CurrentQueueStatus)queue.Status,
-            CancelReason = queue.CancelReason,
-            CreatedAt = queue.CreatedAt
-        }).ToList();
+            var customerName = await GetCustomerNameAsync(queue.CustomerId);
+            var employeeName = await GetEmployeeNameAsync(queue.EmployeeId);
+
+            response.Add(new QueueInfo
+            {
+                Id = queue.Id,
+                CompanyId = queue.CompanyId,
+                BranchId = queue.BranchId,
+                ServiceId = queue.ServiceId,
+                CustomerId = queue.CustomerId,
+                EmployeeId = queue.EmployeeId,
+                CustomerName = customerName,
+                EmployeeName = employeeName,
+                StartTime = queue.StartTime,
+                EndTime = queue.EndTime,
+                CurrentQueueStatus = (CurrentQueueStatus)queue.Status,
+                CancelReason = queue.CancelReason,
+                CreatedAt = queue.CreatedAt
+            });
+        }
 
         return response;
     }
 
     public async UnaryResult<List<QueueInfo>> GetCompanyQueuesAsync(int companyId)
     {
-        _logger.LogInformation("Getting queues with company Id: {companyId}", companyId);
+        _logger.LogInformation("Getting queues for company Id: {CompanyId}", companyId);
 
         var companyQueues = await _dbContext.Queues
             .AsNoTracking()
-            .Include(s=>s.Employee)
-            .Include(s=>s.Customer)
             .Where(s => s.CompanyId == companyId)
             .ToListAsync();
 
-
         if (!companyQueues.Any())
         {
-            _logger.LogWarning("Not found queues for this company");
-            return [];
+            _logger.LogWarning("No queues found for company {CompanyId}", companyId);
+            return new List<QueueInfo>();
         }
-        
 
-        var response = companyQueues.Select(queue => new QueueInfo
+        var response = new List<QueueInfo>();
+        foreach (var queue in companyQueues)
         {
-            Id = queue.Id,
-            CompanyId = queue.CompanyId,
-            BranchId = queue.BranchId,
-            ServiceId = queue.ServiceId,
-            EmployeeId = queue.EmployeeId,
-            CustomerId = queue.CustomerId,
-            EmployeeName = queue.Employee.FirstName,
-            CustomerName = queue.Customer.FirstName,
-            StartTime = queue.StartTime,
-            EndTime = queue.EndTime,
-            CurrentQueueStatus = (CurrentQueueStatus)queue.Status,
-            CancelReason = queue.CancelReason,
-            CreatedAt = queue.CreatedAt
-        }).ToList();
+            var customerName = await GetCustomerNameAsync(queue.CustomerId);
+            var employeeName = await GetEmployeeNameAsync(queue.EmployeeId);
+
+            response.Add(new QueueInfo
+            {
+                Id = queue.Id,
+                CompanyId = queue.CompanyId,
+                BranchId = queue.BranchId,
+                ServiceId = queue.ServiceId,
+                CustomerId = queue.CustomerId,
+                EmployeeId = queue.EmployeeId,
+                CustomerName = customerName,
+                EmployeeName = employeeName,
+                StartTime = queue.StartTime,
+                EndTime = queue.EndTime,
+                CurrentQueueStatus = (CurrentQueueStatus)queue.Status,
+                CancelReason = queue.CancelReason,
+                CreatedAt = queue.CreatedAt
+            });
+        }
 
         return response;
     }
 
     public async UnaryResult<List<QueueInfo>> GetServiceQueuesAsync(int serviceId)
     {
-        _logger.LogInformation("Getting queues with service Id: {serviceId}", serviceId);
+        _logger.LogInformation("Getting queues for service Id: {ServiceId}", serviceId);
 
         var serviceQueues = await _dbContext.Queues
             .AsNoTracking()
             .Where(s => s.ServiceId == serviceId)
             .ToListAsync();
 
-
         if (!serviceQueues.Any())
         {
-            _logger.LogWarning("Not found queues for this service");
-            return [];
+            _logger.LogWarning("No queues found for service {ServiceId}", serviceId);
+            return new List<QueueInfo>();
         }
-        
 
-        var response = serviceQueues.Select(queue => new QueueInfo
+        var response = new List<QueueInfo>();
+        foreach (var queue in serviceQueues)
         {
-            Id = queue.Id,
-            CompanyId = queue.CompanyId,
-            BranchId = queue.BranchId,
-            ServiceId = queue.ServiceId,
-            CustomerId = queue.CustomerId,
-            EmployeeName = queue.Employee.FirstName,
-            CustomerName = queue.Customer.FirstName,
-            StartTime = queue.StartTime,
-            EndTime = queue.EndTime,
-            CurrentQueueStatus = (CurrentQueueStatus)queue.Status,
-            CancelReason = queue.CancelReason,
-            CreatedAt = queue.CreatedAt
-        }).ToList();
+            var customerName = await GetCustomerNameAsync(queue.CustomerId);
+            var employeeName = await GetEmployeeNameAsync(queue.EmployeeId);
+
+            response.Add(new QueueInfo
+            {
+                Id = queue.Id,
+                CompanyId = queue.CompanyId,
+                BranchId = queue.BranchId,
+                ServiceId = queue.ServiceId,
+                CustomerId = queue.CustomerId,
+                EmployeeId = queue.EmployeeId,
+                CustomerName = customerName,
+                EmployeeName = employeeName,
+                StartTime = queue.StartTime,
+                EndTime = queue.EndTime,
+                CurrentQueueStatus = (CurrentQueueStatus)queue.Status,
+                CancelReason = queue.CancelReason,
+                CreatedAt = queue.CreatedAt
+            });
+        }
 
         return response;
     }
@@ -305,15 +337,18 @@ public class QueueService : ServiceBase<IQueueService>, IQueueService
     {
         _logger.LogInformation("Getting reviews for employee Id: {employeeId}", employeeId);
 
-        var employee = await _dbContext.Employees
-            .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.Id == employeeId);
+        var employee = await _userService.GetEmployeeById(new EmployeeByIdRequest
+        {
+            RequestId = Guid.NewGuid(),
+            EmployeeId = employeeId
+        });
 
-        if (employee == null)
+        if (!employee.IsValid)
         {
             _logger.LogWarning("Employee with Id {employeeId} not found", employeeId);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, $"Employee with Id {employeeId} not found");
         }
+
 
         var employeeReviews = await _dbContext.Reviews
             .AsNoTracking()
@@ -345,11 +380,13 @@ public class QueueService : ServiceBase<IQueueService>, IQueueService
     {
         _logger.LogInformation("Getting reviews for customer Id: {customerId}", customerId);
 
-        var customer = await _dbContext.Customers
-            .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.Id == customerId);
+        var customer = await _userService.GetCustomerById(new CustomerByIdRequest
+        {
+            RequestId = Guid.NewGuid(),
+            CustomerId = customerId
+        });
 
-        if (customer == null)
+        if (!customer.IsValid)
         {
             _logger.LogWarning("Customer with Id {customerId} not found", customerId);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, $"Customer with Id {customerId} not found");
@@ -388,7 +425,7 @@ public class QueueService : ServiceBase<IQueueService>, IQueueService
         var companyReviews = await _dbContext.Reviews
             .AsNoTracking()
             .Include(s => s.Queue)
-            .Where(s => s.Queue.CompanyId== companyId)
+            .Where(s => s.Queue.CompanyId == companyId)
             .ToListAsync();
 
         if (!companyReviews.Any())
@@ -453,11 +490,14 @@ public class QueueService : ServiceBase<IQueueService>, IQueueService
     {
         _logger.LogInformation("Getting complaints for employee Id: {employeeId}", employeeId);
 
-        var employee = await _dbContext.Employees
-            .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.Id == employeeId);
 
-        if (employee == null)
+        var employee = await _userService.GetEmployeeById(new EmployeeByIdRequest
+        {
+            RequestId = Guid.NewGuid(),
+            EmployeeId = employeeId
+        });
+
+        if (!employee.IsValid)
         {
             _logger.LogWarning("Employee with Id {employeeId} not found", employeeId);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, $"Employee with Id {employeeId} not found");
@@ -494,15 +534,18 @@ public class QueueService : ServiceBase<IQueueService>, IQueueService
     {
         _logger.LogInformation("Getting complaints for customer Id: {customerId}", customerId);
 
-        var customer = await _dbContext.Customers
-            .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.Id == customerId);
+        var customer = await _userService.GetCustomerById(new CustomerByIdRequest
+        {
+            RequestId = Guid.NewGuid(),
+            CustomerId = customerId
+        });
 
-        if (customer == null)
+        if (!customer.IsValid)
         {
             _logger.LogWarning("Customer with Id {customerId} not found", customerId);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, $"Customer with Id {customerId} not found");
         }
+
 
         var customerComplaints = await _dbContext.Complaints
             .AsNoTracking()
@@ -538,7 +581,7 @@ public class QueueService : ServiceBase<IQueueService>, IQueueService
         var companyComplaints = await _dbContext.Complaints
             .AsNoTracking()
             .Include(s => s.Queue)
-            .Where(s => s.Queue.CompanyId== companyId)
+            .Where(s => s.Queue.CompanyId == companyId)
             .ToListAsync();
 
         if (!companyComplaints.Any())
@@ -564,120 +607,63 @@ public class QueueService : ServiceBase<IQueueService>, IQueueService
 
     public async UnaryResult<List<CustomerInfo>> GetAllCompanyCustomers(int companyId)
     {
-        var customers = await _dbContext.Queues
-            .Include(s=>s.Customer)
-            .Where(s=>s.CompanyId==companyId)
+        _logger.LogInformation("Getting all customers for company Id: {CompanyId}", companyId);
+
+        var customerIds = await _dbContext.Queues
+            .Where(q => q.CompanyId == companyId)
+            .Select(q => q.CustomerId)
+            .Distinct()
             .ToListAsync();
-     
-        if (!customers.Any())
+
+        if (!customerIds.Any())
         {
-            _logger.LogWarning("Not found any customer");
-            return [];
+            _logger.LogWarning("No customers found for company {CompanyId}", companyId);
+            return new List<CustomerInfo>();
         }
 
-        var response = customers.Select(customer => new CustomerInfo
+        var response = new List<CustomerInfo>();
+        foreach (var customerId in customerIds)
         {
-            CustomerId = customer.CustomerId,
-            FirstName = customer.Customer.FirstName,
-            LastName = customer.Customer.LastName,
-            CreatedAt = customer.CreatedAt
-        }).ToList();
+            var customer = await _userService.GetCustomerById(new CustomerByIdRequest
+            {
+                RequestId = Guid.NewGuid(),
+                CustomerId = customerId
+            });
+
+            if (customer.IsValid)
+            {
+                response.Add(new CustomerInfo
+                {
+                    CustomerId = customer.Id,
+                    FirstName = customer.FirstName,
+                    LastName = customer.LastName,
+                    CreatedAt = customer.CreatedAt
+                });
+            }
+        }
 
         return response;
     }
 
-    public async UnaryResult<List<EmployeeInfo>> GetAllCompanyEmployees(int companyId)
+    private async Task<string> GetCustomerNameAsync(int customerId)
     {
-        var employees = await _dbContext.Employees
-            .Where(s=>s.CompanyId== companyId)
-            .ToListAsync();
-        if (!employees.Any())
+        var customer = await _userService.GetCustomerById(new CustomerByIdRequest
         {
-            _logger.LogWarning("Not found any employee");
-            return [];
-        }
+            RequestId = Guid.NewGuid(),
+            CustomerId = customerId
+        });
 
-        var response = employees.Select(employee => new EmployeeInfo
-        {
-            CompanyId = employee.CompanyId,
-            BranchId = employee.BranchId,
-            CompanyServiceId = employee.ServiceId,
-            EmployeeId = employee.Id,
-            FirstName = employee.FirstName,
-            LastName = employee.LastName,
-            Position = employee.Position,
-            CreatedAt = employee.CreatedAt
-        }).ToList();
-
-        return response;
+        return customer.IsValid ? $"{customer.FirstName} {customer.LastName}" : "Unknown Customer";
     }
 
-    public async UnaryResult<List<BlockedCustomerInfo>> GetAllCompanyBlockedCustomers(int companyId)
+    private async Task<string> GetEmployeeNameAsync(int employeeId)
     {
-        var blockedCustomers = await _dbContext.BlockedCustomers
-            .Where(s=>s.CompanyId== companyId)
-            .ToListAsync();
-        if (!blockedCustomers.Any())
+        var employee = await _userService.GetEmployeeById(new EmployeeByIdRequest
         {
-            _logger.LogWarning("Not found any blocked customer");
-            return [];
-        }
+            RequestId = Guid.NewGuid(),
+            EmployeeId = employeeId
+        });
 
-        var response = blockedCustomers.Select(blockedCustomer => new BlockedCustomerInfo
-        {
-            BlockedId = blockedCustomer.Id,
-            CustomerId = blockedCustomer.CustomerId,
-            CompanyId = blockedCustomer.CompanyId,
-            Reason = blockedCustomer.Reason,
-            BannedUntil = blockedCustomer.BannedUntil,
-            DoesBanForever = blockedCustomer.DoesBanForever,
-            CreatedAt = blockedCustomer.CreatedAt
-        }).ToList();
-
-        return response;
-    }
-
-    public async UnaryResult<List<EmployeeInfo>> GetAllEmployees()
-    {
-        var employees = await _dbContext.Employees.ToListAsync();
-        if (!employees.Any())
-        {
-            _logger.LogWarning("Not found any employees");
-            return [];
-        }
-
-        var response = employees.Select(employee => new EmployeeInfo
-        {
-            CompanyId = employee.CompanyId,
-            BranchId = employee.BranchId,
-            CompanyServiceId = employee.ServiceId,
-            EmployeeId = employee.Id,
-            FirstName = employee.FirstName,
-            LastName = employee.LastName,
-            Position = employee.Position,
-            CreatedAt = employee.CreatedAt
-        }).ToList();
-
-        return response;
-    }
-
-    public async UnaryResult<List<CustomerInfo>> GetAllCustomers()
-    {
-        var customers = await _dbContext.Customers.ToListAsync();
-        if (!customers.Any())
-        {
-            _logger.LogWarning("Not found any customer");
-            return [];
-        }
-
-        var response = customers.Select(customer => new CustomerInfo()
-        {
-            CustomerId = customer.Id,
-            FirstName = customer.FirstName,
-            LastName = customer.LastName,
-            CreatedAt = customer.CreatedAt
-        }).ToList();
-
-        return response;
+        return employee.IsValid ? $"{employee.FirstName} {employee.LastName}" : "Unknown Employee";
     }
 }

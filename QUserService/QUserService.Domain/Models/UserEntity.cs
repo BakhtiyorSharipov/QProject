@@ -24,6 +24,8 @@ public class UserEntity
     public List<RefreshTokenEntity> RefreshTokens { get; set; } = new();
 
     public int? EmployeeId { get; set; }
+    public EmployeeEntity? Employee { get; set; }
     
     public int? CustomerId { get; set; }
+    public CustomerEntity? Customer { get; set; }
 }

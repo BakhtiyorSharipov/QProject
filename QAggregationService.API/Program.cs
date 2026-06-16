@@ -1,4 +1,3 @@
-using System.Net;
 using System.Text;
 using MagicOnion.Client;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
@@ -19,6 +18,7 @@ using QAggregationService.Application.Consumers.CustomerConsumers;
 using QAggregationService.Application.Consumers.EmployeeConsumers;
 using QContracts.Interfaces;
 using QBranchService.Contracts.Interfaces;
+using QUserService.Contracts.Interfaces;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -38,55 +38,22 @@ builder.WebHost.ConfigureKestrel(options =>
 
 builder.Services.AddMagicOnion();
 
-builder.Services.AddSingleton<IQueueService>(provider =>
-{
-    var url = builder.Configuration["Services:QueueService"] 
-              ?? "http://localhost:5001";
+var branchServiceUrl = builder.Configuration["Services:BranchService"]
+                       ?? "http://localhost:5002";
+builder.Services.AddSingleton<IBranchService>(_ =>
+    MagicOnionClient.Create<IBranchService>(GrpcChannel.ForAddress(branchServiceUrl)));
 
-    var logger = provider.GetRequiredService<ILogger<Program>>();
-    logger.LogInformation("Connecting to QueueService gRPC at {Url}", url);
 
-    var handler = new HttpClientHandler
-    {
-        ServerCertificateCustomValidationCallback =
-            HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-    };
+var userServiceUrl = builder.Configuration["Services:UserService"]
+                     ?? "http://localhost:5007";
+builder.Services.AddSingleton<IUserService>(_ =>
+    MagicOnionClient.Create<IUserService>(GrpcChannel.ForAddress(userServiceUrl)));
 
-    var channel = GrpcChannel.ForAddress(url, new GrpcChannelOptions
-    {
-        LoggerFactory = provider.GetService<ILoggerFactory>(),
-        HttpHandler = handler,
-        HttpVersion = HttpVersion.Version20,
-        HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact
-    });
+var queueServiceUrl = builder.Configuration["Services:QueueService"] 
+          ?? "http://localhost:5001";
+builder.Services.AddSingleton<IQueueService>(_ =>
+    MagicOnionClient.Create<IQueueService>(GrpcChannel.ForAddress(queueServiceUrl)));
 
-    return MagicOnionClient.Create<IQueueService>(channel);
-});
-
-builder.Services.AddSingleton<IBranchService>(provider =>
-{
-    var url = builder.Configuration["Services:BranchService"] 
-              ?? "http://localhost:5002";
-
-    var logger = provider.GetRequiredService<ILogger<Program>>();
-    logger.LogInformation("Connecting to BranchService gRPC at {Url}", url);
-
-    var handler = new HttpClientHandler
-    {
-        ServerCertificateCustomValidationCallback =
-            HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-    };
-
-    var channel = GrpcChannel.ForAddress(url, new GrpcChannelOptions
-    {
-        LoggerFactory = provider.GetService<ILoggerFactory>(),
-        HttpHandler = handler,
-        HttpVersion = HttpVersion.Version20,
-        HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact
-    });
-
-    return MagicOnionClient.Create<IBranchService>(channel);
-});
 
 
 builder.Services.AddMemoryCache();

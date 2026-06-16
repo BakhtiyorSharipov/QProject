@@ -15,8 +15,8 @@ public class QueueDbContext: DbContext, IQueueApplicationDbContext
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Ignore<BaseEntity>();
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(TableConfiguration.CustomerTableConfiguration).Assembly);
+       
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(TableConfiguration.QueueTableConfiguration).Assembly);
         base.OnModelCreating(modelBuilder);
     }
     
@@ -25,15 +25,12 @@ public class QueueDbContext: DbContext, IQueueApplicationDbContext
         return base.SaveChangesAsync(cancellationToken);
     }
 
-    public DbSet<CustomerEntity> Customers { get; set; }
-    public DbSet<EmployeeEntity> Employees { get; set; }
-    public DbSet<AvailabilityScheduleEntity> AvailabilitySchedules { get; set; }
-    public DbSet<BlockedCustomerEntity> BlockedCustomers { get; set; }
+    
     public DbSet<ComplaintEntity> Complaints { get; set; }
     public DbSet<QueueEntity> Queues { get; set; }
-    public DbSet<RefreshTokenEntity> RefreshTokens { get; set; }
+   
     public DbSet<ReviewEntity> Reviews { get; set; }
-    public DbSet<UserEntity> Users { get; set; }
+ 
     
     
 }

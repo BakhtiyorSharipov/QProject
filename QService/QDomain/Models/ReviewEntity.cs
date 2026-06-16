@@ -1,7 +1,9 @@
 namespace QDomain.Models;
 
-public class ReviewEntity: BaseEntity   
+public class ReviewEntity   
 {
+    public int Id { get; set; }
+    
     public int Grade { get; set; }
     public string? ReviewText { get; set; }
     
@@ -9,7 +11,7 @@ public class ReviewEntity: BaseEntity
     public QueueEntity Queue { get; set; }
 
     public int CustomerId { get; set; }
-    public CustomerEntity Customer { get; set; }
+    // public CustomerEntity Customer { get; set; }
 
     public DateTime CreatedAt { get; set; }= DateTime.UtcNow;
     

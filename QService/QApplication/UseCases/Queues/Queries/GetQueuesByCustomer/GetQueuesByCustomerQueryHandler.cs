@@ -5,10 +5,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Caching;
 using QApplication.Exceptions;
-using QApplication.Extensions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QDomain.Models;
+using QUserService.Contracts.Interfaces;
+using QUserService.Contracts.Requests.UserRequests;
 using StackExchange.Redis;
 
 namespace QApplication.UseCases.Queues.Queries.GetQueuesByCustomer;
@@ -20,23 +21,38 @@ public class GetQueuesByCustomerQueryHandler : IRequestHandler<GetQueuesByCustom
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly ICacheService _cache;
     private readonly IHttpContextAccessor _contextAccessor;
+    private readonly IUserService _userService;
    
 
     public GetQueuesByCustomerQueryHandler(ILogger<GetQueuesByCustomerQueryHandler> logger,
-        IQueueApplicationDbContext dbContext, ICacheService cache, IHttpContextAccessor contextAccessor)
+        IQueueApplicationDbContext dbContext, ICacheService cache, IHttpContextAccessor contextAccessor, IUserService userService)
     {
         _logger = logger;
         _dbContext = dbContext;
         _cache = cache;
         _contextAccessor = contextAccessor;
+        _userService = userService;
     }
 
     public async Task<PagedResponse<QueueResponseModel>> Handle(GetQueuesByCustomerQuery request,
         CancellationToken cancellationToken)
     {
         
-        var currentCustomer = await _contextAccessor.CurrentCustomer(_dbContext, cancellationToken);
-        var customerId = currentCustomer.Id;
+        
+        
+        var userIdClaim = _contextAccessor.HttpContext!.User.FindFirst("id");
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+        {
+            _logger.LogWarning("User not authenticated");
+            throw new UnauthorizedAccessException("User not authenticated");
+        }
+
+        var currentCustomer = await _userService.GetCurrentCustomer(new CurrentUserRequest
+        {
+            RequestId = Guid.NewGuid(),
+            UserId = userId
+        });
+        var customerId = currentCustomer.CustomerId;
         
 
         _logger.LogInformation("Getting all customer's queue. PageNumber: {pageNumber}, PageSize: {pageSize}",

@@ -5,14 +5,17 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QApplication.Exceptions;
-using QApplication.Extensions;
 using QApplication.Interfaces.Data;
 using QApplication.Responses;
 using QContracts.Events;
-using QContracts.QueueEvents;
 using QContracts.QueueEvents.Enums;
 using QDomain.Enums;
 using QDomain.Models;
+using QUserService.Contracts.Interfaces;
+using QUserService.Contracts.Requests.BlockedCustomersRequests;
+using QUserService.Contracts.Requests.CustomerRequests;
+using QUserService.Contracts.Requests.EmployeeRequests;
+using QUserService.Contracts.Requests.UserRequests;
 
 namespace QApplication.UseCases.Queues.Commands.UpdateQueueStatus;
 
@@ -22,22 +25,35 @@ public class UpdateQueueStatusCommandHandler : IRequestHandler<UpdateQueueStatus
     private readonly IQueueApplicationDbContext _dbContext;
     private readonly IPublishEndpoint _publishEndpoint;
     private readonly IHttpContextAccessor _contextAccessor;
+    private readonly IUserService _userService;
 
     public UpdateQueueStatusCommandHandler(ILogger<UpdateQueueStatusCommandHandler> logger,
-        IQueueApplicationDbContext dbContext, IPublishEndpoint publishEndpoint, IHttpContextAccessor contextAccessor)
+        IQueueApplicationDbContext dbContext, IPublishEndpoint publishEndpoint, IHttpContextAccessor contextAccessor, IUserService userService)
     {
         _logger = logger;
         _dbContext = dbContext;
         _publishEndpoint = publishEndpoint;
         _contextAccessor = contextAccessor;
+        _userService = userService;
     }
 
     public async Task<UpdateQueueStatusResponseModel> Handle(UpdateQueueStatusCommand request,
         CancellationToken cancellationToken)
     {
+        
+        var userIdClaim = _contextAccessor.HttpContext!.User.FindFirst("id");
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+        {
+            _logger.LogWarning("User not authenticated");
+            throw new UnauthorizedAccessException("User not authenticated");
+        }
 
-        var currentEmployee = await _contextAccessor.CurrentEmployee(_dbContext, cancellationToken);
-        var employeeId = currentEmployee.Id;
+        var currentEmployee = await _userService.GetCurrentEmployee(new CurrentUserRequest
+        {
+            RequestId = Guid.NewGuid(),
+            UserId = userId
+        });
+        var employeeId = currentEmployee.EmployeeId;
         _logger.LogInformation("Updating queue status for QueueId: {QueueId} to {NewStatus}", request.QueueId,
             request.newStatus);
         var dbQueue = await _dbContext.Queues
@@ -48,18 +64,21 @@ public class UpdateQueueStatusCommandHandler : IRequestHandler<UpdateQueueStatus
             _logger.LogWarning("Queue with Id {QueueId} not found for this employee", request.QueueId);
             throw new HttpStatusCodeException(HttpStatusCode.NotFound, $"Queue with Id {request.QueueId} not found for this employee");
         }
+        
+        
+        
 
-        _logger.LogDebug("Current queue status: {CurrentStatus}, requested new status: {NewStatus}", dbQueue.Status,
-            request.newStatus);
-        var employeeSchedule = await _dbContext.AvailabilitySchedules.Where(s => s.EmployeeId == dbQueue.EmployeeId)
-            .ToListAsync(cancellationToken);
-
-        if (!employeeSchedule.Any())
-        {
-            _logger.LogWarning("Employee with Id {id} not found in schedule entities for adding new queue",
-                dbQueue.EmployeeId);
-            throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(AvailabilityScheduleEntity));
-        }
+        // _logger.LogDebug("Current queue status: {CurrentStatus}, requested new status: {NewStatus}", dbQueue.Status,
+        //     request.newStatus);
+        // var employeeSchedule = await _dbContext.AvailabilitySchedules.Where(s => s.EmployeeId == dbQueue.EmployeeId)
+        //     .ToListAsync(cancellationToken);
+        //
+        // if (!employeeSchedule.Any())
+        // {
+        //     _logger.LogWarning("Employee with Id {id} not found in schedule entities for adding new queue",
+        //         dbQueue.EmployeeId);
+        //     throw new HttpStatusCodeException(HttpStatusCode.NotFound, nameof(AvailabilityScheduleEntity));
+        // }
 
         switch (dbQueue.Status)
         {
@@ -96,46 +115,97 @@ public class UpdateQueueStatusCommandHandler : IRequestHandler<UpdateQueueStatus
             throw new Exception("Invalid status update by employee");
         }
 
-        bool Exists(int customerId, int companyId)
+        
+        
+        var blockValidation = await _userService.IsCustomerBlockedForCompany(new IsCustomerBlockedRequest
         {
-            var customer = _dbContext.BlockedCustomers.Where(s => s.CustomerId == customerId);
-            var company = _dbContext.BlockedCustomers.Where(s => s.CompanyId == companyId);
+            RequestId = Guid.NewGuid(),
+            CustomerId = dbQueue.CustomerId,
+            CompanyId = dbQueue.CompanyId
+        });
 
-            if (customer.Any() && company.Any())
+        if (blockValidation.IsBlocked)
+        {
+            _logger.LogDebug("Customer {CustomerId} is already blocked for Company {CompanyId}", 
+                dbQueue.CustomerId, dbQueue.CompanyId);
+            throw new Exception("You are blocked by this company!");
+        }
+        
+        var didNotComeCount = await _dbContext.Queues
+            .Where(q => q.CustomerId == dbQueue.CustomerId && 
+                        q.Status == QueueStatus.DidNotCome)
+            .CountAsync(cancellationToken);
+        
+        if (didNotComeCount >= 3)
+        {
+            _logger.LogWarning("Customer {CustomerId} automatically blocked for Company {CompanyId}: 3+ DidNotCome",
+                dbQueue.CustomerId, dbQueue.CompanyId);
+
+            var blockResponse = await _userService.BlockCustomer(new BlockCustomerRequest
             {
-                return true;
+                RequestId = Guid.NewGuid(),
+                CustomerId = dbQueue.CustomerId,
+                CompanyId = dbQueue.CompanyId,
+                Reason = "Did not come 3 times",
+                BannedUntil = DateTime.MaxValue,
+                DoesBanForever = true
+            }, cancellationToken);
+
+            if (!blockResponse.Success)
+            {
+                _logger.LogError("Failed to block customer {CustomerId}: {ErrorMessage}", 
+                    dbQueue.CustomerId, blockResponse.ErrorMessage);
+                throw new Exception($"Failed to block customer: {blockResponse.ErrorMessage ?? "Unknown error"}");
             }
 
-            return false;
+            _logger.LogInformation("Customer {CustomerId} blocked successfully with BlockId: {BlockId}", 
+                dbQueue.CustomerId, blockResponse.BlockedCustomerId);
+
+            throw new Exception("Customer has been automatically blocked due to multiple DidNotCome.");
         }
-
-        if (request.newStatus == QueueStatus.DidNotCome)
-        {
-            _logger.LogDebug("Checking DidNotCome count for CustomerId: {CustomerId}", dbQueue.CustomerId);
-
-            var queuesByCustomer = await _dbContext.Queues.Where(s => s.CustomerId == dbQueue.CustomerId)
-                .ToListAsync(cancellationToken);
-
-            var count = queuesByCustomer.Count(s => s.Status == QueueStatus.DidNotCome);
-            if (count >= 3 && !Exists(dbQueue.CustomerId, dbQueue.CompanyId))
-            {
-                _logger.LogWarning("CustomerId {id} automatically blocked for CompanyId {companyId}: 3+ DidNotCome",
-                    dbQueue.CustomerId, dbQueue.CompanyId);
-                BlockedCustomerEntity blockedCustomer = new BlockedCustomerEntity
-                {
-                    CustomerId = dbQueue.CustomerId,
-                    CompanyId = dbQueue.CompanyId,
-                    DoesBanForever = true,
-                    Reason = "Did not come 3 times",
-                    BannedUntil = DateTime.MaxValue,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                await _dbContext.BlockedCustomers.AddAsync(blockedCustomer, cancellationToken);
-                await _dbContext.SaveChangesAsync(cancellationToken);
-                throw new Exception("Customer has been automatically blocked due to multiple DidNotCome.");
-            }
-        }
+        
+        
+        
+        // bool Exists(int customerId, int companyId)
+        // {
+        //     var customer = _dbContext.BlockedCustomers.Where(s => s.CustomerId == customerId);
+        //     var company = _dbContext.BlockedCustomers.Where(s => s.CompanyId == companyId);
+        //
+        //     if (customer.Any() && company.Any())
+        //     {
+        //         return true;
+        //     }
+        //
+        //     return false;
+        // }
+        //
+        // if (request.newStatus == QueueStatus.DidNotCome)
+        // {
+        //     _logger.LogDebug("Checking DidNotCome count for CustomerId: {CustomerId}", dbQueue.CustomerId);
+        //
+        //     var queuesByCustomer = await _dbContext.Queues.Where(s => s.CustomerId == dbQueue.CustomerId)
+        //         .ToListAsync(cancellationToken);
+        //
+        //     var count = queuesByCustomer.Count(s => s.Status == QueueStatus.DidNotCome);
+        //     if (count >= 3 && !Exists(dbQueue.CustomerId, dbQueue.CompanyId))
+        //     {
+        //         _logger.LogWarning("CustomerId {id} automatically blocked for CompanyId {companyId}: 3+ DidNotCome",
+        //             dbQueue.CustomerId, dbQueue.CompanyId);
+        //         BlockedCustomerEntity blockedCustomer = new BlockedCustomerEntity
+        //         {
+        //             CustomerId = dbQueue.CustomerId,
+        //             CompanyId = dbQueue.CompanyId,
+        //             DoesBanForever = true,
+        //             Reason = "Did not come 3 times",
+        //             BannedUntil = DateTime.MaxValue,
+        //             CreatedAt = DateTime.UtcNow
+        //         };
+        //
+        //         await _dbContext.BlockedCustomers.AddAsync(blockedCustomer, cancellationToken);
+        //         await _dbContext.SaveChangesAsync(cancellationToken);
+        //         throw new Exception("Customer has been automatically blocked due to multiple DidNotCome.");
+        //     }
+        // }
 
 
         if (request.newStatus == QueueStatus.Confirmed)
@@ -157,16 +227,36 @@ public class UpdateQueueStatusCommandHandler : IRequestHandler<UpdateQueueStatus
                                         $"End: {endTimeUtc:dd.MM.yyyy HH:mm:ss} (UTC)");
                 }
 
-                var slotExists = employeeSchedule.Any(s => s.AvailableSlots.Any(slot =>
-                    startTimeUtc >= slot.From && endTimeUtc <= slot.To));
-
-                if (!slotExists)
+                
+                var availabilityResponse = await _userService.CheckEmployeeAvailability(new EmployeeAvailabilityRequest
                 {
-                    _logger.LogWarning(
-                        "Updated queue time outside employee working hours. Start: {StartTime}, End: {EndTime}",
-                        startTimeUtc, endTimeUtc);
-                    throw new Exception("The updated queue time is outside the employee's working hours.");
+                    RequestId = Guid.NewGuid(),
+                    EmployeeId = dbQueue.EmployeeId,
+                    StartTime = dbQueue.StartTime,
+                    EndTime = request.EndTime,  
+                    ExistingQueueId = dbQueue.Id  
+                });
+
+                if (!availabilityResponse.IsAvailable)
+                {
+                    _logger.LogWarning("Employee {EmployeeId} is not available from {StartTime} to {EndTime}. Message: {ErrorMessage}", 
+                        dbQueue.EmployeeId, dbQueue.StartTime, request.EndTime, availabilityResponse.ErrorMessage);
+            
+                    throw new Exception(availabilityResponse.ErrorMessage ?? 
+                                        "The selected time slot is not available. Please choose a different time.");
                 }
+                
+                
+                // var slotExists = employeeSchedule.Any(s => s.AvailableSlots.Any(slot =>
+                //     startTimeUtc >= slot.From && endTimeUtc <= slot.To));
+                //
+                // if (!slotExists)
+                // {
+                //     _logger.LogWarning(
+                //         "Updated queue time outside employee working hours. Start: {StartTime}, End: {EndTime}",
+                //         startTimeUtc, endTimeUtc);
+                //     throw new Exception("The updated queue time is outside the employee's working hours.");
+                // }
 
                 var queuesByEmployee = _dbContext.Queues.Where(s => s.EmployeeId == dbQueue.EmployeeId);
 
@@ -202,7 +292,7 @@ public class UpdateQueueStatusCommandHandler : IRequestHandler<UpdateQueueStatus
 
         if (dbQueue.Status == QueueStatus.Confirmed || dbQueue.Status == QueueStatus.Completed || dbQueue.Status== QueueStatus.DidNotCome)
         {
-            var queueUpdatedEvent = CreateQueueUpdatedEvent(dbQueue, request.newStatus);
+            var queueUpdatedEvent = await CreateQueueUpdatedEvent(dbQueue, request.newStatus);
             await _publishEndpoint.Publish(queueUpdatedEvent, cancellationToken);
         }
 
@@ -226,14 +316,21 @@ public class UpdateQueueStatusCommandHandler : IRequestHandler<UpdateQueueStatus
     }
     
 
-    private QueueEvent CreateQueueUpdatedEvent(QueueEntity dbQueue, QueueStatus newStatus)
+    private async Task<QueueEvent> CreateQueueUpdatedEvent(QueueEntity dbQueue, QueueStatus newStatus)
     {
-        var user = _dbContext.Users.FirstOrDefault(s => s.CustomerId == dbQueue.CustomerId);
-        if (user==null)
+        
+        var user = await _userService.GetUserByCustomerId(new GetUserByCustomerIdRequest
+        {
+            RequestId = Guid.NewGuid(),
+            CustomerId = dbQueue.CustomerId
+        });
+
+        if (!user.IsValid)
         {
             throw new HttpStatusCodeException(HttpStatusCode.NotFound,
                 $"Customer with Id {dbQueue.CustomerId} not found");
         }
+        
         var userEmail = user.EmailAddress;
         
         return new QueueEvent

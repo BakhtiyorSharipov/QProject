@@ -21,4 +21,9 @@
       <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\QUserService.Application\QUserService.Application.csproj" />
+      <ProjectReference Include="..\QUserService.Domain\QUserService.Domain.csproj" />
+    </ItemGroup>
+
 </Project>

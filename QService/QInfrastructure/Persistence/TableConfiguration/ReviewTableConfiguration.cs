@@ -10,10 +10,9 @@ public class ReviewTableConfiguration: IEntityTypeConfiguration<ReviewEntity>
     {
         builder.ToTable("Reviews");
         builder.HasKey(s => s.Id);
-
-        builder.HasOne(s => s.Customer)
-            .WithMany(s => s.Reviews)
-            .HasForeignKey(s => s.CustomerId);
+        builder.HasIndex(s => s.CustomerId);
+        
+        
 
         builder.HasOne(s => s.Queue)
             .WithMany()

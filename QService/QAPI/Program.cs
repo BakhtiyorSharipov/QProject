@@ -1,4 +1,3 @@
-using System.Net;
 using System.Text;
 using FluentValidation.AspNetCore;
 using Grpc.Net.Client;
@@ -17,13 +16,14 @@ using QApplication.Interfaces;
 using QApplication.Interfaces.Data;
 using QApplication.Services;
 using QApplication.Services.BackgroundJob;
-using QApplication.Validators.AuthValidators;
+using QApplication.Validators.QueueValidators;
 using QBranchService.Contracts.Interfaces;
 using QDomain.Models;
 using QInfrastructure.Consumers.Cache;
 using QInfrastructure.Consumers.QueueConsumers;
 using QInfrastructure.Persistence.Caching;
 using QInfrastructure.Persistence.DataBase;
+using QUserService.Contracts.Interfaces;
 using Serilog;
 using StackExchange.Redis;
 
@@ -43,33 +43,15 @@ builder.WebHost.ConfigureKestrel(options =>
     });
 });
 
-builder.Services.AddSingleton(provider =>
-{
-    var branchServiceUrl = builder.Configuration["Services:BranchService"]
-                           ?? "http://localhost:5002";
+var branchServiceUrl = builder.Configuration["Services:BranchService"]
+                       ?? "http://localhost:5002";
+builder.Services.AddSingleton<IBranchService>(_ =>
+    MagicOnionClient.Create<IBranchService>(GrpcChannel.ForAddress(branchServiceUrl)));
 
-    var logger = provider.GetRequiredService<ILogger<Program>>();
-    logger.LogInformation("Connecting to BranchService gRPC at {Url}", branchServiceUrl);
-
-    var channel = GrpcChannel.ForAddress(branchServiceUrl, new GrpcChannelOptions
-    {
-        LoggerFactory = provider.GetService<ILoggerFactory>(),
-        HttpVersion = HttpVersion.Version20,
-        HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact
-    });
-
-    return channel;
-});
-
-builder.Services.AddSingleton<IBranchService>(provider =>
-{
-    var channel = provider.GetRequiredService<GrpcChannel>();
-    var logger = provider.GetRequiredService<ILogger<IBranchService>>();
-
-    logger.LogInformation("Creating MagicOnion client for IBranchValidationService");
-
-    return MagicOnionClient.Create<IBranchService>(channel);
-});
+var userServiceUrl = builder.Configuration["Services:UserService"]
+                     ?? "http://localhost:5007";
+builder.Services.AddSingleton<IUserService>(_ =>
+    MagicOnionClient.Create<IUserService>(GrpcChannel.ForAddress(userServiceUrl)));
 
 builder.Services.AddMagicOnion();
 
@@ -77,11 +59,11 @@ builder.Services.AddMagicOnion();
 builder.Services.AddApplicationService();
 builder.Services.AddFluentValidation(fv =>
 {
-    fv.RegisterValidatorsFromAssemblyContaining<RegisterCustomerRequestValidator>();
+    fv.RegisterValidatorsFromAssemblyContaining<CreateQueueRequestValidator>();
 });
 
 
-builder.Services.AddScoped<IPasswordHasher<UserEntity>, PasswordHasher<UserEntity>>();
+builder.Services.AddScoped<IPasswordHasher<QueueEntity>, PasswordHasher<QueueEntity>>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IQueueCancellationService, QueueCancellationService>();
 builder.Services.AddScoped<IQueueApplicationDbContext, QueueDbContext>();
@@ -215,30 +197,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<QueueDbContext>();
-    await db.Database.MigrateAsync();
-
-
-    var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<UserEntity>>();
-
-    var sys = await db.Users
-        .AnyAsync(u => u.EmailAddress == "systemAdmin@gmail.com");
-    if (!sys)
-    {
-        var sysUser = new UserEntity
-        {
-            EmailAddress = "systemAdmin@gmail.com",
-            Roles = QDomain.Enums.UserRoles.SystemAdmin,
-            CreatedAt = DateTime.UtcNow,
-            
-        };
-        sysUser.PasswordHash = hasher.HashPassword(sysUser, "B.sh.3242");
-        await db.AddAsync(sysUser);
-        await db.SaveChangesAsync();
-    }
-}
 
 app.Run();
 

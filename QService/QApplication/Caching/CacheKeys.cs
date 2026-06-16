@@ -6,12 +6,7 @@ public static class CacheKeys
         => $"company:{id}";
 
     public static string AllCompaniesKey = "companies:pages";
-    public static string AllCompaniesFiled(int pageNumber)
-        => $"{pageNumber}";
     
-
-    public static string CustomerById(int id)
-        => $"queue:{id}";
 
     public static string QueueId(int id) 
         => $"queue:{id}";

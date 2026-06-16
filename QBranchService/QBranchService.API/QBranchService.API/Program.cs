@@ -7,7 +7,6 @@ using QBranchService.Application.Interfaces.Data;
 using QBranchService.Application.Validators.CompanyValidators;
 using QBranchService.Infrastructure.Persistence.DataBase;
 using QBranchService.Application.Services;
-using QBranchService.Contracts.Interfaces;
 using FluentValidation.AspNetCore;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;

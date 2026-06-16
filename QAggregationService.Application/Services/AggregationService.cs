@@ -9,6 +9,7 @@ using QBranchService.Contracts.Interfaces;
 using QBranchService.Contracts.Requests;
 using QContracts.Enums;
 using QContracts.Interfaces;
+using QUserService.Contracts.Interfaces;
 
 namespace QAggregationService.Application.Services;
 
@@ -16,18 +17,20 @@ public class AggregationService : IAggregationService
 {
     private readonly IQueueService _queueService;
     private readonly IBranchService _branchService;
+    private readonly IUserService _userService; 
     private readonly ILogger<AggregationService> _logger;
     private readonly ICacheService _cacheService;
     private readonly IMemoryCacheService _memoryCacheService;
 
     public AggregationService(IQueueService queueService, IBranchService branchService,
-        ILogger<AggregationService> logger, ICacheService cacheService, IMemoryCacheService memoryCacheService)
+        ILogger<AggregationService> logger, ICacheService cacheService, IMemoryCacheService memoryCacheService, IUserService userService)
     {
         _queueService = queueService;
         _branchService = branchService;
         _logger = logger;
         _cacheService = cacheService;
         _memoryCacheService = memoryCacheService;
+        _userService = userService;
     }
 
     public async Task<CompanyReportResponse> GetReportAsync(ReportRequest request)
@@ -115,7 +118,7 @@ public class AggregationService : IAggregationService
             {
                 _logger.LogInformation("Cache miss for CompanyBlockedCustomers {CompanyId}, calling QService",
                     request.CompanyId.Value);
-                return await _queueService.GetAllCompanyBlockedCustomers(request.CompanyId.Value);
+                return await _userService.GetAllCompanyBlockedCustomers(request.CompanyId.Value);
             }, TimeSpan.FromMinutes(10));
 
         var employees = await _cacheService.GetOrCreateAsync(
@@ -124,7 +127,7 @@ public class AggregationService : IAggregationService
             {
                 _logger.LogInformation("Cache miss for CompanyEmployees {CompanyId}, calling QService",
                     request.CompanyId.Value);
-                return await _queueService.GetAllCompanyEmployees(request.CompanyId.Value);
+                return await _userService.GetAllCompanyEmployees(request.CompanyId.Value);
             },
             TimeSpan.FromMinutes(10)
         );
@@ -298,7 +301,7 @@ public class AggregationService : IAggregationService
             {
                 _logger.LogInformation("Cache miss for CompanyBlockedCustomers {CompanyId}, calling QService",
                     companyId);
-                return await _queueService.GetAllCompanyBlockedCustomers(companyId);
+                return await _userService.GetAllCompanyBlockedCustomers(companyId);
             }, TimeSpan.FromMinutes(10));
 
         var companyEmployees = await _cacheService.GetOrCreateAsync(
@@ -306,7 +309,7 @@ public class AggregationService : IAggregationService
             async () =>
             {
                 _logger.LogInformation("Cache miss for CompanyEmployees {CompanyId}, calling QService", companyId);
-                return await _queueService.GetAllCompanyEmployees(companyId);
+                return await _userService.GetAllCompanyEmployees(companyId);
             },
             TimeSpan.FromMinutes(10)
         );
@@ -462,7 +465,7 @@ public class AggregationService : IAggregationService
             async () =>
             {
                 _logger.LogInformation("Cache miss for AllEmployees, calling QService");
-                return await _queueService.GetAllEmployees();
+                return await _userService.GetAllEmployees();
             }, TimeSpan.FromMinutes(10));
         
         if (employees != null && !employees.Any())
@@ -565,7 +568,7 @@ public class AggregationService : IAggregationService
             async () =>
             {
                 _logger.LogInformation("Cache miss for AllCustomers, calling QService");
-                return await _queueService.GetAllCustomers();
+                return await _userService.GetAllCustomers();
             }, TimeSpan.FromMinutes(10));
         if (customers != null && !customers.Any())
         {

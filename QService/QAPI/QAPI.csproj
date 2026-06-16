@@ -34,6 +34,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\QUserService\QUserService.Contracts\QUserService.Contracts.csproj" />
       <ProjectReference Include="..\QApplication\QApplication.csproj" />
       <ProjectReference Include="..\QDomain\QDomain.csproj" />
       <ProjectReference Include="..\QInfrastructure\QInfrastructure.csproj" />

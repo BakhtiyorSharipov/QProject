@@ -13,7 +13,7 @@ public static class AuthEndpoints
         authGroup.MapPost("/login", async (HttpClient client, LoginRequest request) =>
         {
             var response = await client.PostAsJsonAsync(
-                "http://localhost:5003/api/Auth/login",
+                "http://localhost:5008/api/Auth/login",
                 request
             );
             var content = await response.Content.ReadAsStringAsync();
@@ -23,7 +23,7 @@ public static class AuthEndpoints
         authGroup.MapPost("/register", async (HttpClient client, RegisterRequest request) =>
         {
             var response = await client.PostAsJsonAsync(
-                "http://localhost:5003/api/Auth/register", request);
+                "http://localhost:5008/api/Auth/register", request);
 
             var content = await response.Content.ReadAsStringAsync();
             return Results.Content(content, "application/json", Encoding.UTF8, (int)response.StatusCode);
@@ -32,7 +32,7 @@ public static class AuthEndpoints
         authGroup.MapPost("/logout",  async (HttpClient client, HttpRequest httpRequest, string refreshToken) =>
         {
             var token = httpRequest.Headers["Authorization"].ToString();
-            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost:5003/api/Auth/logout");
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost:5008/api/Auth/logout");
             request.Headers.Add("Authorization", token);
             request.Content = new StringContent(JsonSerializer.Serialize(refreshToken), Encoding.UTF8,
                 "application/json");
@@ -46,7 +46,7 @@ public static class AuthEndpoints
             async (HttpClient client, VerifyEmailRequest request) =>
             {
                 var response = await client.PostAsJsonAsync(
-                    "http://localhost:5003/api/Auth/verify-email", request);
+                    "http://localhost:5008/api/Auth/verify-email", request);
 
                 var content = await response.Content.ReadAsStringAsync();
                 return Results.Content(content, "application/json", Encoding.UTF8, (int)response.StatusCode);
@@ -55,7 +55,7 @@ public static class AuthEndpoints
         authGroup.MapPost("/resend-code", async (HttpClient client, ResendCodeRequest request) =>
         {
             var response = await client.PostAsJsonAsync(
-                "http://localhost:5003/api/Auth/resend-code", request);
+                "http://localhost:5008/api/Auth/resend-code", request);
 
             var content = await response.Content.ReadAsStringAsync();
             return Results.Content(content, "application/json", Encoding.UTF8, (int)response.StatusCode);
@@ -66,7 +66,7 @@ public static class AuthEndpoints
             {
                 var token = httpRequest.Headers["Authorization"].ToString();
                 var request = new HttpRequestMessage(HttpMethod.Put,
-                    "http://localhost:5003/api/Auth/change-password");
+                    "http://localhost:5008/api/Auth/change-password");
                 request.Headers.Add("Authorization", token);
                 request.Content = new StringContent(JsonSerializer.Serialize(updatePasswordRequest), Encoding.UTF8,
                     "application/json");
@@ -79,7 +79,7 @@ public static class AuthEndpoints
         authGroup.MapPost("/forgot-password", async (HttpClient client, ForgotPasswordRequest request) =>
         {
             var response = await client.PostAsJsonAsync(
-                "http://localhost:5003/api/Auth/forgot-password", request);
+                "http://localhost:5008/api/Auth/forgot-password", request);
 
             var content = await response.Content.ReadAsStringAsync();
             return Results.Content(content, "application/json", Encoding.UTF8, (int)response.StatusCode);
@@ -88,7 +88,7 @@ public static class AuthEndpoints
         authGroup.MapPost("/reset-password", async (HttpClient client, ResetPasswordRequest request) =>
         {
             var response = await client.PostAsJsonAsync(
-                "http://localhost:5003/api/Auth/reset-password", request);
+                "http://localhost:5008/api/Auth/reset-password", request);
 
             var content = await response.Content.ReadAsStringAsync();
             return Results.Content(content, "application/json", Encoding.UTF8, (int)response.StatusCode);
@@ -98,7 +98,7 @@ public static class AuthEndpoints
         {
             var token = httpRequest.Headers["Authorization"].ToString();
             var request = new HttpRequestMessage(HttpMethod.Delete,
-                "http://localhost:5003/api/Auth/delete-customer-account");
+                "http://localhost:5008/api/Auth/delete-customer-account");
 
             request.Headers.Add("Authorization", token);
             var response = await client.SendAsync(request);

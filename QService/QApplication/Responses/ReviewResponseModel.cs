@@ -1,6 +1,6 @@
 namespace QApplication.Responses;
 
-public class ReviewResponseModel: BaseResponse
+public class ReviewResponseModel
 {
     public int Id { get; set; }
     public int CustomerId { get; set; }

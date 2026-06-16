@@ -7,10 +7,26 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="FluentValidation" Version="12.1.0" />
+      <PackageReference Include="MagicOnion.Server" Version="7.10.0" />
+      <PackageReference Include="MassTransit" Version="8.5.7" />
+      <PackageReference Include="MassTransit.AspNetCore" Version="7.3.1" />
+      <PackageReference Include="MassTransit.RabbitMQ" Version="8.5.7" />
+      <PackageReference Include="MediatR" Version="14.0.0" />
+      <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.11" />
+      <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.3.11" />
       <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.9" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.9" />
+      <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.15.0" />
+      <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+      <PackageReference Include="StackExchange.Redis" Version="2.7.27" />
+      <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\QBranchService\QBranchService.Contracts\QBranchService.Contracts\QBranchService.Contracts.csproj" />
+      <ProjectReference Include="..\..\QNotificationService\QNotificationService.Contracts\QNotificationService.Contracts.csproj" />
+      <ProjectReference Include="..\QUserService.Contracts\QUserService.Contracts.csproj" />
       <ProjectReference Include="..\QUserService.Domain\QUserService.Domain.csproj" />
     </ItemGroup>
 

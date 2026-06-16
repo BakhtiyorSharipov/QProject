@@ -10,10 +10,8 @@ public class ComplaintTableConfiguration: IEntityTypeConfiguration<ComplaintEnti
     {
         builder.ToTable("Complaints");
         builder.HasKey(s => s.Id);
-
-        builder.HasOne(s => s.Customer)
-            .WithMany(s => s.Complaints)
-            .HasForeignKey(s => s.CustomerId);
+        builder.HasIndex(s => s.CustomerId);
+        
 
         builder.HasOne(s => s.Queue)
             .WithMany()

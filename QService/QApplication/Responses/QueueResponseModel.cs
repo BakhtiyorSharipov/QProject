@@ -2,7 +2,7 @@ using QDomain.Enums;
 
 namespace QApplication.Responses;
 
-public class QueueResponseModel: BaseResponse
+public class QueueResponseModel
 {
     public int Id { get; set; }
     public int CompanyId { get; set; }
